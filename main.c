@@ -23,6 +23,93 @@ void add_history(char* unused) {}
 
 #endif
 
+enum {CVAL_NUMBER, CVAL_ERROR};
+enum {CERR_DIVISION_BY_ZERO, CERR_BAD_OPERATOR, CERR_BAD_NUMBER};
+
+typedef struct {
+    int type;
+    long num;
+    int err;
+} cval;
+
+cval cval_number(long x) {
+    cval value;
+    value.type = CVAL_NUMBER;
+    value.num = x;
+    return value;
+}
+
+cval cval_error(int x) {
+    cval value;
+    value.type = CVAL_ERROR;
+    value.err = x;
+    return value;
+}
+
+void cval_print(cval value) {
+    switch (value.type) {
+
+        case CVAL_NUMBER:
+            printf("%li", value.num);
+            break;
+
+        case CVAL_ERROR:
+            switch (value.err) {
+                case CERR_DIVISION_BY_ZERO:
+                    printf("Error: Division by zero.");
+                    break;
+
+                case CERR_BAD_OPERATOR:
+                    printf("Error: Unknown operator.");
+                    break;
+
+                case CERR_BAD_NUMBER:
+                    printf("Error: Invalid number.");
+                    break;
+            }
+    break;
+    }
+}
+
+void cval_print_line(cval value) {
+    cval_print(value);
+    putchar('\n');
+}
+
+
+cval eval_op(cval x, char* op, cval y) {
+    if (x.type == CVAL_ERROR) {return x;}
+    if (y.type == CVAL_ERROR) {return y;}
+
+    if (strcmp(op, "+") == 0) {return cval_number(x.num + y.num);}
+    if (strcmp(op, "-") == 0) {return cval_number(x.num - y.num);}
+    if (strcmp(op, "*") == 0) {return cval_number(x.num * y.num);}
+    if (strcmp(op, "/") == 0) {
+    return y.num == 0
+    ? cval_error(CERR_DIVISION_BY_ZERO)
+    : cval_number(x.num / y.num);}
+
+    return cval_error(CERR_BAD_OPERATOR);
+}
+
+cval eval(mpc_ast_t* t) {
+    if (strstr(t->tag, "number")) {
+        errno = 0;
+        long x = strtol(t->contents, NULL, 10);
+        return errno != ERANGE ? cval_number(x) : cval_error(CERR_BAD_NUMBER);
+    }
+
+    char* op = t->children[1]->contents;
+    cval x = eval(t->children[2]);
+    int i = 3;
+
+    while(strstr(t->children[i]->tag, "expr")) {
+        x = eval_op(x, op, eval(t->children[i]));
+        i++;
+    }
+    return x;
+}
+
 int main() {
     mpc_parser_t* Number = mpc_new("number");
     mpc_parser_t* Operator = mpc_new("operator");
@@ -48,14 +135,11 @@ int main() {
         add_history(input);
 
         mpc_result_t result;
+        mpc_parse("<stdin>", input, Connery, &result);
 
-        if (mpc_parse("<stdin>", input, Connery, &result)) {
-            mpc_ast_print(result.output);
-            mpc_ast_delete(result.output);
-        } else {
-            mpc_err_print(result.error);
-            mpc_err_delete(result.error);
-        }
+        cval output = eval(result.output);
+        cval_print_line(output);
+        mpc_ast_delete(result.output);
 
         free(input);
     }
