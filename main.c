@@ -23,108 +23,272 @@ void add_history(char* unused) {}
 
 #endif
 
-enum {CVAL_NUMBER, CVAL_ERROR};
+enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_S_EXPRESSION};
 enum {CERR_DIVISION_BY_ZERO, CERR_BAD_OPERATOR, CERR_BAD_NUMBER};
 
-typedef struct {
+typedef struct cval {
     int type;
     long num;
-    int err;
+    char* err;
+    char* sym;
+    int count;
+    struct cval** cell;
 } cval;
 
-cval cval_number(long x) {
-    cval value;
-    value.type = CVAL_NUMBER;
-    value.num = x;
+cval* cval_number(long x) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_NUMBER;
+    value->num = x;
     return value;
 }
 
-cval cval_error(int x) {
-    cval value;
-    value.type = CVAL_ERROR;
-    value.err = x;
+cval* cval_error(char* s) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_ERROR;
+    value->err = malloc(strlen(s) + 1);
+    strcpy(value->err, s);
     return value;
 }
 
-void cval_print(cval value) {
-    switch (value.type) {
+cval* cval_symbol(char* s) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_SYMBOL;
+    value->sym = malloc(strlen(s) + 1);
+    strcpy(value->sym, s);
+    return value;
+}
 
+cval* cval_s_expression(void) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_S_EXPRESSION;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
+}
+
+void cval_delete(cval* value) {
+    switch(value->type) {
         case CVAL_NUMBER:
-            printf("%li", value.num);
             break;
 
         case CVAL_ERROR:
-            switch (value.err) {
-                case CERR_DIVISION_BY_ZERO:
-                    printf("Error: Division by zero.");
-                    break;
+            free(value->err);
+            break;
 
-                case CERR_BAD_OPERATOR:
-                    printf("Error: Unknown operator.");
-                    break;
+        case CVAL_SYMBOL:
+            free(value->sym);
+            break;
 
-                case CERR_BAD_NUMBER:
-                    printf("Error: Invalid number.");
-                    break;
+        case CVAL_S_EXPRESSION:
+            for (int i = 0; i < value->count; i++) {
+                cval_delete(value->cell[i]);
             }
-    break;
+            free(value->cell);
+            break;
     }
+    free(value);
 }
 
-void cval_print_line(cval value) {
-    cval_print(value);
-    putchar('\n');
+cval* cval_read_num(mpc_ast_t* t) {
+    errno = 0;
+    long x = strtol(t->contents, NULL, 10);
+    return errno != ERANGE ?
+    cval_number(x) : cval_error("that'sh an invalid number");
 }
 
-
-cval eval_op(cval x, char* op, cval y) {
-    if (x.type == CVAL_ERROR) {return x;}
-    if (y.type == CVAL_ERROR) {return y;}
-
-    if (strcmp(op, "+") == 0) {return cval_number(x.num + y.num);}
-    if (strcmp(op, "-") == 0) {return cval_number(x.num - y.num);}
-    if (strcmp(op, "*") == 0) {return cval_number(x.num * y.num);}
-    if (strcmp(op, "/") == 0) {
-    return y.num == 0
-    ? cval_error(CERR_DIVISION_BY_ZERO)
-    : cval_number(x.num / y.num);}
-
-    return cval_error(CERR_BAD_OPERATOR);
+cval* cval_add(cval* v, cval* x) {
+    v->count++;
+    v->cell = realloc(v->cell, sizeof(cval*) * v->count);
+    v->cell[v->count-1] = x;
+    return v;
 }
 
-cval eval(mpc_ast_t* t) {
+cval* cval_read(mpc_ast_t* t) {
+
     if (strstr(t->tag, "number")) {
-        errno = 0;
-        long x = strtol(t->contents, NULL, 10);
-        return errno != ERANGE ? cval_number(x) : cval_error(CERR_BAD_NUMBER);
+        return cval_read_num(t);
     }
 
-    char* op = t->children[1]->contents;
-    cval x = eval(t->children[2]);
-    int i = 3;
+    if (strstr(t->tag, "symbol")) {
+        return cval_symbol(t->contents);
+    }
 
-    while(strstr(t->children[i]->tag, "expr")) {
-        x = eval_op(x, op, eval(t->children[i]));
-        i++;
+    cval* x = NULL;
+    if (strcmp(t->tag, ">") == 0) {
+        x = cval_s_expression();
+    }
+    if (strstr(t->tag, "sexpr")) {
+        x = cval_s_expression();
+    }
+
+    for (int i = 0; i < t->children_num; i++) {
+        if (strcmp(t->children[i]->contents, "(") == 0){
+            continue;
+        }
+        if (strcmp(t->children[i]->contents, ")") == 0){
+            continue;
+        }
+        if (strcmp(t->children[i]->contents, "}") == 0){
+            continue;
+        }
+        if (strcmp(t->children[i]->contents, "{") == 0){
+            continue;
+        }
+        if (strcmp(t->children[i]->tag, "regex") == 0){
+            continue;
+        }
+        x = cval_add(x, cval_read(t->children[i]));
     }
     return x;
 }
 
+void cval_print(cval* value);
+
+void cval_expr_print(cval* value, char open, char close) {
+    putchar(open);
+    for (int i = 0; i < value->count; i++) {
+        cval_print(value->cell[i]);
+        if (i != (value->count-1)) {
+            putchar(' ');
+        }
+    }
+    putchar(close);
+}
+
+
+void cval_print(cval* value) {
+    switch (value->type) {
+
+        case CVAL_NUMBER:
+            printf("%li", value->num);
+            break;
+
+        case CVAL_ERROR:
+            printf("shtirred: %s", value->err);
+            break;
+
+        case CVAL_SYMBOL:
+            printf("%s", value->sym);
+            break;
+
+        case CVAL_S_EXPRESSION:
+            cval_expr_print(value, '(', ')');
+            break;
+    }
+}
+
+void cval_print_line(cval* value) {
+    cval_print(value);
+    putchar('\n');
+}
+
+cval* cval_evaluate(cval* value);
+
+cval* cval_pop(cval* value, int i) {
+    cval* x = value->cell[i];
+
+    memmove(&value->cell[i], &value->cell[i+1],
+            sizeof(cval*) * (value->count-i-1));
+
+    value->count--;
+
+    value->cell = realloc(value->cell, sizeof(cval*) * value->count);
+    return x;
+}
+
+cval* cval_take(cval* value, int i) {
+    cval* x = cval_pop(value, i);
+    cval_delete(value);
+    return x;
+}
+
+
+cval* cval_evaluate_s_expression(cval* value) {
+
+    for (int i = 0; i < value->count; i++) {
+        value->cell[i] = cval_evaluate(value->cell[i]);
+    }
+
+    for (int i = 0; i < value->count; i++) {
+        if (value->cell[i]->type == CVAL_ERROR) {return cval_take(value, 0);}
+    }
+
+    if (value->count == 0) {
+        return value;
+    }
+
+    if (value->count == 1) {
+        return cval_take(value, 0);
+    }
+
+    cval* f = cval_pop(value, 0);
+    if (f->type != CVAL_SYMBOL) {
+        cval_delete(f);
+        cval_delete(value);
+        return cval_error("sh-expreshion doesh not shtart with a shymbol!");
+    }
+
+    cval* result = builtin_op(value, f->sym);
+    cval_delete(f);
+    return result;
+}
+
+cval* cval_evaluate(cval* value) {
+    if (value->type == CVAL_S_EXPRESSION) {
+        return cval_evaluate_s_expression(value);
+    }
+    return value;
+}
+
+//cval eval_op(cval x, char* op, cval y) {
+//    if (x.type == CVAL_ERROR) {return x;}
+//    if (y.type == CVAL_ERROR) {return y;}
+//
+//    if (strcmp(op, "+") == 0) {return cval_number(x.num + y.num);}
+//    if (strcmp(op, "-") == 0) {return cval_number(x.num - y.num);}
+//    if (strcmp(op, "*") == 0) {return cval_number(x.num * y.num);}
+//    if (strcmp(op, "/") == 0) {
+//    return y.num == 0
+//    ? cval_error(CERR_DIVISION_BY_ZERO)
+//    : cval_number(x.num / y.num);}
+//
+//    return cval_error(CERR_BAD_OPERATOR);
+//}
+
+//cval eval(mpc_ast_t* t) {
+//    if (strstr(t->tag, "number")) {
+//        errno = 0;
+//        long x = strtol(t->contents, NULL, 10);
+//        return errno != ERANGE ? cval_number(x) : cval_error(CERR_BAD_NUMBER);
+//    }
+//
+//    char* op = t->children[1]->contents;
+//    cval x = eval(t->children[2]);
+//    int i = 3;
+//
+//    while(strstr(t->children[i]->tag, "expr")) {
+//        x = eval_op(x, op, eval(t->children[i]));
+//        i++;
+//    }
+//    return x;
+//}
+
 int main() {
     mpc_parser_t* Number = mpc_new("number");
-    mpc_parser_t* Operator = mpc_new("operator");
+    mpc_parser_t* Symbol = mpc_new("symbol");
+    mpc_parser_t* Sexpr = mpc_new("sexpr");
     mpc_parser_t* Expr = mpc_new("expr");
     mpc_parser_t* Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                \
                 number    : /-?[0-9]+/ ;                             \
-                operator  : '+' | '-' | '*' | '/' ;                  \
-                expr      : <number> | '(' <operator>  <expr>+ ')' ; \
-                connery   : /^/ <operator> <expr>+ /$/ ;             \
+                symbol    : '+' | '-' | '*' | '/' ;                  \
+                sexpr     : '(' <expr>* ')' ;                        \
+                expr      : <number> | <symbol> | <sexpr> ;          \
+                connery   : /^/ <expr>* /$/ ;             \
             ",
-            Number, Operator, Expr, Connery);
-
+            Number, Symbol, Sexpr, Expr, Connery);
 
 
     puts("Connery version 0.0.1");
@@ -137,13 +301,13 @@ int main() {
         mpc_result_t result;
         mpc_parse("<stdin>", input, Connery, &result);
 
-        cval output = eval(result.output);
+        cval* output = cval_read(result.output);
         cval_print_line(output);
-        mpc_ast_delete(result.output);
+        cval_delete(output);
 
         free(input);
     }
 
-    mpc_cleanup(4, Number, Operator, Expr, Connery);
+    mpc_cleanup(4, Number, Symbol, Sexpr, Expr, Connery);
     return 0;
 }
