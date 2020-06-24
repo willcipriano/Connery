@@ -202,6 +202,51 @@ cval* cval_take(cval* value, int i) {
     return x;
 }
 
+cval* builtin_op(cval* a, char* op) {
+
+    for (int i = 0; i < a->count; i++) {
+        if (a->cell[i]->type != CVAL_NUMBER) {
+            cval_delete(a);
+            return cval_error("cannot operate on anything but numbersh");
+        }
+    }
+
+    cval* x = cval_pop(a, 0);
+
+    if ((strcmp(op, "-") == 0) && a->count == 0) {
+        x->num = -x->num;
+    }
+
+    while (a->count > 0) {
+        cval* y = cval_pop(a, 0);
+
+        if (strcmp(op, "+") == 0) {
+            x->num += y->num;
+        }
+
+        if (strcmp(op, "-") == 0) {
+            x->num -= y->num;
+        }
+
+        if (strcmp(op, "*") == 0) {
+            x->num *= y->num;
+        }
+
+        if (strcmp(op, "/") == 0) {
+            if (y->num == 0) {
+                cval_delete(x);
+                cval_delete(y);
+                x = cval_error("Divishion by zero");
+                break;
+            }
+            x->num /= y->num;
+        }
+        cval_delete(y);
+    }
+    cval_delete(a);
+    return x;
+}
+
 
 cval* cval_evaluate_s_expression(cval* value) {
 
@@ -301,7 +346,7 @@ int main() {
         mpc_result_t result;
         mpc_parse("<stdin>", input, Connery, &result);
 
-        cval* output = cval_read(result.output);
+        cval* output = cval_evaluate(cval_read(result.output));
         cval_print_line(output);
         cval_delete(output);
 
