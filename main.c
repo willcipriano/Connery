@@ -23,7 +23,7 @@ void add_history(char* unused) {}
 
 #endif
 
-enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_S_EXPRESSION};
+enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
 enum {CERR_DIVISION_BY_ZERO, CERR_BAD_OPERATOR, CERR_BAD_NUMBER};
 
 typedef struct cval {
@@ -66,6 +66,14 @@ cval* cval_s_expression(void) {
     return value;
 }
 
+cval* cval_q_expression(void) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_Q_EXPRESSION;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
+}
+
 void cval_delete(cval* value) {
     switch(value->type) {
         case CVAL_NUMBER:
@@ -79,12 +87,13 @@ void cval_delete(cval* value) {
             free(value->sym);
             break;
 
+        case CVAL_Q_EXPRESSION:
         case CVAL_S_EXPRESSION:
             for (int i = 0; i < value->count; i++) {
                 cval_delete(value->cell[i]);
             }
             free(value->cell);
-            break;
+        break;
     }
     free(value);
 }
@@ -119,6 +128,9 @@ cval* cval_read(mpc_ast_t* t) {
     }
     if (strstr(t->tag, "sexpr")) {
         x = cval_s_expression();
+    }
+    if (strstr(t->tag, "qexpr")) {
+        x = cval_q_expression();
     }
 
     for (int i = 0; i < t->children_num; i++) {
@@ -173,6 +185,10 @@ void cval_print(cval* value) {
 
         case CVAL_S_EXPRESSION:
             cval_expr_print(value, '(', ')');
+            break;
+
+        case CVAL_Q_EXPRESSION:
+            cval_expr_print(value, '{', '}');
             break;
     }
 }
@@ -322,18 +338,20 @@ int main() {
     mpc_parser_t* Number = mpc_new("number");
     mpc_parser_t* Symbol = mpc_new("symbol");
     mpc_parser_t* Sexpr = mpc_new("sexpr");
+    mpc_parser_t* Qexpr = mpc_new("qexpr");
     mpc_parser_t* Expr = mpc_new("expr");
     mpc_parser_t* Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-            "                                                \
-                number    : /-?[0-9]+/ ;                             \
-                symbol    : '+' | '-' | '*' | '/' ;                  \
-                sexpr     : '(' <expr>* ')' ;                        \
-                expr      : <number> | <symbol> | <sexpr> ;          \
-                connery   : /^/ <expr>* /$/ ;             \
+            "                                                 \
+                number    : /-?[0-9]+/ ;                              \
+                symbol    : '+' | '-' | '*' | '/' ;                   \
+                sexpr     : '(' <expr>* ')' ;                         \
+                qexpr     : '{' <expr>* '}' ;                         \
+                expr      : <number> | <symbol> | <sexpr> | <qexpr> ; \
+                connery   : /^/ <expr>* /$/ ;                          \
             ",
-            Number, Symbol, Sexpr, Expr, Connery);
+            Number, Symbol, Sexpr, Qexpr, Expr, Connery);
 
 
     puts("Connery version 0.0.1");
@@ -353,6 +371,6 @@ int main() {
         free(input);
     }
 
-    mpc_cleanup(4, Number, Symbol, Sexpr, Expr, Connery);
+    mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Connery);
     return 0;
 }
