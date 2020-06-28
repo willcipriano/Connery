@@ -26,6 +26,9 @@ void add_history(char* unused) {}
 enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
 enum {CERR_DIVISION_BY_ZERO, CERR_BAD_OPERATOR, CERR_BAD_NUMBER};
 
+#define CASSERT(args, cond, err) \
+if (!(cond)) {cval_delete(args); return cval_error(err);}
+
 typedef struct cval {
     int type;
     long num;
@@ -263,6 +266,31 @@ cval* builtin_op(cval* a, char* op) {
     return x;
 }
 
+cval* builtin_head(cval* a) {
+    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
+    CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
+
+    cval* v = cval_take(a, 0);
+
+    while (v->count > 1) {
+        cval_delete((cval_pop(v, 1)));
+    }
+
+    return v;
+}
+
+cval* builtin_tail(cval* a) {
+    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
+    CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
+
+    cval* v = cval_take(a, 0);
+
+    cval_delete(cval_pop(v,0));
+    return v;
+}
+
 
 cval* cval_evaluate_s_expression(cval* value) {
 
@@ -301,39 +329,6 @@ cval* cval_evaluate(cval* value) {
     return value;
 }
 
-//cval eval_op(cval x, char* op, cval y) {
-//    if (x.type == CVAL_ERROR) {return x;}
-//    if (y.type == CVAL_ERROR) {return y;}
-//
-//    if (strcmp(op, "+") == 0) {return cval_number(x.num + y.num);}
-//    if (strcmp(op, "-") == 0) {return cval_number(x.num - y.num);}
-//    if (strcmp(op, "*") == 0) {return cval_number(x.num * y.num);}
-//    if (strcmp(op, "/") == 0) {
-//    return y.num == 0
-//    ? cval_error(CERR_DIVISION_BY_ZERO)
-//    : cval_number(x.num / y.num);}
-//
-//    return cval_error(CERR_BAD_OPERATOR);
-//}
-
-//cval eval(mpc_ast_t* t) {
-//    if (strstr(t->tag, "number")) {
-//        errno = 0;
-//        long x = strtol(t->contents, NULL, 10);
-//        return errno != ERANGE ? cval_number(x) : cval_error(CERR_BAD_NUMBER);
-//    }
-//
-//    char* op = t->children[1]->contents;
-//    cval x = eval(t->children[2]);
-//    int i = 3;
-//
-//    while(strstr(t->children[i]->tag, "expr")) {
-//        x = eval_op(x, op, eval(t->children[i]));
-//        i++;
-//    }
-//    return x;
-//}
-
 int main() {
     mpc_parser_t* Number = mpc_new("number");
     mpc_parser_t* Symbol = mpc_new("symbol");
@@ -345,7 +340,8 @@ int main() {
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                 \
                 number    : /-?[0-9]+/ ;                              \
-                symbol    : '+' | '-' | '*' | '/' ;                   \
+                symbol    : \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" \
+                            |'+' | '-' | '*' | '/' ;                   \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
                 expr      : <number> | <symbol> | <sexpr> | <qexpr> ; \
