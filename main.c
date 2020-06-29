@@ -157,7 +157,11 @@ cval* cval_read(mpc_ast_t* t) {
     return x;
 }
 
+//    todo: optimize function defs
 void cval_print(cval* value);
+cval* cval_pop(cval* value, int i);
+cval* cval_evaluate(cval* value);
+cval* cval_take(cval* value, int i);
 
 void cval_expr_print(cval* value, char open, char close) {
     putchar(open);
@@ -201,23 +205,13 @@ void cval_print_line(cval* value) {
     putchar('\n');
 }
 
-cval* cval_evaluate(cval* value);
+cval* cval_join(cval* x, cval* y) {
 
-cval* cval_pop(cval* value, int i) {
-    cval* x = value->cell[i];
+    while (y->count) {
+        x = cval_add(x, cval_pop(y, 0));
+    }
 
-    memmove(&value->cell[i], &value->cell[i+1],
-            sizeof(cval*) * (value->count-i-1));
-
-    value->count--;
-
-    value->cell = realloc(value->cell, sizeof(cval*) * value->count);
-    return x;
-}
-
-cval* cval_take(cval* value, int i) {
-    cval* x = cval_pop(value, i);
-    cval_delete(value);
+    cval_delete(y);
     return x;
 }
 
@@ -266,31 +260,7 @@ cval* builtin_op(cval* a, char* op) {
     return x;
 }
 
-cval* builtin_head(cval* a) {
-    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
-    CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
-
-    cval* v = cval_take(a, 0);
-
-    while (v->count > 1) {
-        cval_delete((cval_pop(v, 1)));
-    }
-
-    return v;
-}
-
-cval* builtin_tail(cval* a) {
-    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
-    CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
-
-    cval* v = cval_take(a, 0);
-
-    cval_delete(cval_pop(v,0));
-    return v;
-}
-
+cval* builtin(cval* a, char* func);
 
 cval* cval_evaluate_s_expression(cval* value) {
 
@@ -317,7 +287,7 @@ cval* cval_evaluate_s_expression(cval* value) {
         return cval_error("sh-expreshion doesh not shtart with a shymbol!");
     }
 
-    cval* result = builtin_op(value, f->sym);
+    cval* result = builtin(value, f->sym);
     cval_delete(f);
     return result;
 }
@@ -327,6 +297,91 @@ cval* cval_evaluate(cval* value) {
         return cval_evaluate_s_expression(value);
     }
     return value;
+}
+
+cval* cval_pop(cval* value, int i) {
+    cval* x = value->cell[i];
+
+    memmove(&value->cell[i], &value->cell[i+1],
+            sizeof(cval*) * (value->count-i-1));
+
+    value->count--;
+
+    value->cell = realloc(value->cell, sizeof(cval*) * value->count);
+    return x;
+}
+
+cval* cval_take(cval* value, int i) {
+    cval* x = cval_pop(value, i);
+    cval_delete(value);
+    return x;
+}
+
+cval* builtin_head(cval* a) {
+    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
+    CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
+
+    cval* v = cval_take(a, 0);
+
+    while (v->count > 1) {
+        cval_delete((cval_pop(v, 1)));
+    }
+
+    return v;
+}
+
+cval* builtin_tail(cval* a) {
+    CASSERT(a, a->count==1, "Function 'tail' pashed in too many argumentsh!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'tail' pashed incorrect typesh!");
+    CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
+
+    cval* v = cval_take(a, 0);
+
+    cval_delete(cval_pop(v,0));
+    return v;
+}
+
+cval* builtin_list(cval* a) {
+    a->type = CVAL_Q_EXPRESSION;
+    return a;
+}
+
+cval* builtin_eval(cval* a) {
+    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh!")
+
+    cval* x = cval_take(a, 0);
+    x->type = CVAL_S_EXPRESSION;
+    return cval_evaluate(x);
+}
+
+cval* builtin_join(cval* a) {
+
+    for (int i = 0; i < a->count; i++) {
+        CASSERT(a, a->cell[i]->type == CVAL_Q_EXPRESSION, "Function 'join' pashed incorrect typesh!");
+    }
+
+    cval* x = cval_pop(a, 0);
+
+    while (a->count) {
+        x = cval_join(x, cval_pop(a, 0));
+    }
+
+    cval_delete(a);
+    return x;
+}
+
+cval* builtin(cval* a, char* func) {
+            if (strcmp("list", func) == 0) {return builtin_list(a);}
+            if (strcmp("head", func) == 0) {return builtin_head(a);}
+            if (strcmp("tail", func) == 0) {return builtin_tail(a);}
+            if (strcmp("join", func) == 0) {return builtin_join(a);}
+            if (strcmp("eval", func) == 0) {return builtin_eval(a);}
+            if (strstr("+-/*", func)) {return builtin_op(a, func);}
+            cval_delete(a);
+            return cval_error("Unknown functionsh!");
+
 }
 
 int main() {
