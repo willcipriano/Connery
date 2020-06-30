@@ -23,20 +23,41 @@ void add_history(char* unused) {}
 
 #endif
 
-enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
-enum {CERR_DIVISION_BY_ZERO, CERR_BAD_OPERATOR, CERR_BAD_NUMBER};
+struct cval;
+struct lenv;
+typedef struct cval cval;
+typedef struct cenv cenv;
 
-#define CASSERT(args, cond, err) \
-if (!(cond)) {cval_delete(args); return cval_error(err);}
+enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
 
-typedef struct cval {
+typedef cval*(*cbuiltin)(cenv*, cval*);
+
+struct cval {
     int type;
     long num;
     char* err;
     char* sym;
+    cbuiltin fun;
+
     int count;
     struct cval** cell;
-} cval;
+};
+
+struct cenv {
+    int count;
+    char** symbols;
+    cval** values;
+};
+
+#define CASSERT(args, cond, err) \
+if (!(cond)) {cval_delete(args); return cval_error(err);}
+
+cval* cval_function(cbuiltin func) {
+    cval* v = malloc(sizeof(cval));
+    v->type = CVAL_FUNCTION;
+    v->fun = func;
+    return v;
+}
 
 cval* cval_number(long x) {
     cval* value = malloc(sizeof(cval));
@@ -77,9 +98,20 @@ cval* cval_q_expression(void) {
     return value;
 }
 
+cenv* cenv_new(void) {
+    cenv* e = malloc(sizeof(cenv));
+    e->count = 0;
+    e->symbols = NULL;
+    e->values = NULL;
+    return e;
+}
+
 void cval_delete(cval* value) {
     switch(value->type) {
         case CVAL_NUMBER:
+            break;
+
+        case CVAL_FUNCTION:
             break;
 
         case CVAL_ERROR:
@@ -100,6 +132,19 @@ void cval_delete(cval* value) {
     }
     free(value);
 }
+
+void cenv_delete(cenv* e) {
+    for (int i = 0; i < e->count; i++) {
+        free(e->symbols[i]);
+        cval_delete(e->values[i]);
+    }
+    free(e->symbols);
+    free(e->values);
+    free(e);
+}
+
+
+
 
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
@@ -174,12 +219,56 @@ void cval_expr_print(cval* value, char open, char close) {
     putchar(close);
 }
 
+cval* cval_copy(cval* v) {
+
+    cval* x = malloc(sizeof(cval));
+    x->type = v->type;
+
+    switch (v->type) {
+
+        case CVAL_FUNCTION:
+            x->fun = v->fun;
+            break;
+
+        case CVAL_NUMBER:
+            x->num = v->num;
+            break;
+
+        case CVAL_ERROR:
+            x->err = malloc(strlen(v->err) + 1);
+            strcpy(x->err, v->err);
+            break;
+
+        case CVAL_SYMBOL:
+            x->sym = malloc(strlen(v->sym) + 1);
+            strcpy(x->sym, v->sym);
+            break;
+
+        case CVAL_S_EXPRESSION:
+        case CVAL_Q_EXPRESSION:
+            x->count = v->count;
+            x->cell = malloc(sizeof(cval *) * x->count);
+            for (int i = 0; i < x->count; i++) {
+                x->cell[i] = cval_copy(v->cell[i]);
+            }
+            break;
+
+    }
+
+    return x;
+}
+
+
 
 void cval_print(cval* value) {
     switch (value->type) {
 
         case CVAL_NUMBER:
             printf("%li", value->num);
+            break;
+
+        case CVAL_FUNCTION:
+            printf("<function>");
             break;
 
         case CVAL_ERROR:
@@ -395,7 +484,7 @@ int main() {
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                 \
                 number    : /-?[0-9]+/ ;                              \
-                symbol    : \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" \
+                symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
                             |'+' | '-' | '*' | '/' ;                   \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
