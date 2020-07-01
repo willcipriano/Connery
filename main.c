@@ -144,8 +144,6 @@ void cenv_delete(cenv* e) {
 }
 
 
-
-
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -205,7 +203,7 @@ cval* cval_read(mpc_ast_t* t) {
 //    todo: optimize function defs
 void cval_print(cval* value);
 cval* cval_pop(cval* value, int i);
-cval* cval_evaluate(cval* value);
+cval* cval_evaluate(cenv* env,cval* value);
 cval* cval_take(cval* value, int i);
 
 void cval_expr_print(cval* value, char open, char close) {
@@ -258,7 +256,33 @@ cval* cval_copy(cval* v) {
     return x;
 }
 
+cval* cenv_get(cenv* e, cval* k) {
+    for (int i = 0; i < e->count; i++) {
 
+        if (strcmp(e->symbols[i], k->sym) == 0) {
+            return cval_copy(e->values[i]);
+        }
+    }
+
+    return cval_error("Unbound shymbol!");
+}
+
+void cenv_put(cenv* e, cval* k, cval* v) {
+
+    for (int i = 0; i < e->count; i++) {
+
+        if (strcmp(e->symbols[i], k->sym) == 0) {
+            cval_delete(e->values[i]);
+            e->values[i] = cval_copy(v);
+            return;
+        }
+    }
+
+    e->count++;
+    e->values = realloc(e->values, sizeof(cval*) * e->count);
+    e->symbols = realloc(e->symbols, sizeof(char*) * e->count);
+    strcpy(e->symbols[e->count-1], k->sym);
+}
 
 void cval_print(cval* value) {
     switch (value->type) {
@@ -351,10 +375,10 @@ cval* builtin_op(cval* a, char* op) {
 
 cval* builtin(cval* a, char* func);
 
-cval* cval_evaluate_s_expression(cval* value) {
+cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
     for (int i = 0; i < value->count; i++) {
-        value->cell[i] = cval_evaluate(value->cell[i]);
+        value->cell[i] = cval_evaluate(env, value->cell[i]);
     }
 
     for (int i = 0; i < value->count; i++) {
@@ -381,7 +405,13 @@ cval* cval_evaluate_s_expression(cval* value) {
     return result;
 }
 
-cval* cval_evaluate(cval* value) {
+cval* cval_evaluate(cenv* env, cval* value) {
+    if (value->type == CVAL_SYMBOL) {
+        cval* x = cenv_get(env, value);
+        cval_delete(value);
+        return x;
+    }
+
     if (value->type == CVAL_S_EXPRESSION) {
         return cval_evaluate_s_expression(value);
     }
