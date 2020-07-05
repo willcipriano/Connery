@@ -49,8 +49,11 @@ struct cenv {
     cval** values;
 };
 
-#define CASSERT(args, cond, err) \
-if (!(cond)) {cval_delete(args); return cval_error(err);}
+#define CASSERT(args, cond, fmt, ...) \
+if (!(cond)) {\
+    cval* err = cval_error(fmt, ##__VA_ARGS__); \
+    cval_delete(args); \
+    return err;}
 
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
@@ -66,11 +69,21 @@ cval* cval_number(long x) {
     return value;
 }
 
-cval* cval_error(char* s) {
+cval* cval_error(char* fmt, ...) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_ERROR;
-    value->err = malloc(strlen(s) + 1);
-    strcpy(value->err, s);
+
+    va_list va;
+    va_start(va, fmt);
+
+    value->err = malloc(512);
+
+    vsnprintf(value->err, 511, fmt, va);
+
+    value->err = realloc(value->err, strlen(value->err)+1);
+
+    va_end(va);
+
     return value;
 }
 
@@ -108,9 +121,8 @@ cenv* cenv_new(void) {
 
 void cval_delete(cval* value) {
     switch(value->type) {
-        case CVAL_NUMBER:
-            break;
 
+        case CVAL_NUMBER:
         case CVAL_FUNCTION:
             break;
 
@@ -264,7 +276,7 @@ cval* cenv_get(cenv* e, cval* k) {
         }
     }
 
-    return cval_error("Unbound shymbol!");
+    return cval_error("Unbound shymbol '%s' not defined in shcope!", k->sym);
 }
 
 void cenv_put(cenv* e, cval* k, cval* v) {
@@ -376,6 +388,18 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
     return x;
 }
 
+char* ctype_name(int t) {
+    switch(t) {
+        case CVAL_FUNCTION: return "Function";
+        case CVAL_NUMBER: return "Number";
+        case CVAL_ERROR: return "Error";
+        case CVAL_SYMBOL: return "Symbol";
+        case CVAL_S_EXPRESSION: return "S-Expression";
+        case CVAL_Q_EXPRESSION: return "Q-Expression";
+        default: return "Unknown Type";
+    }
+}
+
 
 cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
@@ -439,8 +463,8 @@ cval* cval_take(cval* value, int i) {
 }
 
 cval* builtin_head(cenv* e, cval* a) {
-    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh!");
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh!");
+    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1);
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
     CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
 
     cval* v = cval_take(a, 0);
@@ -453,8 +477,8 @@ cval* builtin_head(cenv* e, cval* a) {
 }
 
 cval* builtin_tail(cenv* e, cval* a) {
-    CASSERT(a, a->count==1, "Function 'tail' pashed in too many argumentsh!");
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'tail' pashed incorrect typesh!");
+    CASSERT(a, a->count==1, "Function 'tail' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1);
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'tail' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
     CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 
     cval* v = cval_take(a, 0);
@@ -469,8 +493,8 @@ cval* builtin_list(cenv* e, cval* a) {
 }
 
 cval* builtin_eval(cenv* e, cval* a) {
-    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh!");
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh!")
+    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1)
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
 
     cval* x = cval_take(a, 0);
     x->type = CVAL_S_EXPRESSION;
@@ -480,7 +504,7 @@ cval* builtin_eval(cenv* e, cval* a) {
 cval* builtin_join(cenv* e, cval* a) {
 
     for (int i = 0; i < a->count; i++) {
-        CASSERT(a, a->cell[i]->type == CVAL_Q_EXPRESSION, "Function 'join' pashed incorrect typesh!");
+        CASSERT(a, a->cell[i]->type == CVAL_Q_EXPRESSION, "Function 'join' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
     }
 
     cval* x = cval_pop(a, 0);
@@ -518,14 +542,14 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
 }
 
 cval* builtin_def(cenv* e, cval* a) {
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type!");
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
     cval* syms = a->cell[0];
 
     for (int i = 0; i < syms->count; i++) {
         CASSERT(a, syms->cell[i]->type == CVAL_SYMBOL, "Function 'def' cannot define non-shymbol!");
     }
 
-    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh!");
+    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh! Got %i, Expected %i", syms->count, a->count-1);
 
     for (int i = 0; i < syms->count; i++) {
         cenv_put(e, syms->cell[i], a->cell[i+1]);
