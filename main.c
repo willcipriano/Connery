@@ -31,6 +31,7 @@ typedef struct cenv cenv;
 enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
 
 typedef cval*(*cbuiltin)(cenv*, cval*);
+void cenv_delete(cenv* e);
 
 char* ctype_name(int t) {
     switch(t) {
@@ -46,13 +47,18 @@ char* ctype_name(int t) {
 
 struct cval {
     int type;
+
     long num;
     char* err;
     char* sym;
-    cbuiltin fun;
+
+    cbuiltin builtin;
+    cenv* env;
+    cval* formals;
+    cval* body;
 
     int count;
-    struct cval** cell;
+    cval** cell;
 };
 
 struct cenv {
@@ -70,7 +76,7 @@ if (!(cond)) {\
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
     v->type = CVAL_FUNCTION;
-    v->fun = func;
+    v->builtin = func;
     return v;
 }
 
@@ -135,7 +141,14 @@ void cval_delete(cval* value) {
     switch(value->type) {
 
         case CVAL_NUMBER:
+            break;
+
         case CVAL_FUNCTION:
+            if (value->builtin) {
+                cenv_delete(value->env);
+                cval_delete(value->formals);
+                cval_delete(value->body);
+            }
             break;
 
         case CVAL_ERROR:
@@ -241,6 +254,7 @@ void cval_expr_print(cval* value, char open, char close) {
     putchar(close);
 }
 
+
 cval* cval_copy(cval* v) {
 
     cval* x = malloc(sizeof(cval));
@@ -249,7 +263,12 @@ cval* cval_copy(cval* v) {
     switch (v->type) {
 
         case CVAL_FUNCTION:
-            x->fun = v->fun;
+            if (v->builtin) {
+                x->builtin = v->builtin;
+            } else {
+                x->builtin = NULL;
+                x->env =
+            }
             break;
 
         case CVAL_NUMBER:
@@ -423,7 +442,7 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
         return cval_error("firsht element ish not a function!");
     }
 
-    cval* result = f->fun(env, value);
+    cval* result = f->builtin(env, value);
     cval_delete(f);
     return result;
 }
@@ -568,6 +587,18 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "-", builtin_sub);
     cenv_add_builtin(e, "*", builtin_mul);
     cenv_add_builtin(e, "/", builtin_div);
+}
+
+cval* cval_lambda(cval* formals, cval* body) {
+    cval* v = malloc(sizeof(cval));
+    v->type = CVAL_FUNCTION;
+
+    v->builtin = NULL;
+
+    v->env = cenv_new();
+    v->formals = formals;
+    v->body = body;
+    return v;
 }
 
 int main() {
