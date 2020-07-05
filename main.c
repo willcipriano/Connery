@@ -376,7 +376,6 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
     return x;
 }
 
-cval* builtin(cenv* e, cval* a, char* func);
 
 cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
@@ -518,29 +517,36 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
     cval_delete(v);
 }
 
+cval* builtin_def(cenv* e, cval* a) {
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type!");
+    cval* syms = a->cell[0];
+
+    for (int i = 0; i < syms->count; i++) {
+        CASSERT(a, syms->cell[i]->type == CVAL_SYMBOL, "Function 'def' cannot define non-shymbol!");
+    }
+
+    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh!");
+
+    for (int i = 0; i < syms->count; i++) {
+        cenv_put(e, syms->cell[i], a->cell[i+1]);
+    }
+
+    cval_delete(a);
+    return cval_s_expression();
+}
+
 void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "list", builtin_list);
     cenv_add_builtin(e, "head", builtin_head);
     cenv_add_builtin(e, "tail", builtin_tail);
     cenv_add_builtin(e, "eval", builtin_eval);
     cenv_add_builtin(e, "join", builtin_join);
+    cenv_add_builtin(e, "def", builtin_def);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
     cenv_add_builtin(e, "*", builtin_mul);
     cenv_add_builtin(e, "/", builtin_div);
-}
-
-cval* builtin(cenv* e, cval* a, char* func) {
-            if (strcmp("list", func) == 0) {return builtin_list(e, a);}
-            if (strcmp("head", func) == 0) {return builtin_head(e, a);}
-            if (strcmp("tail", func) == 0) {return builtin_tail(e, a);}
-            if (strcmp("join", func) == 0) {return builtin_join(e, a);}
-            if (strcmp("eval", func) == 0) {return builtin_eval(e, a);}
-            if (strstr("+-/*", func)) {return builtin_op(e, a, func);}
-            cval_delete(a);
-            return cval_error("Unknown functionsh!");
-
 }
 
 int main() {
@@ -588,5 +594,6 @@ int main() {
         }
         free(input);
     }
+
     cenv_delete(e);
 }
