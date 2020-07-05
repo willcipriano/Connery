@@ -267,7 +267,9 @@ cval* cval_copy(cval* v) {
                 x->builtin = v->builtin;
             } else {
                 x->builtin = NULL;
-                x->env =
+                x->env = cenv_copy(v->env);
+                x->formals = cval_copy(v->formals);
+                x->body = cval_copy(v->body);
             }
             break;
 
@@ -338,7 +340,15 @@ void cval_print(cval* value) {
             break;
 
         case CVAL_FUNCTION:
-            printf("<function>");
+            if (value->builtin) {
+                printf("<builtin>");
+            } else {
+                printf("(\\ ");
+                cval_print(value->formals);
+                putchar(' ');
+                cval_print(value->body);
+                putchar(')');
+            }
             break;
 
         case CVAL_ERROR:
@@ -599,6 +609,27 @@ cval* cval_lambda(cval* formals, cval* body) {
     v->formals = formals;
     v->body = body;
     return v;
+}
+
+cval* builtin_lambda(cenv* e, cval* a) {
+    CASSERT(a, a->count == 2, \
+    "Function '%s' pashed incorrect number of argumentsh. " \
+    "Got %i, Expected %i.", \
+    a, a->count, 2);
+
+    CASSERT(a, a->type == CVAL_Q_EXPRESSION, \
+    "Function '%s' pashed incorrect type. Got %s, Expected %s.", \
+    a, ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+
+    CASSERT(a, a->type == CVAL_Q_EXPRESSION, \
+    "Function '%s' pashed incorrect type. Got %s, Expected %s.", \
+    a, ctype_name(a->cell[1]->type), ctype_name(CVAL_Q_EXPRESSION));
+
+    cval* formals = cval_pop(a, 0);
+    cval* body = cval_pop(a, 0);
+    cval_delete(a);
+
+    return cval_lambda(formals, body);
 }
 
 int main() {
