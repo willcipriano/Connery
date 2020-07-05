@@ -32,6 +32,18 @@ enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CV
 
 typedef cval*(*cbuiltin)(cenv*, cval*);
 
+char* ctype_name(int t) {
+    switch(t) {
+        case CVAL_FUNCTION: return "Function";
+        case CVAL_NUMBER: return "Number";
+        case CVAL_ERROR: return "Error";
+        case CVAL_SYMBOL: return "Symbol";
+        case CVAL_S_EXPRESSION: return "S-Expression";
+        case CVAL_Q_EXPRESSION: return "Q-Expression";
+        default: return "Unknown Type";
+    }
+}
+
 struct cval {
     int type;
     long num;
@@ -346,10 +358,7 @@ cval* cval_join(cval* x, cval* y) {
 cval* builtin_op(cenv* e, cval* a, char* op) {
 
     for (int i = 0; i < a->count; i++) {
-        if (a->cell[i]->type != CVAL_NUMBER) {
-            cval_delete(a);
-            return cval_error("cannot operate on anything but numbersh");
-        }
+        CASSERT(a, a->cell[i]->type == CVAL_NUMBER, "Function '%s' passed incorrect type for argument %i Got %s, Expected %s.", op, i, ctype_name(a->cell[i]->type), ctype_name(CVAL_NUMBER));
     }
 
     cval* x = cval_pop(a, 0);
@@ -386,18 +395,6 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
     }
     cval_delete(a);
     return x;
-}
-
-char* ctype_name(int t) {
-    switch(t) {
-        case CVAL_FUNCTION: return "Function";
-        case CVAL_NUMBER: return "Number";
-        case CVAL_ERROR: return "Error";
-        case CVAL_SYMBOL: return "Symbol";
-        case CVAL_S_EXPRESSION: return "S-Expression";
-        case CVAL_Q_EXPRESSION: return "Q-Expression";
-        default: return "Unknown Type";
-    }
 }
 
 
