@@ -62,6 +62,7 @@ struct cval {
 };
 
 struct cenv {
+    cenv* par;
     int count;
     char** symbols;
     cval** values;
@@ -131,6 +132,7 @@ cval* cval_q_expression(void) {
 
 cenv* cenv_new(void) {
     cenv* e = malloc(sizeof(cenv));
+    e->par = NULL;
     e->count = 0;
     e->symbols = NULL;
     e->values = NULL;
@@ -254,6 +256,24 @@ void cval_expr_print(cval* value, char open, char close) {
     putchar(close);
 }
 
+cval* cval_copy(cval* v);
+
+cenv* cenv_copy(cenv* e) {
+    cenv* n = malloc(sizeof(cenv));
+    n->par = e->par;
+    n->count = e->count;
+    n->symbols = malloc(sizeof(char*) * n->count);
+    n->values = malloc(sizeof(cval*) * n->count);
+
+    for (int i = 0; i < e->count; i++) {
+        n->symbols[i] = malloc(strlen(e->symbols) + 1);
+        strcpy(n->symbols[i], e->symbols[i]);
+        n->values = cval_copy(e->values[i]);
+    }
+
+    return n;
+}
+
 
 cval* cval_copy(cval* v) {
 
@@ -302,14 +322,18 @@ cval* cval_copy(cval* v) {
 }
 
 cval* cenv_get(cenv* e, cval* k) {
-    for (int i = 0; i < e->count; i++) {
 
+    for (int i = 0; i < e->count; i++) {
         if (strcmp(e->symbols[i], k->sym) == 0) {
             return cval_copy(e->values[i]);
         }
     }
 
-    return cval_error("Unbound shymbol '%s' not defined in shcope!", k->sym);
+    if (e->par) {
+        return cenv_get(e->par, k);
+    } else {
+        return cval_error("Unbound shymbol '%s' not defined in shcope!", k->sym);
+    }
 }
 
 void cenv_put(cenv* e, cval* k, cval* v) {
@@ -330,6 +354,13 @@ void cenv_put(cenv* e, cval* k, cval* v) {
     e->values[e->count-1] = cval_copy(v);
     e->symbols[e->count-1] = malloc(strlen(k->sym)+1);
     strcpy(e->symbols[e->count-1], k->sym);
+}
+
+void cenv_def(cenv* e, cval* k, cval* v) {
+    while (e->par) {
+        e = e->par;
+    }
+    cenv_put(e, k , v);
 }
 
 void cval_print(cval* value) {
@@ -567,23 +598,43 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
     cval_delete(v);
 }
 
-cval* builtin_def(cenv* e, cval* a) {
+cval* builtin_var(cenv* e, cval* a, char* func) {
     CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+
     cval* syms = a->cell[0];
-
     for (int i = 0; i < syms->count; i++) {
-        CASSERT(a, syms->cell[i]->type == CVAL_SYMBOL, "Function 'def' cannot define non-shymbol!");
+        CASSERT(a, (syms->cell[i]->type == CVAL_SYMBOL), "Function 'def' cannot define non-shymbol! Got %s", func, )
     }
-
-    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh! Got %i, Expected %i", syms->count, a->count-1);
-
-    for (int i = 0; i < syms->count; i++) {
-        cenv_put(e, syms->cell[i], a->cell[i+1]);
-    }
-
-    cval_delete(a);
-    return cval_s_expression();
 }
+
+cval* builtin_put(cenv* e, cval* a) {
+    return builtin_var(e, a, "=");
+}
+
+cval* builtin_def(cenv* e, cval* a) {
+    return builtin_var(e, a, "def");
+}
+
+
+//cval* builtin_def(cenv* e, cval* a) {
+//    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+//    cval* syms = a->cell[0];
+//
+//    for (int i = 0; i < syms->count; i++) {
+//        CASSERT(a, syms->cell[i]->type == CVAL_SYMBOL, "Function 'def' cannot define non-shymbol!");
+//    }
+//
+//    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh! Got %i, Expected %i", syms->count, a->count-1);
+//
+//    for (int i = 0; i < syms->count; i++) {
+//        cenv_put(e, syms->cell[i], a->cell[i+1]);
+//    }
+//
+//    cval_delete(a);
+//    return cval_s_expression();
+//}
+
+
 
 void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "list", builtin_list);
@@ -592,6 +643,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "eval", builtin_eval);
     cenv_add_builtin(e, "join", builtin_join);
     cenv_add_builtin(e, "def", builtin_def);
+    cenv_add_builtin(e, "=", builtin_put);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
