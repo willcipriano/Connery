@@ -146,7 +146,7 @@ void cval_delete(cval* value) {
             break;
 
         case CVAL_FUNCTION:
-            if (value->builtin) {
+            if (!value->builtin) {
                 cenv_delete(value->env);
                 cval_delete(value->formals);
                 cval_delete(value->body);
@@ -266,9 +266,9 @@ cenv* cenv_copy(cenv* e) {
     n->values = malloc(sizeof(cval*) * n->count);
 
     for (int i = 0; i < e->count; i++) {
-        n->symbols[i] = malloc(strlen(e->symbols) + 1);
+        n->symbols[i] = malloc(strlen(e->symbols[i]) + 1);
         strcpy(n->symbols[i], e->symbols[i]);
-        n->values = cval_copy(e->values[i]);
+        n->values[i] = cval_copy(e->values[i]);
     }
 
     return n;
@@ -457,6 +457,48 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
     return x;
 }
 
+cval* builtin_eval(cenv* e, cval* a) {
+    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1)
+    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
+
+    cval* x = cval_take(a, 0);
+    x->type = CVAL_S_EXPRESSION;
+    return cval_evaluate(e, x);
+}
+
+cval* cval_call(cenv* e, cval* f, cval* a) {
+    if (f->builtin) {return f->builtin(e, a);}
+
+    int given = a->count;
+    int total = f->formals->count;
+
+    while (a->count) {
+
+        if(f->formals->count == 0) {
+            cval_delete(a);
+            return cval_error("Function pashed too many argumentsh. Got %i, Expected %s", given, total);
+        }
+
+        cval* sym = cval_pop(f->formals, 0);
+        cval* val = cval_pop(a, 0);
+        cenv_put(f->env, sym, val);
+
+        cval_delete(sym);
+        cval_delete(val);
+    }
+
+    cval_delete(a);
+
+    if (f->formals->count == 0) {
+        f->env->par = e;
+
+        return builtin_eval(f->env, cval_add(cval_s_expression(), cval_copy(f->body)));
+    }
+    else {
+        return cval_copy(f);
+    }
+}
+
 
 cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
@@ -473,17 +515,18 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
     }
 
     if (value->count == 1) {
-        return cval_take(value, 0);
+        return cval_evaluate(env, cval_take(value, 0));
     }
 
     cval* f = cval_pop(value, 0);
     if (f->type != CVAL_FUNCTION) {
+        cval* err = cval_error("S-Expression starts with incorrect type. Got %s, Expected %s", ctype_name(f->type), ctype_name(CVAL_FUNCTION));
         cval_delete(f);
         cval_delete(value);
-        return cval_error("firsht element ish not a function!");
+        return err;
     }
 
-    cval* result = f->builtin(env, value);
+    cval* result = cval_call(env, f, value);
     cval_delete(f);
     return result;
 }
@@ -549,15 +592,6 @@ cval* builtin_list(cenv* e, cval* a) {
     return a;
 }
 
-cval* builtin_eval(cenv* e, cval* a) {
-    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1)
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
-
-    cval* x = cval_take(a, 0);
-    x->type = CVAL_S_EXPRESSION;
-    return cval_evaluate(e, x);
-}
-
 cval* builtin_join(cenv* e, cval* a) {
 
     for (int i = 0; i < a->count; i++) {
@@ -571,6 +605,7 @@ cval* builtin_join(cenv* e, cval* a) {
     }
 
     cval_delete(a);
+
     return x;
 }
 
@@ -603,8 +638,25 @@ cval* builtin_var(cenv* e, cval* a, char* func) {
 
     cval* syms = a->cell[0];
     for (int i = 0; i < syms->count; i++) {
-        CASSERT(a, (syms->cell[i]->type == CVAL_SYMBOL), "Function 'def' cannot define non-shymbol! Got %s", func, )
+        CASSERT(a, (syms->cell[i]->type == CVAL_SYMBOL), "Function '%s' cannot define non-shymbol! Got %s Expected %s", func, ctype_name(syms->cell[i]->type), ctype_name(CVAL_SYMBOL));
     }
+
+    CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %s", func, syms->count, a->count-1);
+
+    for (int i = 0; i < syms->count; i++) {
+
+        if (strcmp(func, "def") == 0) {
+            cenv_def(e, syms->cell[i], a->cell[i+1]);
+        }
+
+        if (strcmp(func, "=") == 0) {
+            cenv_put(e, syms->cell[i], a->cell[i+1]);
+        }
+
+    }
+
+    cval_delete(a);
+    return cval_s_expression();
 }
 
 cval* builtin_put(cenv* e, cval* a) {
@@ -613,42 +665,6 @@ cval* builtin_put(cenv* e, cval* a) {
 
 cval* builtin_def(cenv* e, cval* a) {
     return builtin_var(e, a, "def");
-}
-
-
-//cval* builtin_def(cenv* e, cval* a) {
-//    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
-//    cval* syms = a->cell[0];
-//
-//    for (int i = 0; i < syms->count; i++) {
-//        CASSERT(a, syms->cell[i]->type == CVAL_SYMBOL, "Function 'def' cannot define non-shymbol!");
-//    }
-//
-//    CASSERT(a, syms->count == a->count-1, "Function 'def' cannot define incorrect number of valuesh to shymbolsh! Got %i, Expected %i", syms->count, a->count-1);
-//
-//    for (int i = 0; i < syms->count; i++) {
-//        cenv_put(e, syms->cell[i], a->cell[i+1]);
-//    }
-//
-//    cval_delete(a);
-//    return cval_s_expression();
-//}
-
-
-
-void cenv_add_builtins(cenv* e) {
-    cenv_add_builtin(e, "list", builtin_list);
-    cenv_add_builtin(e, "head", builtin_head);
-    cenv_add_builtin(e, "tail", builtin_tail);
-    cenv_add_builtin(e, "eval", builtin_eval);
-    cenv_add_builtin(e, "join", builtin_join);
-    cenv_add_builtin(e, "def", builtin_def);
-    cenv_add_builtin(e, "=", builtin_put);
-
-    cenv_add_builtin(e, "+", builtin_add);
-    cenv_add_builtin(e, "-", builtin_sub);
-    cenv_add_builtin(e, "*", builtin_mul);
-    cenv_add_builtin(e, "/", builtin_div);
 }
 
 cval* cval_lambda(cval* formals, cval* body) {
@@ -677,12 +693,35 @@ cval* builtin_lambda(cenv* e, cval* a) {
     "Function '%s' pashed incorrect type. Got %s, Expected %s.", \
     a, ctype_name(a->cell[1]->type), ctype_name(CVAL_Q_EXPRESSION));
 
+    for (int i = 0; i < a->cell[0]->count; i++) {
+        CASSERT(a, (a->cell[0]->cell[i]->type == CVAL_SYMBOL), "Cannot define non-symbol. Got %s, Expected %s.", ctype_name(a->cell[0]->cell[i]->type),ctype_name(CVAL_SYMBOL));
+    }
+
     cval* formals = cval_pop(a, 0);
     cval* body = cval_pop(a, 0);
     cval_delete(a);
 
     return cval_lambda(formals, body);
 }
+
+void cenv_add_builtins(cenv* e) {
+    cenv_add_builtin(e, "def", builtin_def);
+    cenv_add_builtin(e, "=",   builtin_put);
+
+    cenv_add_builtin(e, "list", builtin_list);
+    cenv_add_builtin(e, "head", builtin_head);
+    cenv_add_builtin(e, "tail", builtin_tail);
+    cenv_add_builtin(e, "eval", builtin_eval);
+    cenv_add_builtin(e, "join", builtin_join);
+    cenv_add_builtin(e, "def", builtin_def);
+    cenv_add_builtin(e, "=", builtin_put);
+
+    cenv_add_builtin(e, "+", builtin_add);
+    cenv_add_builtin(e, "-", builtin_sub);
+    cenv_add_builtin(e, "*", builtin_mul);
+    cenv_add_builtin(e, "/", builtin_div);
+}
+
 
 int main() {
     mpc_parser_t* Number = mpc_new("number");
