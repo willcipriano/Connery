@@ -74,6 +74,12 @@ if (!(cond)) {\
     cval_delete(args); \
     return err;}
 
+#define CASSERT_TYPE(func, args, index, expect) \
+  CASSERT(args, args->cell[index]->type == expect, \
+    "Function '%s' pashed incorrect type for argument %i. " \
+    "Got %s, Expected %s.", \
+    func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
+
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
     v->type = CVAL_FUNCTION;
@@ -507,7 +513,7 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
     }
 
     for (int i = 0; i < value->count; i++) {
-        if (value->cell[i]->type == CVAL_ERROR) {return cval_take(value, 0);}
+        if (value->cell[i]->type == CVAL_ERROR) {return cval_take(value, i);}
     }
 
     if (value->count == 0) {
@@ -685,13 +691,8 @@ cval* builtin_lambda(cenv* e, cval* a) {
     "Got %i, Expected %i.", \
     a, a->count, 2);
 
-    CASSERT(a, a->type == CVAL_Q_EXPRESSION, \
-    "Function '%s' pashed incorrect type. Got %s, Expected %s.", \
-    a, ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
-
-    CASSERT(a, a->type == CVAL_Q_EXPRESSION, \
-    "Function '%s' pashed incorrect type. Got %s, Expected %s.", \
-    a, ctype_name(a->cell[1]->type), ctype_name(CVAL_Q_EXPRESSION));
+    CASSERT_TYPE("\\", a, 0, CVAL_Q_EXPRESSION);
+    CASSERT_TYPE("\\", a, 1, CVAL_Q_EXPRESSION);
 
     for (int i = 0; i < a->cell[0]->count; i++) {
         CASSERT(a, (a->cell[0]->cell[i]->type == CVAL_SYMBOL), "Cannot define non-symbol. Got %s, Expected %s.", ctype_name(a->cell[0]->cell[i]->type),ctype_name(CVAL_SYMBOL));
@@ -705,6 +706,7 @@ cval* builtin_lambda(cenv* e, cval* a) {
 }
 
 void cenv_add_builtins(cenv* e) {
+    cenv_add_builtin(e, "\\",  builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
     cenv_add_builtin(e, "=",   builtin_put);
 
