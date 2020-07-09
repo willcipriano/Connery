@@ -472,6 +472,11 @@ cval* builtin_eval(cenv* e, cval* a) {
     return cval_evaluate(e, x);
 }
 
+cval* builtin_list(cenv* e, cval* a) {
+    a->type = CVAL_Q_EXPRESSION;
+    return a;
+}
+
 cval* cval_call(cenv* e, cval* f, cval* a) {
     if (f->builtin) {return f->builtin(e, a);}
 
@@ -486,6 +491,21 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
         }
 
         cval* sym = cval_pop(f->formals, 0);
+
+        if (strcmp(sym->sym, "&") == 0) {
+
+            if (f->formals->count != 1) {
+                cval_delete(a);
+                return cval_error("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+            }
+
+            cval* nsym = cval_pop(f->formals, 0);
+            cenv_put(f->env, nsym, builtin_list(e, a));
+            cval_delete(sym);
+            cval_delete(nsym);
+            break;
+        }
+
         cval* val = cval_pop(a, 0);
         cenv_put(f->env, sym, val);
 
@@ -494,6 +514,24 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
     }
 
     cval_delete(a);
+
+    if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
+
+        if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
+            return cval_error("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+        }
+
+        cval_delete(cval_pop(f->formals, 0));
+
+        cval* sym = cval_pop(f->formals, 0);
+        cval* val = cval_q_expression();
+
+        cenv_put(f->env, sym, val);
+        cval_delete(sym);
+        cval_delete(val);
+
+
+    }
 
     if (f->formals->count == 0) {
         f->env->par = e;
@@ -591,11 +629,6 @@ cval* builtin_tail(cenv* e, cval* a) {
 
     cval_delete(cval_pop(v,0));
     return v;
-}
-
-cval* builtin_list(cenv* e, cval* a) {
-    a->type = CVAL_Q_EXPRESSION;
-    return a;
 }
 
 cval* builtin_join(cenv* e, cval* a) {
