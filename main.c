@@ -772,15 +772,65 @@ int cval_equal(cval* x, cval* y) {
         case CVAL_FUNCTION:
             if (x->builtin || y->builtin) {
                 return x->builtin == y->builtin;
-            }
-            else {
+            } else {
                 return cval_equal(x->formals, y->formals) && cval_equal(x->body, y->body);
             }
 
         case CVAL_Q_EXPRESSION:
         case CVAL_S_EXPRESSION:
-
+            if (x->count != y->count) { return 0; }
+            for (int i = 0; i < x->count; i++) {
+                if (!cval_equal(x->cell[i], y->cell[i])) { return 0; }
+            }
+            return 1;
+            break;
     }
+    return 0;
+    }
+
+cval* builtin_cmp(cenv* e, cval* a, char* op) {
+    CASSERT_NUM(op, a, 2);
+    int r;
+
+    if (strcmp(op, "==") == 0) {
+        r = cval_equal(a->cell[0], a->cell[1]);
+    }
+
+    if (strcmp(op, "!=") == 0) {
+        r = !cval_equal(a->cell[0], a->cell[1]);
+    }
+
+    cval_delete(a);
+    return cval_number(r);
+}
+
+cval* builtin_eq(cenv* e, cval* a) {
+    return builtin_cmp(e, a, "==");
+}
+
+cval* builtin_ne(cenv* e, cval* a) {
+    return builtin_cmp(e, a, "!=");
+}
+
+cval* builtin_if (cenv* e, cval* a) {
+    CASSERT_NUM("if", a, 3)
+    CASSERT_TYPE("if", a, 0, CVAL_NUMBER)
+    CASSERT_TYPE("if", a, 1, CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("if", a, 3, CVAL_Q_EXPRESSION)
+
+    cval* x;
+    a->cell[1]->type = CVAL_S_EXPRESSION;
+    a->cell[2]->type = CVAL_S_EXPRESSION;
+
+    if (a->cell[0]->num) {
+        x = cval_evaluate(e, cval_pop(a, 1));
+    }
+    else {
+        x = cval_evaluate(e, cval_pop(a, 2));
+    }
+
+    cval_delete(a);
+    return x;
 }
 
 cval* cval_lambda(cval* formals, cval* body) {
@@ -832,6 +882,14 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "-", builtin_sub);
     cenv_add_builtin(e, "*", builtin_mul);
     cenv_add_builtin(e, "/", builtin_div);
+
+    cenv_add_builtin(e, "if", builtin_if);
+    cenv_add_builtin(e, "==", builtin_eq);
+    cenv_add_builtin(e, "!=", builtin_ne);
+    cenv_add_builtin(e, ">", builtin_greater_than);
+    cenv_add_builtin(e, "<", builtin_less_than);
+    cenv_add_builtin(e, ">=", builtin_greater_than_or_equal);
+    cenv_add_builtin(e, "<=", builtin_less_than_or_equal);
 }
 
 
