@@ -80,6 +80,11 @@ if (!(cond)) {\
     "Got %s, Expected %s.", \
     func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
 
+#define CASSERT_NUM(func, args, num) \
+  CASSERT(args, args->count == num, \
+    "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
+    func, args->count, num)
+
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
     v->type = CVAL_FUNCTION;
@@ -704,6 +709,78 @@ cval* builtin_put(cenv* e, cval* a) {
 
 cval* builtin_def(cenv* e, cval* a) {
     return builtin_var(e, a, "def");
+}
+
+cval* builtin_order(cenv* e, cval* a, char* op) {
+    CASSERT_NUM(op, a, 2);
+    CASSERT_TYPE(op, a, 0, CVAL_NUMBER);
+    CASSERT_TYPE(op, a, 1, CVAL_NUMBER);
+
+    int result;
+
+    if (strcmp(op, ">") == 0) {
+        result = (a->cell[0]->num > a->cell[1]->num);
+    }
+
+    if (strcmp(op, "<") == 0) {
+        result = (a->cell[0]->num < a->cell[1]->num);
+    }
+
+    if (strcmp(op, ">=") == 0) {
+        result = (a->cell[0]->num >= a->cell[1]->num);
+    }
+
+    if (strcmp(op, "<=") == 0) {
+        result = (a->cell[0]->num <= a->cell[1]->num);
+    }
+    cval_delete(a);
+    return cval_number(result);
+}
+
+cval* builtin_greater_than_or_equal(cenv* e, cval* a) {
+    return builtin_order(e, a, ">=");
+}
+
+cval* builtin_less_than_or_equal(cenv* e, cval* a) {
+    return builtin_order(e, a, "<=");
+}
+
+cval* builtin_greater_than(cenv* e, cval* a) {
+    return builtin_order(e, a, ">");
+}
+
+cval* builtin_less_than(cenv* e, cval* a) {
+    return builtin_order(e, a, "<");
+}
+
+int cval_equal(cval* x, cval* y) {
+
+    if (x->type != y->type) {
+        return 0;
+    }
+
+    switch (x->type) {
+        case CVAL_NUMBER:
+            return (x->num == y->num);
+
+        case CVAL_ERROR:
+            return (strcmp(x->err, y->err) == 0);
+
+        case CVAL_SYMBOL:
+            return (strcmp(x->err, y->err) == 0);
+
+        case CVAL_FUNCTION:
+            if (x->builtin || y->builtin) {
+                return x->builtin == y->builtin;
+            }
+            else {
+                return cval_equal(x->formals, y->formals) && cval_equal(x->body, y->body);
+            }
+
+        case CVAL_Q_EXPRESSION:
+        case CVAL_S_EXPRESSION:
+
+    }
 }
 
 cval* cval_lambda(cval* formals, cval* body) {
