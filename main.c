@@ -28,7 +28,7 @@ struct cenv;
 typedef struct cval cval;
 typedef struct cenv cenv;
 
-enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION};
+enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING};
 
 typedef cval*(*cbuiltin)(cenv*, cval*);
 void cenv_delete(cenv* e);
@@ -41,6 +41,7 @@ char* ctype_name(int t) {
         case CVAL_SYMBOL: return "Symbol";
         case CVAL_S_EXPRESSION: return "S-Expression";
         case CVAL_Q_EXPRESSION: return "Q-Expression";
+        case CVAL_STRING: return "String";
         default: return "Unknown Type";
     }
 }
@@ -51,6 +52,7 @@ struct cval {
     long num;
     char* err;
     char* sym;
+    char* str;
 
     cbuiltin builtin;
     cenv* env;
@@ -97,6 +99,14 @@ cval* cval_number(long x) {
     value->type = CVAL_NUMBER;
     value->num = x;
     return value;
+}
+
+cval* cval_string (char* s) {
+    cval* v = malloc(sizeof(cval));
+    v->type = CVAL_STRING;
+    v->str = malloc(strlen(s) + 1);
+    strcpy(v->str, s);
+    return v;
 }
 
 cval* cval_error(char* fmt, ...) {
@@ -179,6 +189,10 @@ void cval_delete(cval* value) {
             }
             free(value->cell);
         break;
+
+        case CVAL_STRING:
+            free(value->str);
+            break;
     }
     free(value);
 }
@@ -208,6 +222,16 @@ cval* cval_add(cval* v, cval* x) {
     return v;
 }
 
+cval* cval_read_string(mpc_ast_t* t) {
+    t->contents[strlen(t->contents)-1] = '\0';
+    char* unescaped = malloc(strlen(t->contents+1)+1);
+    strcpy(unescaped, t->contents+1);
+    unescaped = mpcf_unescape(unescaped);
+    cval* str = cval_string(unescaped);
+    free(unescaped);
+    return str;
+}
+
 cval* cval_read(mpc_ast_t* t) {
 
     if (strstr(t->tag, "number")) {
@@ -227,6 +251,9 @@ cval* cval_read(mpc_ast_t* t) {
     }
     if (strstr(t->tag, "qexpr")) {
         x = cval_q_expression();
+    }
+    if (strstr(t->tag, "string")) {
+        return cval_read_string(t);
     }
 
     for (int i = 0; i < t->children_num; i++) {
@@ -327,6 +354,10 @@ cval* cval_copy(cval* v) {
             }
             break;
 
+        case CVAL_STRING:
+            x->str = malloc(strlen(v->str) + 1);
+            strcpy(x->str, v->str);
+            break;
     }
 
     return x;
@@ -374,6 +405,14 @@ void cenv_def(cenv* e, cval* k, cval* v) {
     cenv_put(e, k , v);
 }
 
+void cval_print_str(cval* v) {
+    char* escaped = malloc(strlen(v->str)+1);
+    strcpy(escaped, v->str);
+    escaped = mpcf_escape(escaped);
+    printf("\"%s\"", escaped);
+    free(escaped);
+}
+
 void cval_print(cval* value) {
     switch (value->type) {
 
@@ -407,6 +446,10 @@ void cval_print(cval* value) {
 
         case CVAL_Q_EXPRESSION:
             cval_expr_print(value, '{', '}');
+            break;
+
+        case CVAL_STRING:
+            cval_print_str(value);
             break;
     }
 }
@@ -783,7 +826,9 @@ int cval_equal(cval* x, cval* y) {
                 if (!cval_equal(x->cell[i], y->cell[i])) { return 0; }
             }
             return 1;
-            break;
+
+        case CVAL_STRING:
+            return (strcmp(x->str, y->str) == 0);
     }
     return 0;
     }
@@ -899,6 +944,7 @@ int main() {
     mpc_parser_t* Sexpr = mpc_new("sexpr");
     mpc_parser_t* Qexpr = mpc_new("qexpr");
     mpc_parser_t* Expr = mpc_new("expr");
+    mpc_parser_t* String = mpc_new("string");
     mpc_parser_t* Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
@@ -908,10 +954,11 @@ int main() {
                             |'+' | '-' | '*' | '/' ;                   \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
-                expr      : <number> | <symbol> | <sexpr> | <qexpr> ; \
+                expr      : <number> | <symbol> | <sexpr> | <qexpr> | <string> ; \
+                string  : /\\\"(\\\\\\\\.|[^\\\"])*\\\"/ ;             \
                 connery   : /^/ <expr>* /$/ ;                          \
             ",
-            Number, Symbol, Sexpr, Qexpr, Expr, Connery);
+            Number, Symbol, Sexpr, Qexpr, Expr, String, Connery);
 
     cenv* e = cenv_new();
     cenv_add_builtins(e);
