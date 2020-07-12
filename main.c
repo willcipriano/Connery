@@ -1037,6 +1037,10 @@ int main(int argc, char** argv) {
     puts("Connery version 0.0.2");
     puts("Press Ctrl + c to exit\n");
 
+//    Load std library
+    cval* stdLib = cval_add(cval_s_expression(), cval_string("ConneryStdLib.connery"));
+    cval* libImport = builtin_load(e, stdLib);
+
     if (argc >= 2) {
         for (int i = 1; i < argc; i++) {
 
@@ -1045,8 +1049,8 @@ int main(int argc, char** argv) {
 
             if (x->type == CVAL_ERROR) {
                 cval_print_line(x);
-                cval_delete(x);
             }
+            cval_delete(x);
         }
     }
 

@@ -1,0 +1,10 @@
+; Constants
+(def {None} {})
+(def {True} 1)
+(def {False} 0)
+
+; Function definition
+(def {fun} (\ {f b} {
+    def (head f) (\ (tail f) b)
+}))
+
