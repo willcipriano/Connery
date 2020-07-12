@@ -30,6 +30,15 @@ typedef struct cenv cenv;
 
 enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING};
 
+mpc_parser_t* Number;
+mpc_parser_t* Symbol;
+mpc_parser_t* String;
+mpc_parser_t* Comment;
+mpc_parser_t* Sexpr;
+mpc_parser_t* Qexpr;
+mpc_parser_t* Expr;
+mpc_parser_t* Connery;
+
 typedef cval*(*cbuiltin)(cenv*, cval*);
 void cenv_delete(cenv* e);
 
@@ -258,6 +267,9 @@ cval* cval_read(mpc_ast_t* t) {
 
     for (int i = 0; i < t->children_num; i++) {
         if (strcmp(t->children[i]->contents, "(") == 0){
+            continue;
+        }
+        if (strstr(t->children[i]->tag, "comment")) {
             continue;
         }
         if (strcmp(t->children[i]->contents, ")") == 0){
@@ -807,8 +819,6 @@ int cval_equal(cval* x, cval* y) {
             return (x->num == y->num);
 
         case CVAL_ERROR:
-            return (strcmp(x->err, y->err) == 0);
-
         case CVAL_SYMBOL:
             return (strcmp(x->err, y->err) == 0);
 
@@ -910,6 +920,62 @@ cval* builtin_lambda(cenv* e, cval* a) {
     return cval_lambda(formals, body);
 }
 
+cval* builtin_load(cenv* e, cval* a) {
+    CASSERT_NUM("load", a, 1)
+    CASSERT_TYPE("load", a, 0, CVAL_STRING)
+
+    mpc_result_t r;
+    if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
+        cval* expr = cval_read(r.output);
+        mpc_ast_delete(r.output);
+
+        while (expr->count) {
+            cval* x = cval_evaluate(e, cval_pop(expr, 0));
+
+            if (x->type == CVAL_ERROR) {
+                cval_print_line(x);
+            }
+            cval_delete(x);
+        }
+
+        cval_delete(expr);
+        cval_delete(a);
+
+        return cval_s_expression();
+    }
+    else {
+        char* err_msg = mpc_err_string(r.error);
+        mpc_err_delete(r.error);
+
+        cval* err = cval_error("Could not load library '%s'", err_msg);
+        free(err_msg);
+        cval_delete(a);
+        return err;
+    }
+}
+
+cval* builtin_print(cenv* e, cval* a) {
+    for (int i = 0; i < a->count; i++) {
+        cval_print(a->cell[i]);
+        putchar(' ');
+    }
+
+    putchar('\n');
+    cval_delete(a);
+
+    return cval_s_expression();
+}
+
+cval* builtin_error(cenv* e, cval* a) {
+    CASSERT_NUM("error", a, 1);
+    CASSERT_TYPE("error", a, 0, CVAL_STRING);
+
+    cval* err = cval_error(a->cell[0]->str);
+
+    cval_delete(a);
+    return err;
+}
+
 void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "\\",  builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
@@ -935,17 +1001,21 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "<", builtin_less_than);
     cenv_add_builtin(e, ">=", builtin_greater_than_or_equal);
     cenv_add_builtin(e, "<=", builtin_less_than_or_equal);
+
+    cenv_add_builtin(e, "load", builtin_load);
+    cenv_add_builtin(e, "error", builtin_error);
+    cenv_add_builtin(e, "print", builtin_print);
 }
 
-
-int main() {
-    mpc_parser_t* Number = mpc_new("number");
-    mpc_parser_t* Symbol = mpc_new("symbol");
-    mpc_parser_t* Sexpr = mpc_new("sexpr");
-    mpc_parser_t* Qexpr = mpc_new("qexpr");
-    mpc_parser_t* Expr = mpc_new("expr");
-    mpc_parser_t* String = mpc_new("string");
-    mpc_parser_t* Connery = mpc_new("connery");
+int main(int argc, char** argv) {
+    Number = mpc_new("number");
+    Symbol = mpc_new("symbol");
+    Sexpr = mpc_new("sexpr");
+    Qexpr = mpc_new("qexpr");
+    Expr = mpc_new("expr");
+    Comment = mpc_new("comment");
+    String = mpc_new("string");
+    Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                 \
@@ -954,17 +1024,31 @@ int main() {
                             |'+' | '-' | '*' | '/' ;                   \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
-                expr      : <number> | <symbol> | <sexpr> | <qexpr> | <string> ; \
                 string  : /\\\"(\\\\\\\\.|[^\\\"])*\\\"/ ;             \
+                comment : /;[^\\r\\n]*/  ;                              \
+                expr      : <number> | <symbol> | <comment> | <sexpr> | <qexpr> | <string> ; \
                 connery   : /^/ <expr>* /$/ ;                          \
             ",
-            Number, Symbol, Sexpr, Qexpr, Expr, String, Connery);
+            Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
 
     cenv* e = cenv_new();
     cenv_add_builtins(e);
 
-    puts("Connery version 0.0.1");
+    puts("Connery version 0.0.2");
     puts("Press Ctrl + c to exit\n");
+
+    if (argc >= 2) {
+        for (int i = 1; i < argc; i++) {
+
+            cval* args = cval_add(cval_s_expression(), cval_string(argv[i]));
+            cval* x = builtin_load(e, args);
+
+            if (x->type == CVAL_ERROR) {
+                cval_print_line(x);
+                cval_delete(x);
+            }
+        }
+    }
 
     while (1) {
         char* input = readline("connery> ");
@@ -986,5 +1070,6 @@ int main() {
         free(input);
     }
 
+    mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
     cenv_delete(e);
 }
