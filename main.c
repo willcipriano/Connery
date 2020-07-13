@@ -1039,6 +1039,9 @@ int main(int argc, char** argv) {
 
 //    Load std library
     cval* stdLib = cval_add(cval_s_expression(), cval_string("ConneryStdLib.connery"));
+    if (stdLib->type == CVAL_ERROR) {
+        cval_print_line(stdLib);
+    }
     cval* libImport = builtin_load(e, stdLib);
 
     if (argc >= 2) {

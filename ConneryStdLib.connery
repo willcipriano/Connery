@@ -3,8 +3,32 @@
 (def {True} 1)
 (def {False} 0)
 
-; Function definition
+; fun
 (def {fun} (\ {f b} {
     def (head f) (\ (tail f) b)
 }))
 
+; Currying
+(fun {unpack f l} {
+    eval (join (list f) l)
+})
+(fun {pack f & xs} {f xs})
+(def {curry} unpack)
+(def {uncurry} pack)
+
+; do
+(fun {do & l} {
+    if (== l None)
+    {None}
+    {last l}
+})
+
+; shcope
+  (fun {shcope b} {
+  ((\ {_} b) ())
+  })
+
+; Logical Operators
+(fun {not x} {- 1 x})
+(fun {or x y} {+ x y})
+(fun {and x y} {* x y})
