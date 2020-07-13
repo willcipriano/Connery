@@ -1,1 +1,1 @@
-[/img/ConneryLogo_70.jpg|Connery Logo]
+![Connery Logo](/img/ConneryLogo_70.jpg)
