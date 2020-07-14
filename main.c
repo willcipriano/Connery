@@ -28,7 +28,8 @@ struct cenv;
 typedef struct cval cval;
 typedef struct cenv cenv;
 
-enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION, CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING};
+enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION,
+        CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING};
 
 mpc_parser_t* Number;
 mpc_parser_t* Symbol;
@@ -391,9 +392,7 @@ cval* cenv_get(cenv* e, cval* k) {
 }
 
 void cenv_put(cenv* e, cval* k, cval* v) {
-
     for (int i = 0; i < e->count; i++) {
-
         if (strcmp(e->symbols[i], k->sym) == 0) {
             cval_delete(e->values[i]);
             e->values[i] = cval_copy(v);
@@ -427,7 +426,6 @@ void cval_print_str(cval* v) {
 
 void cval_print(cval* value) {
     switch (value->type) {
-
         case CVAL_NUMBER:
             printf("%li", value->num);
             break;
@@ -472,7 +470,6 @@ void cval_print_line(cval* value) {
 }
 
 cval* cval_join(cval* x, cval* y) {
-
     while (y->count) {
         x = cval_add(x, cval_pop(y, 0));
     }
@@ -482,9 +479,8 @@ cval* cval_join(cval* x, cval* y) {
 }
 
 cval* builtin_op(cenv* e, cval* a, char* op) {
-
     for (int i = 0; i < a->count; i++) {
-        CASSERT(a, a->cell[i]->type == CVAL_NUMBER, "Function '%s' passed incorrect type for argument %i Got %s, Expected %s.", op, i, ctype_name(a->cell[i]->type), ctype_name(CVAL_NUMBER));
+        CASSERT_TYPE(op, a, i, CVAL_NUMBER);
     }
 
     cval* x = cval_pop(a, 0);
@@ -524,8 +520,8 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
 }
 
 cval* builtin_eval(cenv* e, cval* a) {
-    CASSERT(a, a->count == 1, "Function 'eval' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1)
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'eval' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
+    CASSERT_NUM("eval", a, 1);
+    CASSERT_TYPE("eval", a, 0, CVAL_Q_EXPRESSION);
 
     cval* x = cval_take(a, 0);
     x->type = CVAL_S_EXPRESSION;
@@ -589,13 +585,10 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
         cenv_put(f->env, sym, val);
         cval_delete(sym);
         cval_delete(val);
-
-
     }
 
     if (f->formals->count == 0) {
         f->env->par = e;
-
         return builtin_eval(f->env, cval_add(cval_s_expression(), cval_copy(f->body)));
     }
     else {
@@ -650,7 +643,6 @@ cval* cval_evaluate(cenv* env, cval* value) {
 
 cval* cval_pop(cval* value, int i) {
     cval* x = value->cell[i];
-
     memmove(&value->cell[i], &value->cell[i+1],
             sizeof(cval*) * (value->count-i-1));
 
@@ -667,8 +659,8 @@ cval* cval_take(cval* value, int i) {
 }
 
 cval* builtin_head(cenv* e, cval* a) {
-    CASSERT(a, a->count==1, "Function 'head' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1);
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'head' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+    CASSERT_NUM("head", a, 1)
+    CASSERT_TYPE("head", a, 0, CVAL_Q_EXPRESSION)
     CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
 
     cval* v = cval_take(a, 0);
@@ -681,8 +673,8 @@ cval* builtin_head(cenv* e, cval* a) {
 }
 
 cval* builtin_tail(cenv* e, cval* a) {
-    CASSERT(a, a->count==1, "Function 'tail' pashed in too many argumentsh! Got %i, Expected %i!", a->count, 1);
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'tail' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+    CASSERT_NUM("tail", a, 1)
+    CASSERT_TYPE("tail", a, 0, CVAL_Q_EXPRESSION)
     CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 
     cval* v = cval_take(a, 0);
@@ -694,7 +686,7 @@ cval* builtin_tail(cenv* e, cval* a) {
 cval* builtin_join(cenv* e, cval* a) {
 
     for (int i = 0; i < a->count; i++) {
-        CASSERT(a, a->cell[i]->type == CVAL_Q_EXPRESSION, "Function 'join' pashed incorrect typesh! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION))
+        CASSERT_TYPE("join", a, i, CVAL_Q_EXPRESSION)
     }
 
     cval* x = cval_pop(a, 0);
@@ -733,11 +725,11 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
 }
 
 cval* builtin_var(cenv* e, cval* a, char* func) {
-    CASSERT(a, a->cell[0]->type == CVAL_Q_EXPRESSION, "Function 'def' pashed incorrect type! Got %s, Expected %s", ctype_name(a->cell[0]->type), ctype_name(CVAL_Q_EXPRESSION));
+    CASSERT_TYPE("def", a, 0, CVAL_Q_EXPRESSION)
 
     cval* syms = a->cell[0];
     for (int i = 0; i < syms->count; i++) {
-        CASSERT(a, (syms->cell[i]->type == CVAL_SYMBOL), "Function '%s' cannot define non-shymbol! Got %s Expected %s", func, ctype_name(syms->cell[i]->type), ctype_name(CVAL_SYMBOL));
+        CASSERT_TYPE("def", syms, i, CVAL_SYMBOL)
     }
 
     CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %s", func, syms->count, a->count-1);
@@ -901,11 +893,7 @@ cval* cval_lambda(cval* formals, cval* body) {
 }
 
 cval* builtin_lambda(cenv* e, cval* a) {
-    CASSERT(a, a->count == 2, \
-    "Function '%s' pashed incorrect number of argumentsh. " \
-    "Got %i, Expected %i.", \
-    a, a->count, 2);
-
+    CASSERT_NUM("lambda", a, 2)
     CASSERT_TYPE("\\", a, 0, CVAL_Q_EXPRESSION);
     CASSERT_TYPE("\\", a, 1, CVAL_Q_EXPRESSION);
 
@@ -1007,6 +995,14 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "print", builtin_print);
 }
 
+void load_standard_lib(cenv* e) {
+    cval* stdLib = cval_add(cval_s_expression(), cval_string("ConneryStdLib.connery"));
+    if (stdLib->type == CVAL_ERROR) {
+        cval_print_line(stdLib);
+    }
+    builtin_load(e, stdLib);
+}
+
 int main(int argc, char** argv) {
     Number = mpc_new("number");
     Symbol = mpc_new("symbol");
@@ -1033,16 +1029,36 @@ int main(int argc, char** argv) {
 
     cenv* e = cenv_new();
     cenv_add_builtins(e);
+    load_standard_lib(e);
 
-    puts("Connery version 0.0.2");
-    puts("Press Ctrl + c to exit\n");
+    puts("   ______                                 \n"
+         "  / ____/___  ____  ____  ___  _______  __\n"
+         " / /   / __ \\/ __ \\/ __ \\/ _ \\/ ___/ / / /\n"
+         "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
+         "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
+         "                                 /____/   ");
+    puts("+-----      Version 0.0.3      ------+\n");
 
-//    Load std library
-    cval* stdLib = cval_add(cval_s_expression(), cval_string("ConneryStdLib.connery"));
-    if (stdLib->type == CVAL_ERROR) {
-        cval_print_line(stdLib);
+    if (argc == 1) {
+        while (1) {
+            char* input = readline("connery> ");
+            add_history(input);
+
+            mpc_result_t result;
+            if (mpc_parse("<stdin>", input, Connery, &result)) {
+                cval* output = cval_evaluate(e, cval_read(result.output));
+                cval_print_line(output);
+                cval_delete(output);
+
+                mpc_ast_delete(result.output);
+            }
+            else {
+                mpc_err_print(result.error);
+                mpc_err_delete(result.error);
+            }
+            free(input);
+        }
     }
-    cval* libImport = builtin_load(e, stdLib);
 
     if (argc >= 2) {
         for (int i = 1; i < argc; i++) {
@@ -1057,26 +1073,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    while (1) {
-        char* input = readline("connery> ");
-        add_history(input);
-
-        mpc_result_t result;
-        if (mpc_parse("<stdin>", input, Connery, &result)) {
-
-            cval* output = cval_evaluate(e, cval_read(result.output));
-            cval_print_line(output);
-            cval_delete(output);
-
-            mpc_ast_delete(result.output);
-        }
-        else {
-            mpc_err_print(result.error);
-            mpc_err_delete(result.error);
-        }
-        free(input);
-    }
-
     mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
     cenv_delete(e);
+    return 0;
 }
