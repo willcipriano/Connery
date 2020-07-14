@@ -42,6 +42,10 @@ mpc_parser_t* Connery;
 
 typedef cval*(*cbuiltin)(cenv*, cval*);
 void cenv_delete(cenv* e);
+void cval_print(cval* value);
+cval* cval_pop(cval* value, int i);
+cval* cval_evaluate(cenv* env,cval* value);
+cval* cval_take(cval* value, int i);
 
 char* ctype_name(int t) {
     switch(t) {
@@ -289,12 +293,6 @@ cval* cval_read(mpc_ast_t* t) {
     }
     return x;
 }
-
-//    todo: optimize function defs
-void cval_print(cval* value);
-cval* cval_pop(cval* value, int i);
-cval* cval_evaluate(cenv* env,cval* value);
-cval* cval_take(cval* value, int i);
 
 void cval_expr_print(cval* value, char open, char close) {
     putchar(open);
