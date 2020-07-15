@@ -995,15 +995,17 @@ cval* builtin_read_file(cenv*e, cval* a) {
 }
 
 cval* builtin_append_str(cenv* e, cval* a) {
-    CASSERT_NUM("append", a, 2);
     CASSERT_TYPE("append", a, 0, CVAL_STRING);
 
     cval* x = cval_pop(a, 0);
-    cval* y = cval_pop(a, 0);
+    char* newStr = x->str;
 
+    while(a->count) {
+        CASSERT_TYPE("append", a, 0, CVAL_STRING);
+        cval* stringToAdd = cval_pop(a, 0);
+        newStr = strcat(newStr, stringToAdd->str);
+    }
     cval_delete(a);
-    char* newStr = strcat(x->str, y->str);
-
     return cval_string(newStr);
 }
 
