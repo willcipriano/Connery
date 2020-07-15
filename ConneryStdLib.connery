@@ -2,6 +2,10 @@
 (def {None} {})
 (def {True} 1)
 (def {False} 0)
+(def {StdLibLocation} "ConneryStdLib.connery")
+
+; Easter Egg
+(def {BestKid} "Alice Imogen Cipriano")
 
 ; fun
 (def {fun} (\ {f b} {

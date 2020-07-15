@@ -966,11 +966,13 @@ cval* builtin_read_file(cenv*e, cval* a) {
     CASSERT_NUM("read_file", a, 1);
     CASSERT_TYPE("read_file", a, 0, CVAL_STRING);
 
+    cval* fileLocation = cval_pop(a, 0);
+
     FILE *file;
     char *buffer = 0;
     long length;
 
-    file = fopen(a->cell[0]->str, "r");
+    file = fopen(fileLocation->str, "r");
     if (file) {
         fseek(file, 0, SEEK_END);
         length = ftell (file);
@@ -987,13 +989,23 @@ cval* builtin_read_file(cenv*e, cval* a) {
         return cval_string(buffer);
     }
     else {
-        char* filename = malloc(sizeof(a->cell[0]->str));
-        filename = a->cell[0]->str;
         cval_delete(a);
-        return cval_error("Unable to read file: %s", filename);
+        return cval_error("File not found!");
     }
+}
+
+cval* builtin_append(cenv* e, cval* a) {
+    CASSERT_NUM("append", a, 2);
+    CASSERT_TYPE("append", a, 0, CVAL_STRING);
+
+    cval* x = cval_pop(a, 0);
+    cval* y = cval_pop(a, 0);
 
 
+    cval_delete(a);
+    char* newStr = strcat(x->str, y->str);
+
+    return cval_string(newStr);
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1027,6 +1039,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "print", builtin_print);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
+    cenv_add_builtin(e, "append", builtin_append);
 }
 
 void load_standard_lib(cenv* e) {
