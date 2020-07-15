@@ -96,6 +96,12 @@ if (!(cond)) {\
     "Got %s, Expected %s.", \
     func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
 
+#define CASSERT_TYPE_ITER(func, args, index, iter_index, expect) \
+  CASSERT(args, args->cell[index]->type == expect, \
+    "Function '%s' pashed incorrect type for argument %i. " \
+    "Got %s, Expected %s.", \
+    func, iter_index, ctype_name(args->cell[index]->type), ctype_name(expect))
+
 #define CASSERT_NUM(func, args, num) \
   CASSERT(args, args->count == num, \
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
@@ -994,17 +1000,19 @@ cval* builtin_read_file(cenv*e, cval* a) {
     }
 }
 
-cval* builtin_append_str(cenv* e, cval* a) {
-    CASSERT_TYPE("append", a, 0, CVAL_STRING);
+cval* builtin_concat(cenv* e, cval* a) {
+    CASSERT_TYPE("concat", a, 0, CVAL_STRING);
 
     cval* x = cval_pop(a, 0);
     char* newStr = x->str;
+    int count = a->count;
 
-    while(a->count) {
-        CASSERT_TYPE("append", a, 0, CVAL_STRING);
+    for (int i = 1; i <= count; i++) {
+        CASSERT_TYPE_ITER("concat", a, 0, i, CVAL_STRING)
         cval* stringToAdd = cval_pop(a, 0);
         newStr = strcat(newStr, stringToAdd->str);
     }
+
     cval_delete(a);
     return cval_string(newStr);
 }
@@ -1040,7 +1048,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "print", builtin_print);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
-    cenv_add_builtin(e, "append_str", builtin_append_str);
+    cenv_add_builtin(e, "concat", builtin_concat);
 }
 
 void load_standard_lib(cenv* e) {
