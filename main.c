@@ -962,6 +962,40 @@ cval* builtin_error(cenv* e, cval* a) {
     return err;
 }
 
+cval* builtin_read_file(cenv*e, cval* a) {
+    CASSERT_NUM("read_file", a, 1);
+    CASSERT_TYPE("read_file", a, 0, CVAL_STRING);
+
+    FILE *file;
+    char *buffer = 0;
+    long length;
+
+    file = fopen(a->cell[0]->str, "r");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        length = ftell (file);
+        fseek(file, 0, SEEK_SET);
+        buffer = malloc(length);
+
+        if (buffer) {
+            fread(buffer, 1, length, file);
+        }
+        fclose(file);
+    }
+
+    if (buffer) {
+        return cval_string(buffer);
+    }
+    else {
+        char* filename = malloc(sizeof(a->cell[0]->str));
+        filename = a->cell[0]->str;
+        cval_delete(a);
+        return cval_error("Unable to read file: %s", filename);
+    }
+
+
+}
+
 void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "\\",  builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
@@ -991,6 +1025,8 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "load", builtin_load);
     cenv_add_builtin(e, "error", builtin_error);
     cenv_add_builtin(e, "print", builtin_print);
+
+    cenv_add_builtin(e, "read_file", builtin_read_file);
 }
 
 void load_standard_lib(cenv* e) {
