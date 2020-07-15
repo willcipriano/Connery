@@ -994,13 +994,12 @@ cval* builtin_read_file(cenv*e, cval* a) {
     }
 }
 
-cval* builtin_append(cenv* e, cval* a) {
+cval* builtin_append_str(cenv* e, cval* a) {
     CASSERT_NUM("append", a, 2);
     CASSERT_TYPE("append", a, 0, CVAL_STRING);
 
     cval* x = cval_pop(a, 0);
     cval* y = cval_pop(a, 0);
-
 
     cval_delete(a);
     char* newStr = strcat(x->str, y->str);
@@ -1039,7 +1038,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "print", builtin_print);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
-    cenv_add_builtin(e, "append", builtin_append);
+    cenv_add_builtin(e, "append_str", builtin_append_str);
 }
 
 void load_standard_lib(cenv* e) {
