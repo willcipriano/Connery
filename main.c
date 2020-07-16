@@ -1041,7 +1041,26 @@ cval* builtin_replace(cenv* e, cval* a) {
     sprintf(buffer + (p - temp), "%s%s", rep, p + strlen(orig));
     sprintf(str + start, "%s", buffer);
 
+    cval_delete(a);
     return cval_string(str);
+}
+
+cval* builtin_find(cenv* e, cval* a) {
+    CASSERT_TYPE("find", a, 0, CVAL_STRING);
+    CASSERT_TYPE("find", a, 1, CVAL_STRING);
+    CASSERT_NUM("find", a, 2);
+
+    char* pos;
+    char* org = cval_pop(a, 0)->str;
+
+    if ((pos = strstr(org, cval_pop(a, 0)->str))) {
+        cval_delete(a);
+        return cval_number(pos - org);
+    }
+    else {
+        cval_delete(a);
+        return cval_number(-1);
+    }
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1077,6 +1096,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "read_file", builtin_read_file);
     cenv_add_builtin(e, "concat", builtin_concat);
     cenv_add_builtin(e, "replace", builtin_replace);
+    cenv_add_builtin(e, "find", builtin_find);
 }
 
 void load_standard_lib(cenv* e) {
