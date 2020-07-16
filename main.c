@@ -1002,19 +1002,46 @@ cval* builtin_read_file(cenv*e, cval* a) {
 
 cval* builtin_concat(cenv* e, cval* a) {
     CASSERT_TYPE("concat", a, 0, CVAL_STRING);
-
     cval* x = cval_pop(a, 0);
     char* newStr = x->str;
     int count = a->count;
 
     for (int i = 1; i <= count; i++) {
         CASSERT_TYPE_ITER("concat", a, 0, i, CVAL_STRING)
-        cval* stringToAdd = cval_pop(a, 0);
-        newStr = strcat(newStr, stringToAdd->str);
+        newStr = strcat(newStr, cval_pop(a, 0)->str);
     }
-
     cval_delete(a);
     return cval_string(newStr);
+}
+
+cval* builtin_replace(cenv* e, cval* a) {
+    CASSERT_TYPE("replace", a, 0, CVAL_STRING);
+    CASSERT_TYPE("replace", a, 1, CVAL_STRING);
+    CASSERT_TYPE("replace", a, 2, CVAL_STRING);
+    CASSERT_TYPE("replace", a, 3, CVAL_NUMBER);
+    CASSERT_NUM("replace", a, 4);
+
+    char* str = cval_pop(a, 0)->str;
+    char* orig = cval_pop(a, 0)->str;
+    char* rep = cval_pop(a, 0)->str;
+    long start = cval_pop(a, 0)->num;
+
+    static char temp[4096];
+    static char buffer[4096];
+    char *p;
+
+    strcpy(temp, str + start);
+
+    if(!(p = strstr(temp, orig))) {
+        return cval_string(temp); }
+
+    strncpy(buffer, temp, p-temp);
+    buffer[p-temp] = '\0';
+
+    sprintf(buffer + (p - temp), "%s%s", rep, p + strlen(orig));
+    sprintf(str + start, "%s", buffer);
+
+    return cval_string(str);
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1049,6 +1076,7 @@ void cenv_add_builtins(cenv* e) {
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
     cenv_add_builtin(e, "concat", builtin_concat);
+    cenv_add_builtin(e, "replace", builtin_replace);
 }
 
 void load_standard_lib(cenv* e) {
