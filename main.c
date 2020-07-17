@@ -1025,9 +1025,10 @@ cval* builtin_replace(cenv* e, cval* a) {
     char* orig = cval_pop(a, 0)->str;
     char* rep = cval_pop(a, 0)->str;
     long start = cval_pop(a, 0)->num;
+    long maxLen = strlen(str) + strlen(rep);
 
-    static char temp[4096];
-    static char buffer[4096];
+    char temp[maxLen];
+    char buffer[maxLen];
     char *p;
 
     strcpy(temp, str + start);
@@ -1061,6 +1062,44 @@ cval* builtin_find(cenv* e, cval* a) {
         cval_delete(a);
         return cval_number(-1);
     }
+}
+
+cval* builtin_split(cenv* e, cval* a) {
+    CASSERT_TYPE("slice", a, 0, CVAL_STRING);
+    CASSERT_TYPE("slice", a, 1, CVAL_NUMBER);
+    CASSERT_NUM("slice", a, 2);
+
+    char *original_string = cval_pop(a, 0)->str;
+    long split_index = cval_pop(a, 0)->num;
+    long str_length = strlen(original_string);
+
+    if (str_length <= split_index) {
+        cval_delete(a);
+        return cval_error("Index %i out of bounds", split_index);
+    }
+
+    char first_half[split_index] ;
+    char second_half[str_length - split_index];
+
+    for(int i = 0; i <= str_length; ++i)
+    {
+        if (i < split_index) {
+            first_half[i] = original_string[i];
+            first_half[i+1] = '\0';
+        }
+        else {
+            second_half[i - split_index] = original_string[i];
+        }
+    }
+
+    cval* list = cval_q_expression();
+    cval* first = cval_string(first_half);
+    cval* second = cval_string(second_half);
+
+    cval_add(list, first);
+    cval_add(list, second);
+
+    return list;
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1097,6 +1136,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "concat", builtin_concat);
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
+    cenv_add_builtin(e, "split", builtin_split);
 }
 
 void load_standard_lib(cenv* e) {
@@ -1141,7 +1181,7 @@ int main(int argc, char** argv) {
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
-    puts("+-----      Version 0.0.3      ------+\n");
+    puts("+-----      Version 0.0.4      ------+\n");
 
     if (argc == 1) {
         while (1) {
