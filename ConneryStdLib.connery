@@ -38,3 +38,6 @@
 (fun {and x y} {* x y})
 
 
+; String operations
+(fun {upper x} {case 1 x})
+(fun {lower x} {case 0 x})

@@ -1002,8 +1002,7 @@ cval* builtin_read_file(cenv*e, cval* a) {
 
 cval* builtin_concat(cenv* e, cval* a) {
     CASSERT_TYPE("concat", a, 0, CVAL_STRING);
-    cval* x = cval_pop(a, 0);
-    char* newStr = x->str;
+    char* newStr = cval_pop(a, 0)->str;
     int count = a->count;
 
     for (int i = 1; i <= count; i++) {
@@ -1099,7 +1098,45 @@ cval* builtin_split(cenv* e, cval* a) {
     cval_add(list, first);
     cval_add(list, second);
 
+    cval_delete(a);
+
     return list;
+}
+
+cval* builtin_case(cenv* e, cval* a) {
+    CASSERT_TYPE("case", a, 0, CVAL_NUMBER);
+    CASSERT_TYPE("case", a, 1, CVAL_STRING);
+    CASSERT_NUM("case", a, 2);
+
+    long case_modifier = cval_pop(a, 0)->num;
+    char *org_string = cval_pop(a, 0)->str;
+    char cased_string[strlen(org_string) + 1];
+
+    cval_delete(a);
+
+    if (case_modifier >= 2) {
+        return cval_error("Unknown argument %i for case, only 0 (lowercase) and 1 (uppercase) are accepted.", case_modifier);
+    }
+
+    if (case_modifier == 0) {
+        for(int i = 0; org_string[i]; i++){
+            cased_string[i] = tolower(org_string[i]);
+            cased_string[i + 1] = '\0';}
+    } else {
+        for(int i = 0; org_string[i]; i++){
+            cased_string[i] = toupper(org_string[i]);
+            cased_string[i + 1] = '\0';}
+    }
+
+    return cval_string(cased_string);
+}
+
+void instantiate_string_builtins(cenv* e) {
+    cenv_add_builtin(e, "concat", builtin_concat);
+    cenv_add_builtin(e, "replace", builtin_replace);
+    cenv_add_builtin(e, "find", builtin_find);
+    cenv_add_builtin(e, "split", builtin_split);
+    cenv_add_builtin(e, "case", builtin_case);
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1133,10 +1170,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "print", builtin_print);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
-    cenv_add_builtin(e, "concat", builtin_concat);
-    cenv_add_builtin(e, "replace", builtin_replace);
-    cenv_add_builtin(e, "find", builtin_find);
-    cenv_add_builtin(e, "split", builtin_split);
+    instantiate_string_builtins(e);
 }
 
 void load_standard_lib(cenv* e) {
