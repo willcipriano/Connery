@@ -41,3 +41,4 @@
 ; String operations
 (fun {upper x} {case 1 x})
 (fun {lower x} {case 0 x})
+(fun {casefind x y} {find (lower x) (lower y)})
