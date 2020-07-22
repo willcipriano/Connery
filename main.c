@@ -1064,9 +1064,9 @@ cval* builtin_find(cenv* e, cval* a) {
 }
 
 cval* builtin_split(cenv* e, cval* a) {
-    CASSERT_TYPE("slice", a, 0, CVAL_STRING);
-    CASSERT_TYPE("slice", a, 1, CVAL_NUMBER);
-    CASSERT_NUM("slice", a, 2);
+    CASSERT_TYPE("split", a, 0, CVAL_STRING);
+    CASSERT_TYPE("split", a, 1, CVAL_NUMBER);
+    CASSERT_NUM("split", a, 2);
 
     char *original_string = cval_pop(a, 0)->str;
     long split_index = cval_pop(a, 0)->num;
@@ -1103,6 +1103,37 @@ cval* builtin_split(cenv* e, cval* a) {
     return list;
 }
 
+cval* builtin_chop(cenv* e, cval* a) {
+    CASSERT_TYPE("chop", a, 0, CVAL_STRING);
+    CASSERT_TYPE("chop", a, 1, CVAL_NUMBER);
+    CASSERT_NUM("chop", a, 2);
+
+    char *original_string = cval_pop(a, 0)->str;
+    long chars_to_chop = cval_pop(a, 0)->num;
+
+    if (strlen(original_string) > chars_to_chop) {
+        cval_delete(a);
+        return cval_string(original_string + chars_to_chop);
+    }
+    else {
+        cval_delete(a);
+        return cval_string("");
+    }
+}
+
+cval* builtin_length(cenv* e, cval* a) {
+    CASSERT_TYPE("length", a, 0, CVAL_STRING);
+    CASSERT_NUM("length", a, 1);
+
+    long length = strlen(cval_pop(a, 0)->str);
+    cval_delete(a);
+    return cval_number(length);
+}
+
+
+
+
+
 cval* builtin_case(cenv* e, cval* a) {
     CASSERT_TYPE("case", a, 0, CVAL_NUMBER);
     CASSERT_TYPE("case", a, 1, CVAL_STRING);
@@ -1131,12 +1162,16 @@ cval* builtin_case(cenv* e, cval* a) {
     return cval_string(cased_string);
 }
 
+
+
 void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "concat", builtin_concat);
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "case", builtin_case);
+    cenv_add_builtin(e, "chop", builtin_chop);
+    cenv_add_builtin(e, "length", builtin_length);
 }
 
 void cenv_add_builtins(cenv* e) {

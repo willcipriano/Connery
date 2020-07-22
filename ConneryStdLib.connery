@@ -37,6 +37,20 @@
 (fun {or x y} {+ x y})
 (fun {and x y} {* x y})
 
+; List functions
+(fun {first l} {eval (head l) })
+(fun {second l} {eval (head (tail l)) })
+(fun {third l} {eval (head (tail (tail l))) } )
+(fun {listlength l} {
+     if (== l None)
+     {0}
+     {+ 1 (listlength (tail l))}
+})
+(fun {index n l} {
+     if (== n 0)
+     {first l}
+     {index (- n 1) (tail l)}
+})
 
 ; String operations
 (fun {upper x} {case 1 x})
