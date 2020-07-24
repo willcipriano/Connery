@@ -867,7 +867,7 @@ cval* builtin_if (cenv* e, cval* a) {
     CASSERT_NUM("if", a, 3)
     CASSERT_TYPE("if", a, 0, CVAL_NUMBER)
     CASSERT_TYPE("if", a, 1, CVAL_Q_EXPRESSION)
-    CASSERT_TYPE("if", a, 3, CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("if", a, 2, CVAL_Q_EXPRESSION)
 
     cval* x;
     a->cell[1]->type = CVAL_S_EXPRESSION;

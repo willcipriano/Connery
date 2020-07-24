@@ -51,6 +51,23 @@
      {first l}
      {index (- n 1) (tail l)}
 })
+(fun {last l} {index (- (listlength l) 1) l})
+(fun {take n l} {
+    if (== n 0)
+    {None}
+    {join (head l) (take (- n 1) (tail l))}
+})
+(fun {drop n l} {
+    if (== n 0)
+    {l}
+    {drop (- n 1) (tail l)}
+})
+(fun {cut n l} {list (take n l) (drop n l)})
+(fun {contains x l} {
+    if (== l None)
+    {False}
+    {if (== x (first l)) {True} {contains x (tail l)}}
+})
 
 ; String operations
 (fun {upper x} {case 1 x})
