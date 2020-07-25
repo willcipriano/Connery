@@ -736,7 +736,7 @@ cval* builtin_var(cenv* e, cval* a, char* func) {
         CASSERT_TYPE("def", syms, i, CVAL_SYMBOL)
     }
 
-    CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %s", func, syms->count, a->count-1);
+    CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %i", func, syms->count, a->count-1);
 
     for (int i = 0; i < syms->count; i++) {
 

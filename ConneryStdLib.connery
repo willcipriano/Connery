@@ -38,35 +38,70 @@
 (fun {and x y} {* x y})
 
 ; List functions
+
+;first - get first item of a list
+;usage: first List
 (fun {first l} {eval (head l) })
+
+;second - get second item of a list
+;usage: second List
 (fun {second l} {eval (head (tail l)) })
+
+;third - get third item of a list
+;usage: third List
 (fun {third l} {eval (head (tail (tail l))) } )
+
+;listlength - get the length of a list
+;usage: listlength List
 (fun {listlength l} {
      if (== l None)
      {0}
      {+ 1 (listlength (tail l))}
 })
+
+;index - get a list item at a particular index
+;usage: index Number List
 (fun {index n l} {
      if (== n 0)
      {first l}
      {index (- n 1) (tail l)}
 })
+
+;last - get the list item in a list
+;last List
 (fun {last l} {index (- (listlength l) 1) l})
+
+;take -
 (fun {take n l} {
     if (== n 0)
     {None}
     {join (head l) (take (- n 1) (tail l))}
 })
+
 (fun {drop n l} {
     if (== n 0)
     {l}
     {drop (- n 1) (tail l)}
 })
+
 (fun {cut n l} {list (take n l) (drop n l)})
+
 (fun {contains x l} {
     if (== l None)
     {False}
     {if (== x (first l)) {True} {contains x (tail l)}}
+})
+
+(fun {foreach f l} {
+    if (== l None)
+        {None}
+        {join (list (f (first l))) (foreach f (tail l))}
+})
+
+(fun {filter f l} {
+    if (== l None)
+        {None}
+        {join (if (f (first l)) {head l} {None}) (filter f (tail l))}
 })
 
 ; String operations
