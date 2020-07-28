@@ -32,6 +32,12 @@
   ((\ {_} b) ())
   })
 
+; flipargs
+(fun {flipargs f a b} {f b a})
+
+; addfunc
+(fun {addfunc f g x} {f (g x)})
+
 ; Logical Operators
 (fun {not x} {- 1 x})
 (fun {or x y} {+ x y})
