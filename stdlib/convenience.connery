@@ -1,0 +1,11 @@
+(fun {weekday_num i} {
+    case
+    {(== i 1) "Monday"}
+    {(== i 2) "Tuesday"}
+    {(== i 3) "Wednesday"}
+    {(== i 4) "Thursday"}
+    {(== i 5) "Friday"}
+    {(== i 6) "Saturday"}
+    {(== i 7) "Sunday"}
+    {otherwise (error "Weekday num is undefined")}
+})

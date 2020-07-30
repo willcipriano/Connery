@@ -1,0 +1,6 @@
+(load "stdlib/constants.connery")
+(load "stdlib/functional.connery")
+(load "stdlib/logic.connery")
+(load "stdlib/lists.connery")
+(load "stdlib/strings.connery")
+(load "stdlib/convenience.connery")

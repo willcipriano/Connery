@@ -1209,7 +1209,7 @@ void cenv_add_builtins(cenv* e) {
 }
 
 void load_standard_lib(cenv* e) {
-    cval* stdLib = cval_add(cval_s_expression(), cval_string("ConneryStdLib.connery"));
+    cval* stdLib = cval_add(cval_s_expression(), cval_string("stdlib/main.connery"));
     if (stdLib->type == CVAL_ERROR) {
         cval_print_line(stdLib);
     }

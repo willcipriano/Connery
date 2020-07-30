@@ -1,0 +1,30 @@
+; fun
+(def {fun} (\ {f b} {
+    def (head f) (\ (tail f) b)
+}))
+
+; Currying
+(fun {unpack f l} {
+    eval (join (list f) l)
+})
+(fun {pack f & xs} {f xs})
+(def {curry} unpack)
+(def {uncurry} pack)
+
+; do
+(fun {do & l} {
+    if (== l None)
+    {None}
+    {last l}
+})
+
+; shcope
+  (fun {shcope b} {
+  ((\ {_} b) ())
+  })
+
+; flipargs
+(fun {flipargs f a b} {f b a})
+
+; addfunc
+(fun {addfunc f g x} {f (g x)})

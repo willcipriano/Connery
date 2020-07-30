@@ -1,50 +1,3 @@
-; Constants
-(def {None} {})
-(def {True} 1)
-(def {False} 0)
-(def {StdLibLocation} "ConneryStdLib.connery")
-
-; Easter Egg
-(def {BestKid} "Alice Imogen Cipriano")
-
-; fun
-(def {fun} (\ {f b} {
-    def (head f) (\ (tail f) b)
-}))
-
-; Currying
-(fun {unpack f l} {
-    eval (join (list f) l)
-})
-(fun {pack f & xs} {f xs})
-(def {curry} unpack)
-(def {uncurry} pack)
-
-; do
-(fun {do & l} {
-    if (== l None)
-    {None}
-    {last l}
-})
-
-; shcope
-  (fun {shcope b} {
-  ((\ {_} b) ())
-  })
-
-; flipargs
-(fun {flipargs f a b} {f b a})
-
-; addfunc
-(fun {addfunc f g x} {f (g x)})
-
-; Logical Operators
-(fun {not x} {- 1 x})
-(fun {or x y} {+ x y})
-(fun {and x y} {* x y})
-
-; List functions
-
 ;first - get first item of a list
 ;usage: first List
 (fun {first l} {eval (head l) })
@@ -110,7 +63,20 @@
         {join (if (f (first l)) {head l} {None}) (filter f (tail l))}
 })
 
-; String operations
-(fun {upper x} {case 1 x})
-(fun {lower x} {case 0 x})
-(fun {casefind x y} {find (lower x) (lower y)})
+(fun {fold f z l} {
+    if (== l None)
+    {z}
+    {fold f (f z (first l)) (tail l)}
+})
+
+(fun {sum l} {fold + 0 l})
+
+(fun {product l} {fold * 1 l})
+
+(fun {case & cs} {
+   if (== cs None)
+   {None}
+   {if (first (first cs))
+        {second (first cs)}
+        {unpack select (tail cs)}}
+})

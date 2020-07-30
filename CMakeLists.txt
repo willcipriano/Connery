@@ -8,6 +8,6 @@ target_link_libraries(Connery PRIVATE /usr/lib/x86_64-linux-gnu/libedit.so)
 
 add_custom_command(
         TARGET Connery PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_SOURCE_DIR}/ConneryStdLib.connery
-        ${CMAKE_CURRENT_BINARY_DIR}/ConneryStdLib.connery)
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/stdlib
+        ${CMAKE_CURRENT_BINARY_DIR}/stdlib)
