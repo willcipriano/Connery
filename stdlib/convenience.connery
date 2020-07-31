@@ -24,3 +24,9 @@
      {(== i 9) False}
      {otherwise (error "Single digit number not provided")}
 })
+
+(fun {is_even i} {
+    if (== 1 (length i))
+        {is_digit_even i}
+        {is_even (tail i)}
+})

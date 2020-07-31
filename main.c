@@ -1245,12 +1245,21 @@ cval* builtin_chop(cenv* e, cval* a) {
 }
 
 cval* builtin_length(cenv* e, cval* a) {
-    CASSERT_TYPE("length", a, 0, CVAL_STRING);
     CASSERT_NUM("length", a, 1);
 
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        int length = count_digits(a->cell[0]->num);
+        cval_delete(a);
+        return cval_number(length);
+    }
+
+    if (a->cell[0]->type == CVAL_STRING) {
     long length = strlen(cval_pop(a, 0)->str);
     cval_delete(a);
-    return cval_number(length);
+    return cval_number(length); }
+
+    cval_delete(a);
+    return cval_error("Function 'length' pashed unshupported type!");
 }
 
 
