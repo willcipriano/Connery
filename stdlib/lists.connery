@@ -72,11 +72,3 @@
 (fun {sum l} {fold + 0 l})
 
 (fun {product l} {fold * 1 l})
-
-(fun {case & cs} {
-   if (== cs None)
-   {None}
-   {if (first (first cs))
-        {second (first cs)}
-        {unpack select (tail cs)}}
-})

@@ -107,6 +107,14 @@ if (!(cond)) {\
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
     func, args->count, num)
 
+int count_digits(long n)
+{
+    if (n == 0)
+        return 0;
+    return 1 + count_digits(n / 10);
+}
+
+
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
     v->type = CVAL_FUNCTION;
@@ -664,7 +672,28 @@ cval* cval_take(cval* value, int i) {
 
 cval* builtin_head(cenv* e, cval* a) {
     CASSERT_NUM("head", a, 1)
-    CASSERT_TYPE("head", a, 0, CVAL_Q_EXPRESSION)
+
+    if (a->cell[0]->type == CVAL_STRING) {
+        char* first_char;
+        first_char[0] = cval_pop(a, 0)->str[0];
+        first_char[1] = '\0';
+        cval_delete(a);
+        return cval_string(first_char);
+    }
+
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        long n = cval_pop(a, 0)->num;
+        long first_digit;
+
+        while(n) {
+            first_digit = n;
+            n /= 10;
+        }
+        cval_delete(a);
+        return cval_number(first_digit);
+    }
+
+    if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
     CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
 
     cval* v = cval_take(a, 0);
@@ -673,18 +702,112 @@ cval* builtin_head(cenv* e, cval* a) {
         cval_delete((cval_pop(v, 1)));
     }
 
-    return v;
+    return v; }
+
+    cval_delete(a);
+    return cval_error("Function 'head' pashed unshupported type!");
 }
 
 cval* builtin_tail(cenv* e, cval* a) {
     CASSERT_NUM("tail", a, 1)
-    CASSERT_TYPE("tail", a, 0, CVAL_Q_EXPRESSION)
-    CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 
-    cval* v = cval_take(a, 0);
+    if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+        CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 
-    cval_delete(cval_pop(v,0));
-    return v;
+        cval* v = cval_take(a, 0);
+
+        cval_delete(cval_pop(v,0));
+        return v;
+    }
+
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        long number = cval_pop(a, 0)->num;
+        int neg = 0;
+
+        if (number < 0) {
+            neg = 1;
+            number = labs(number);
+        }
+
+        int init_digits = count_digits(number);
+        long factor;
+        cval_delete(a);
+
+        if (init_digits == 1) {
+            return cval_error("Function 'tail' pashed shingle digit number!");
+        }
+
+        switch (init_digits) {
+            case 2:
+                factor = 10;
+                break;
+            case 3:
+                factor = 100;
+                break;
+            case 4:
+                factor = 1000;
+                break;
+            case 5:
+                factor = 10000;
+                break;
+            case 6:
+                factor = 100000;
+                break;
+            case 7:
+                factor = 1000000;
+                break;
+            case 8:
+                factor = 10000000;
+                break;
+            case 9:
+                factor = 100000000;
+                break;
+            case 10:
+                factor = 1000000000;
+                break;
+            case 11:
+                factor = 10000000000;
+                break;
+            case 12:
+                factor = 100000000000;
+                break;
+            case 13:
+                factor = 1000000000000;
+                break;
+            case 14:
+                factor = 10000000000000;
+                break;
+            case 15:
+                factor = 100000000000000;
+                break;
+            case 16:
+                factor = 1000000000000000;
+                break;
+            case 17:
+                factor = 10000000000000000;
+                break;
+            case 18:
+                factor = 100000000000000000;
+                break;
+            case 19:
+                factor = 1000000000000000000;
+                break;
+            default:
+                return cval_error("Unable to get tail of number.");
+        }
+
+        while (count_digits(number) == init_digits) {
+            number -= factor;
+        }
+
+        if (neg) {
+            number = -labs(number);
+        }
+        return cval_number(number);
+    }
+
+    cval_delete(a);
+    return cval_error("Function 'head' pashed unshupported type!");
 }
 
 cval* builtin_join(cenv* e, cval* a) {

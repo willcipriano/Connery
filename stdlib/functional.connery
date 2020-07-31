@@ -28,3 +28,11 @@
 
 ; addfunc
 (fun {addfunc f g x} {f (g x)})
+
+(fun {case & cs} {
+   if (== cs None)
+   {None}
+   {if (first (first cs))
+        {second (first cs)}
+        {unpack case (tail cs)}}
+})
