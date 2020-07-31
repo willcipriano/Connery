@@ -30,3 +30,9 @@
         {is_digit_even i}
         {is_even (tail i)}
 })
+
+(fun {is_odd i} {
+    if (is_even i)
+    {False}
+    {True}
+})
