@@ -1,26 +1,7 @@
-(fun {is_digit_even i} {
-     case
-     {(== i 0) True}
-     {(== i 1) False}
-     {(== i 2) True}
-     {(== i 3) False}
-     {(== i 4) True}
-     {(== i 5) False}
-     {(== i 6) True}
-     {(== i 7) False}
-     {(== i 8) True}
-     {(== i 9) False}
-     {otherwise (error "Single digit number not provided")}
+(fun {is_even number} {
+    (== 0(mod number 2))
 })
 
-(fun {is_even i} {
-    if (== 1 (length i))
-        {is_digit_even i}
-        {is_even (tail i)}
-})
-
-(fun {is_odd i} {
-    if (is_even i)
-    {False}
-    {True}
+(fun {is_odd number} {
+    (not (== 0 (mod number 2)))
 })
