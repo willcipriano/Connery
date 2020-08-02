@@ -525,6 +525,11 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
             }
             x->num /= y->num;
         }
+
+        if (strcmp(op, "mod") == 0) {
+            x->num = x->num % y->num;
+        }
+
         cval_delete(y);
     }
     cval_delete(a);
@@ -841,6 +846,10 @@ cval* builtin_mul(cenv* e, cval* a) {
 
 cval* builtin_div(cenv* e, cval* a) {
     return builtin_op(e, a, "/");
+}
+
+cval* builtin_modulo(cenv* e, cval* a) {
+    return builtin_op(e, a, "mod");
 }
 
 void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
@@ -1323,6 +1332,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "-", builtin_sub);
     cenv_add_builtin(e, "*", builtin_mul);
     cenv_add_builtin(e, "/", builtin_div);
+    cenv_add_builtin(e, "mod", builtin_modulo);
 
     cenv_add_builtin(e, "if", builtin_if);
     cenv_add_builtin(e, "==", builtin_eq);
