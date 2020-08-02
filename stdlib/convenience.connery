@@ -10,6 +10,40 @@
     {otherwise (error "Weekday num is undefined")}
 })
 
+(fun {month_num i} {
+    case
+    {(== i 1) "January"}
+    {(== i 2) "February"}
+    {(== i 3) "March"}
+    {(== i 4) "April"}
+    {(== i 5) "May"}
+    {(== i 6) "June"}
+    {(== i 7) "July"}
+    {(== i 8) "August"}
+    {(== i 9) "September"}
+    {(== i 10) "October"}
+    {(== i 11) "November"}
+    {(== i 12) "December"}
+    {(otherwise) (error "Month num is undefined")}
+})
+
+(fun {month_day_count month year} {
+    case
+    {(== month 1) 31}
+    {(== month 2) (if (is_leap_year year) {29} {28})}
+    {(== month 3) 31}
+    {(== month 4) 30}
+    {(== month 5) 31}
+    {(== month 6) 30}
+    {(== month 7) 31}
+    {(== month 8) 31}
+    {(== month 9) 30}
+    {(== month 10) 31}
+    {(== month 11) 30}
+    {(== month 12) 31}
+    {(otherwise) (error "Month num is undefined")}
+})
+
 (fun {is_leap_year year} {
      if (== 0 (mod year 4))
      {
@@ -23,3 +57,4 @@
      }
      {False}
 })
+
