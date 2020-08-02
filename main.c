@@ -1303,6 +1303,34 @@ cval* builtin_case(cenv* e, cval* a) {
     return cval_string(cased_string);
 }
 
+cval* builtin_type(cenv* e, cval* a) {
+    int type = a->cell[0]->type;
+    cval_delete(a);
+
+    switch (type) {
+        case CVAL_NUMBER:
+            return cval_number(0);
+
+        case CVAL_STRING:
+            return cval_number(1);
+
+        case CVAL_S_EXPRESSION:
+            return cval_number(2);
+
+        case CVAL_Q_EXPRESSION:
+            return cval_number(3);
+
+        case CVAL_FUNCTION:
+            return cval_number(4);
+
+        case CVAL_SYMBOL:
+            return cval_number(5);
+
+        default:
+            return cval_error("Type not defined!");
+    }
+
+}
 
 
 void instantiate_string_builtins(cenv* e) {
@@ -1345,6 +1373,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "load", builtin_load);
     cenv_add_builtin(e, "error", builtin_error);
     cenv_add_builtin(e, "print", builtin_print);
+    cenv_add_builtin(e, "type", builtin_type);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
     instantiate_string_builtins(e);

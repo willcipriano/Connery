@@ -1,0 +1,50 @@
+(fun {type_num i} {
+    case
+        {(== i 0) "Number"}
+        {(== i 1) "String"}
+        {(== i 2) "S Expression"}
+        {(== i 3) "Q Expression"}
+        {(== i 4) "Function"}
+        {(== i 5) "Symbol"}
+        {(otherwise) "Unknown"}
+})
+
+(fun {is_num i} {
+    if (== 0 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_str i} {
+    if (== 1 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_sexpr i} {
+    if (== 2 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_qexpr i} {
+    if (== 3 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_func i} {
+    if (== 4 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_sym i} {
+    if (== 5 (type i))
+        {True}
+        {False}
+})
+
+(fun {type_string i} {
+   type_num (type i)
+})
