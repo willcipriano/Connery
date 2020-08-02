@@ -9,3 +9,17 @@
     {(== i 7) "Sunday"}
     {otherwise (error "Weekday num is undefined")}
 })
+
+(fun {is_leap_year year} {
+     if (== 0 (mod year 4))
+     {
+         if (== 0 (mod year 100))
+             {
+             if (== 0 (mod year 400))
+                 {True}
+                 {False}
+             }
+             {True}
+     }
+     {False}
+})
