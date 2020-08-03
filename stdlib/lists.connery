@@ -97,6 +97,8 @@
    {error "filter requiresh a function and a lisht ash input!"}
 })
 
+;fold - allows list comprehension
+;fold Function Value List
 (fun {fold f z l} {
    if (and (is_func f) (is_qexpr l))
     {if (== l None)
@@ -105,12 +107,16 @@
     {error "fold requiresh a function and a lisht ash input!"}
 })
 
+;sum - sum of all values in list
+;sum List
 (fun {sum l} {
     if (is_qexpr l)
         {fold + 0 l}
         {error "sum requiresh a lisht ash input!"}
 })
 
+;product - product of all values in list
+;product List
 (fun {product l} {
     if (is_qexpr l)
         {fold * 0 l}

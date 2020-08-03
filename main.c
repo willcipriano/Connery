@@ -1331,9 +1331,7 @@ cval* builtin_type(cenv* e, cval* a) {
         default:
             return cval_error("Type not defined!");
     }
-
 }
-
 
 void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "concat", builtin_concat);
