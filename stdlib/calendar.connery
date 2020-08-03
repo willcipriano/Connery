@@ -45,6 +45,7 @@
 })
 
 (fun {is_leap_year year} {
+     if (is_num year) {
      if (== 0 (mod year 4))
      {
          if (== 0 (mod year 100))
@@ -55,5 +56,5 @@
              }
              {True}
      }
-     {False}
-})
+     {False}}
+     {error "is_leap_year requiresh a number ash input!"}})

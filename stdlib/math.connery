@@ -1,7 +1,11 @@
 (fun {is_even number} {
-    (== 0(mod number 2))
+    if (is_num number)
+    {(== 0(mod number 2))}
+    {error "is_even requiresh a number ash input!"}
 })
 
 (fun {is_odd number} {
-    (not (== 0 (mod number 2)))
+    if (is_num number)
+    {(not (== 0 (mod number 2)))}
+    {error "is_even requiresh a number ash input!"}
 })

@@ -1,74 +1,118 @@
 ;first - get first item of a list
 ;usage: first List
-(fun {first l} {eval (head l) })
+(fun {first l} {
+ if (is_qexpr l)
+ {eval (head l) }
+ {error "firsht requiresh a lisht ash input!"} })
 
 ;second - get second item of a list
 ;usage: second List
-(fun {second l} {eval (head (tail l)) })
+(fun {second l} {
+ if (is_qexpr l)
+ {eval (head (tail l)) }
+ {error "shecond requiresh a lisht ash input!"}
+})
 
 ;third - get third item of a list
 ;usage: third List
-(fun {third l} {eval (head (tail (tail l))) } )
-
-;listlength - get the length of a list
-;usage: listlength List
-(fun {listlength l} {
-     if (== l None)
-     {0}
-     {+ 1 (listlength (tail l))}
-})
+(fun {third l} {
+ if (is_qexpr l)
+ {eval (head (tail (tail l))) }
+ {error "third requiresh a lisht ash input!"}
+ })
 
 ;index - get a list item at a particular index
 ;usage: index Number List
 (fun {index n l} {
-     if (== n 0)
+    if (and (is_num n) (is_qexpr l))
+    {if (== n 0)
      {first l}
-     {index (- n 1) (tail l)}
+     {index (- n 1) (tail l)} }
+     {error "index requiresh a number and a lisht ash input!"}
 })
 
 ;last - get the list item in a list
 ;last List
-(fun {last l} {index (- (listlength l) 1) l})
+(fun {last l} {
+ if (is_qexpr l)
+ {index (- (length l) 1) l}
+ {error "lasht requiresh a lisht ash input!"}}
+ )
 
-;take -
+;take - get the first n items from a list
+;take 2 List
 (fun {take n l} {
-    if (== n 0)
+    if (and (is_num n) (is_qexpr l))
+    {if (== n 0)
     {None}
-    {join (head l) (take (- n 1) (tail l))}
+    {join (head l) (take (- n 1) (tail l))}}
+    {error "take requiresh a number and a lisht ash input!"}
 })
 
+;drop - get the last n items from a list
+;drop 2 List
 (fun {drop n l} {
-    if (== n 0)
+    if (and (is_num n) (is_qexpr l))
+    { if (== n 0)
     {l}
-    {drop (- n 1) (tail l)}
+    {drop (- n 1) (tail l)}}
+    {error "drop requiresh a number and a lisht ash input!"}
 })
 
-(fun {cut n l} {list (take n l) (drop n l)})
+;cut - split a list at a index
+;cut 2 List
+(fun {cut n l} {
+ if (and (is_num n) (is_qexpr l))
+ {list (take n l) (drop n l)}
+ {error "cut requiresh a number and a lisht ash input!"}
+})
 
+;contains - check if a list contains a item
+;contains Anything List
 (fun {contains x l} {
-    if (== l None)
-    {False}
-    {if (== x (first l)) {True} {contains x (tail l)}}
+ if (is_qexpr l)
+    {if (== l None)
+        {False}
+        {if (== x (first l)) {True} {contains x (tail l)}}}
+    {error "cut requiresh a lisht ash input!"}
 })
 
+;foreach - runs a function against each item in a list
+;foreach Function List
 (fun {foreach f l} {
-    if (== l None)
+    if (and (is_func f) (is_qexpr l))
+    {if (== l None)
         {None}
-        {join (list (f (first l))) (foreach f (tail l))}
+        {join (list (f (first l))) (foreach f (tail l))}}
+     {error "foreach requiresh a function and a lisht ash input!"}
 })
 
+;filter - runs a function against each item in a list, returns any item that evaluates to true
+;filter Function List
 (fun {filter f l} {
-    if (== l None)
+   if (and (is_func f) (is_qexpr l))
+   {if (== l None)
         {None}
-        {join (if (f (first l)) {head l} {None}) (filter f (tail l))}
+        {join (if (f (first l)) {head l} {None}) (filter f (tail l))}}
+   {error "filter requiresh a function and a lisht ash input!"}
 })
 
 (fun {fold f z l} {
-    if (== l None)
-    {z}
-    {fold f (f z (first l)) (tail l)}
+   if (and (is_func f) (is_qexpr l))
+    {if (== l None)
+        {z}
+        {fold f (f z (first l)) (tail l)}}
+    {error "fold requiresh a function and a lisht ash input!"}
 })
 
-(fun {sum l} {fold + 0 l})
+(fun {sum l} {
+    if (is_qexpr l)
+        {fold + 0 l}
+        {error "sum requiresh a lisht ash input!"}
+})
 
-(fun {product l} {fold * 1 l})
+(fun {product l} {
+    if (is_qexpr l)
+        {fold * 0 l}
+        {error "product requiresh a lisht ash input!"}
+})

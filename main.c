@@ -1257,25 +1257,27 @@ cval* builtin_length(cenv* e, cval* a) {
     CASSERT_NUM("length", a, 1);
 
     if (a->cell[0]->type == CVAL_NUMBER) {
-        int length = count_digits(a->cell[0]->num);
+        long length = count_digits(a->cell[0]->num);
         cval_delete(a);
         return cval_number(length);
     }
 
     if (a->cell[0]->type == CVAL_STRING) {
-    long length = strlen(cval_pop(a, 0)->str);
-    cval_delete(a);
-    return cval_number(length); }
+        long length = strlen(cval_pop(a, 0)->str);
+        cval_delete(a);
+        return cval_number(length); }
+
+    if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+        long length = a->cell[0]->count;
+        cval_delete(a);
+        return cval_number(length);
+    }
 
     cval_delete(a);
     return cval_error("Function 'length' pashed unshupported type!");
 }
 
-
-
-
-
-cval* builtin_case(cenv* e, cval* a) {
+cval* builtin_string_case(cenv* e, cval* a) {
     CASSERT_TYPE("case", a, 0, CVAL_NUMBER);
     CASSERT_TYPE("case", a, 1, CVAL_STRING);
     CASSERT_NUM("case", a, 2);
@@ -1338,7 +1340,7 @@ void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
-    cenv_add_builtin(e, "case", builtin_case);
+    cenv_add_builtin(e, "string_case", builtin_string_case);
     cenv_add_builtin(e, "chop", builtin_chop);
     cenv_add_builtin(e, "length", builtin_length);
 }
