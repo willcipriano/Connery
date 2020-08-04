@@ -3,5 +3,5 @@
 </p>
 
 <p align="center">
-Connery is an experimental lisp.
+Connery is an experimental lisp. Check out <a href="http://connerylang.org">ConneryLang.org</a> for docs.
 </p>
