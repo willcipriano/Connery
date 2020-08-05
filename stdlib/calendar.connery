@@ -7,7 +7,7 @@
     {(== i 5) "Friday"}
     {(== i 6) "Saturday"}
     {(== i 7) "Sunday"}
-    {otherwise (error "Weekday num is undefined")}
+    {Otherwise (error "Weekday num is undefined")}
 })
 
 (fun {month_num i} {
@@ -24,7 +24,7 @@
     {(== i 10) "October"}
     {(== i 11) "November"}
     {(== i 12) "December"}
-    {(otherwise) (error "Month num is undefined")}
+    {(Otherwise) (error "Month num is undefined")}
 })
 
 (fun {month_day_count month year} {
@@ -41,7 +41,7 @@
     {(== month 10) 31}
     {(== month 11) 30}
     {(== month 12) 31}
-    {(otherwise) (error "Month num is undefined")}
+    {(Otherwise) (error "Month num is undefined")}
 })
 
 (fun {is_leap_year year} {

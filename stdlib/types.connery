@@ -6,7 +6,7 @@
         {(== i 3) "Q Expression"}
         {(== i 4) "Function"}
         {(== i 5) "Symbol"}
-        {(otherwise) "Unknown"}
+        {(Otherwise) "Unknown"}
 })
 
 (fun {is_num i} {

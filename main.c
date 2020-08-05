@@ -871,7 +871,6 @@ cval* builtin_var(cenv* e, cval* a, char* func) {
     CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %i", func, syms->count, a->count-1);
 
     for (int i = 0; i < syms->count; i++) {
-
         if (strcmp(func, "def") == 0) {
             cenv_def(e, syms->cell[i], a->cell[i+1]);
         }
@@ -879,7 +878,6 @@ cval* builtin_var(cenv* e, cval* a, char* func) {
         if (strcmp(func, "=") == 0) {
             cenv_put(e, syms->cell[i], a->cell[i+1]);
         }
-
     }
 
     cval_delete(a);

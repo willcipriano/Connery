@@ -2,8 +2,8 @@
 (def {None} {})
 (def {True} 1)
 (def {False} 0)
-(def {otherwise} True)
-(def {StdLibMainLocation} "stdlib/main.connery")
+(def {Otherwise} True)
+(def {std_lib_main_location} "stdlib/main.connery")
 
 ; Easter Egg
 (def {BestKid} "Alice Imogen Cipriano")
