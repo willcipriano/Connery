@@ -716,6 +716,17 @@ cval* builtin_head(cenv* e, cval* a) {
 cval* builtin_tail(cenv* e, cval* a) {
     CASSERT_NUM("tail", a, 1)
 
+    if (a->cell[0]->type == CVAL_STRING) {
+        char* str = cval_pop(a, 0)->str;
+        cval_delete(a);
+
+        if (strlen(str) > 0) {
+            str++;
+            return(cval_string(str));
+        }
+        return(cval_error("Function 'tail' pashed empty shtring!"));
+    }
+
     if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
         CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 
@@ -1352,7 +1363,6 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "eval", builtin_eval);
     cenv_add_builtin(e, "join", builtin_join);
     cenv_add_builtin(e, "def", builtin_def);
-    cenv_add_builtin(e, "=", builtin_put);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
