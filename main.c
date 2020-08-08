@@ -858,6 +858,20 @@ cval* builtin_rand(cenv* e, cval* a) {
 
 cval* builtin_join(cenv* e, cval* a) {
 
+    if (a->cell[0]->type == CVAL_STRING) {
+        for (int i = 0; i < a->count; i++) {
+            CASSERT_TYPE("join", a, i, CVAL_STRING)
+        }
+
+        char* base_str = a->cell[0]->str;
+
+        for (int i = 1; i < a->count; i++) {
+            base_str = strcat(base_str, a->cell[i]->str);
+        }
+
+        return cval_string(base_str);
+    }
+
     for (int i = 0; i < a->count; i++) {
         CASSERT_TYPE("join", a, i, CVAL_Q_EXPRESSION)
     }
@@ -1175,19 +1189,6 @@ cval* builtin_read_file(cenv*e, cval* a) {
     }
 }
 
-cval* builtin_concat(cenv* e, cval* a) {
-    CASSERT_TYPE("concat", a, 0, CVAL_STRING);
-    char* newStr = cval_pop(a, 0)->str;
-    int count = a->count;
-
-    for (int i = 1; i <= count; i++) {
-        CASSERT_TYPE_ITER("concat", a, 0, i, CVAL_STRING)
-        newStr = strcat(newStr, cval_pop(a, 0)->str);
-    }
-    cval_delete(a);
-    return cval_string(newStr);
-}
-
 cval* builtin_replace(cenv* e, cval* a) {
     CASSERT_TYPE("replace", a, 0, CVAL_STRING);
     CASSERT_TYPE("replace", a, 1, CVAL_STRING);
@@ -1377,7 +1378,6 @@ cval* builtin_type(cenv* e, cval* a) {
 }
 
 void instantiate_string_builtins(cenv* e) {
-    cenv_add_builtin(e, "concat", builtin_concat);
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
