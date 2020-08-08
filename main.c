@@ -841,6 +841,21 @@ cval* builtin_tail(cenv* e, cval* a) {
     return cval_error("Function 'head' pashed unshupported type!");
 }
 
+cval* builtin_rand(cenv* e, cval* a) {
+    CASSERT_NUM("rand", a, 2)
+    CASSERT_TYPE("rand", a, 0, CVAL_NUMBER);
+    CASSERT_TYPE("rand", a, 1, CVAL_NUMBER);
+
+    long rand_start = a->cell[0]->num;
+    long rand_end = a->cell[1]->num;
+    cval_delete(a);
+
+    long rand_result = (rand() %
+               (rand_end - rand_start + 1)) + rand_start;
+
+    return cval_number(rand_result);
+}
+
 cval* builtin_join(cenv* e, cval* a) {
 
     for (int i = 0; i < a->count; i++) {
@@ -1389,6 +1404,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "/", builtin_div);
     cenv_add_builtin(e, "mod", builtin_modulo);
     cenv_add_builtin(e, "pow", builtin_power);
+    cenv_add_builtin(e, "rand", builtin_rand);
 
     cenv_add_builtin(e, "if", builtin_if);
     cenv_add_builtin(e, "==", builtin_eq);
