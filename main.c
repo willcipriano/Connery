@@ -114,6 +114,17 @@ int count_digits(long n)
     return 1 + count_digits(n / 10);
 }
 
+long long_power(long x,long exponent)
+{
+    int i;
+    int number = 1;
+
+    for (i = 0; i < exponent; ++i)
+        number *= x;
+
+    return(number);
+}
+
 
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
@@ -530,6 +541,10 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
             x->num = x->num % y->num;
         }
 
+        if (strcmp(op, "pow") == 0) {
+            x->num = long_power(x->num, y->num);
+        }
+
         cval_delete(y);
     }
     cval_delete(a);
@@ -861,6 +876,10 @@ cval* builtin_div(cenv* e, cval* a) {
 
 cval* builtin_modulo(cenv* e, cval* a) {
     return builtin_op(e, a, "mod");
+}
+
+cval* builtin_power(cenv* e, cval* a) {
+    return builtin_op(e, a, "pow");
 }
 
 void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
@@ -1369,6 +1388,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "*", builtin_mul);
     cenv_add_builtin(e, "/", builtin_div);
     cenv_add_builtin(e, "mod", builtin_modulo);
+    cenv_add_builtin(e, "pow", builtin_power);
 
     cenv_add_builtin(e, "if", builtin_if);
     cenv_add_builtin(e, "==", builtin_eq);
