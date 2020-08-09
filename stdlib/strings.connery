@@ -1,4 +1,4 @@
-(fun {char_to_upper_case char} {
+(fun {__char_to_upper_case__ char} {
     if (is_str char)
     {case
     {(== char "a") "A"}
@@ -28,10 +28,10 @@
     {(== char "y") "Y"}
     {(== char "z") "Z"}
     {Otherwise char}}
-    {error "char_to_upper_case requiresh a shtring ash input!"}
+    {error "__char_to_upper_case__ requiresh a shtring ash input!"}
 })
 
-(fun {char_to_lower_case char} {
+(fun {__char_to_lower_case__ char} {
     if (is_str char)
     {case
     {(== char "A") "a"}
@@ -61,30 +61,202 @@
     {(== char "Y") "y"}
     {(== char "Z") "z"}
     {Otherwise char}}
-    {error "char_to_lower_case requiresh a shtring ash input!"}
+    {error "__char_to_lower_case__ requiresh a shtring ash input!"}
 })
 
-(fun {str_to_upper_loop str_in str_out} {
-     if (== 1 (length str_in))
-        {join str_out (char_to_upper_case (head str_in))}
-        {(str_to_upper_loop (tail str_in) (join str_out (char_to_upper_case (head str_in))))}
+(fun {__char_to_index__ char} {
+    if (is_str char)
+    {case
+    {(== char "a") 0}
+    {(== char "b") 1}
+    {(== char "c") 2}
+    {(== char "d") 3}
+    {(== char "e") 4}
+    {(== char "f") 5}
+    {(== char "g") 6}
+    {(== char "h") 7}
+    {(== char "i") 8}
+    {(== char "j") 9}
+    {(== char "k") 10}
+    {(== char "l") 11}
+    {(== char "m") 12}
+    {(== char "n") 13}
+    {(== char "o") 14}
+    {(== char "p") 15}
+    {(== char "q") 16}
+    {(== char "r") 17}
+    {(== char "s") 18}
+    {(== char "t") 19}
+    {(== char "u") 20}
+    {(== char "v") 21}
+    {(== char "w") 22}
+    {(== char "x") 23}
+    {(== char "y") 24}
+    {(== char "z") 25}
+    {(== char "A") 26}
+    {(== char "B") 27}
+    {(== char "C") 28}
+    {(== char "D") 29}
+    {(== char "E") 30}
+    {(== char "F") 31}
+    {(== char "G") 32}
+    {(== char "H") 33}
+    {(== char "I") 34}
+    {(== char "J") 35}
+    {(== char "K") 36}
+    {(== char "L") 37}
+    {(== char "M") 38}
+    {(== char "N") 39}
+    {(== char "O") 40}
+    {(== char "P") 41}
+    {(== char "Q") 42}
+    {(== char "R") 43}
+    {(== char "S") 44}
+    {(== char "T") 45}
+    {(== char "U") 46}
+    {(== char "V") 47}
+    {(== char "W") 48}
+    {(== char "X") 49}
+    {(== char "Y") 50}
+    {(== char "Z") 51}
+    {(== char "0") 52}
+    {(== char "1") 53}
+    {(== char "2") 54}
+    {(== char "3") 55}
+    {(== char "4") 56}
+    {(== char "5") 57}
+    {(== char "6") 58}
+    {(== char "7") 59}
+    {(== char "8") 60}
+    {(== char "9") 61}
+    {(== char "!") 62}
+    {(== char "@") 63}
+    {(== char "#") 64}
+    {(== char "$") 65}
+    {(== char "%") 66}
+    {(== char "^") 67}
+    {(== char "&") 68}
+    {(== char "*") 69}
+    {(== char "(") 70}
+    {(== char ")") 71}
+    {(== char "-") 72}
+    {(== char "_") 73}
+    {(== char "+") 74}
+    {(== char "=") 75}
+    {Otherwise char}}
+    {error "__char_to_index__ requiresh a shtring ash input!"}
 })
 
-(fun {str_to_lower_loop str_in str_out} {
+(fun {__index_to_char__ index} {
+    if (is_num index)
+    {case
+    {(== index 0) "a"}
+    {(== index 1) "b"}
+    {(== index 2) "c"}
+    {(== index 3) "d"}
+    {(== index 4) "e"}
+    {(== index 5) "f"}
+    {(== index 6) "g"}
+    {(== index 7) "h"}
+    {(== index 8) "i"}
+    {(== index 9) "j"}
+    {(== index 10) "k"}
+    {(== index 11) "l"}
+    {(== index 12) "m"}
+    {(== index 13) "n"}
+    {(== index 14) "o"}
+    {(== index 15) "p"}
+    {(== index 16) "q"}
+    {(== index 17) "r"}
+    {(== index 18) "s"}
+    {(== index 19) "t"}
+    {(== index 20) "u"}
+    {(== index 21) "v"}
+    {(== index 22) "w"}
+    {(== index 23) "x"}
+    {(== index 24) "y"}
+    {(== index 25) "z"}
+    {(== index 26) "A"}
+    {(== index 27) "B"}
+    {(== index 28) "C"}
+    {(== index 29) "D"}
+    {(== index 30) "E"}
+    {(== index 31) "F"}
+    {(== index 32) "G"}
+    {(== index 33) "H"}
+    {(== index 34) "I"}
+    {(== index 35) "J"}
+    {(== index 36) "K"}
+    {(== index 37) "L"}
+    {(== index 38) "M"}
+    {(== index 39) "N"}
+    {(== index 40) "O"}
+    {(== index 41) "P"}
+    {(== index 42) "Q"}
+    {(== index 43) "R"}
+    {(== index 44) "S"}
+    {(== index 45) "T"}
+    {(== index 46) "U"}
+    {(== index 47) "V"}
+    {(== index 48) "W"}
+    {(== index 49) "X"}
+    {(== index 50) "Y"}
+    {(== index 51) "Z"}
+    {(== index 52) "0"}
+    {(== index 53) "1"}
+    {(== index 54) "2"}
+    {(== index 55) "3"}
+    {(== index 56) "4"}
+    {(== index 57) "5"}
+    {(== index 58) "6"}
+    {(== index 59) "7"}
+    {(== index 60) "8"}
+    {(== index 61) "9"}
+    {(== index 62) "!"}
+    {(== index 63) "@"}
+    {(== index 64) "#"}
+    {(== index 65) "$"}
+    {(== index 66) "%"}
+    {(== index 67) "^"}
+    {(== index 68) "&"}
+    {(== index 69) "*"}
+    {(== index 70) "("}
+    {(== index 71) ")"}
+    {(== index 72) "-"}
+    {(== index 73) "_"}
+    {(== index 74) "+"}
+    {(== index 75) "="}
+    {Otherwise char}}
+    {error "__char_to_index__ requiresh a shtring ash input!"}
+})
+
+(fun {__str_to_upper_loop__ str_in str_out} {
      if (== 1 (length str_in))
-        {join str_out (char_to_lower_case (head str_in))}
-        {(str_to_lower_loop (tail str_in) (join str_out (char_to_lower_case (head str_in))))}
+        {join str_out (__char_to_upper_case__ (head str_in))}
+        {(__str_to_upper_loop__ (tail str_in) (join str_out (__char_to_upper_case__ (head str_in))))}
+})
+
+(fun {__str_to_lower_loop__ str_in str_out} {
+     if (== 1 (length str_in))
+        {join str_out (__char_to_lower_case__ (head str_in))}
+        {(__str_to_lower_loop__ (tail str_in) (join str_out (__char_to_lower_case__ (head str_in))))}
+})
+
+(fun {__rand_string_loop__ random_string_length str_output} {
+     if (== (length str_output) (- random_string_length 1))
+         {join str_output (__index_to_char__ (rand 0 75))}
+         {__rand_string_loop__ random_string_length (join str_output (__index_to_char__ (rand 0 75)))}
 })
 
 (fun {upper lower_str} {
     if (is_str lower_str)
-        {str_to_upper_loop lower_str Empty}
+        {__str_to_upper_loop__ lower_str Empty}
         {error "upper requiresh a shtring ash input!"}
 })
 
 (fun {lower upper_str} {
     if (is_str upper_str)
-        {str_to_lower_loop upper_str Empty}
+        {__str_to_lower_loop__ upper_str Empty}
         {error "lower requiresh a shtring ash input!"}
 })
 
@@ -92,4 +264,10 @@
    if (and (is_str x) (is_str y))
       {find (lower x) (lower y)}
       {error "caseless_find requiresh two shtringsh ash input!"}
+})
+
+(fun {rand_string len} {
+    if (is_num len)
+       {__rand_string_loop__ len Empty}
+       {error "rand_string requiresh a number ash input!"}
 })
