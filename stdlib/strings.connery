@@ -1,18 +1,95 @@
-(fun {upper x} {
-    if (is_str x)
-    {string_case 1 x}
-    {error "upper requiresh a shtring ash input!"}
-    })
+(fun {char_to_upper_case char} {
+    if (is_str char)
+    {case
+    {(== char "a") "A"}
+    {(== char "b") "B"}
+    {(== char "c") "C"}
+    {(== char "d") "D"}
+    {(== char "e") "E"}
+    {(== char "f") "F"}
+    {(== char "g") "G"}
+    {(== char "h") "H"}
+    {(== char "i") "I"}
+    {(== char "j") "J"}
+    {(== char "k") "K"}
+    {(== char "l") "L"}
+    {(== char "m") "M"}
+    {(== char "n") "N"}
+    {(== char "o") "O"}
+    {(== char "p") "P"}
+    {(== char "q") "Q"}
+    {(== char "r") "R"}
+    {(== char "s") "S"}
+    {(== char "t") "T"}
+    {(== char "u") "U"}
+    {(== char "v") "V"}
+    {(== char "w") "W"}
+    {(== char "x") "X"}
+    {(== char "y") "Y"}
+    {(== char "z") "Z"}
+    {Otherwise char}}
+    {error "char_to_upper_case requiresh a shtring ash input!"}
+})
 
-(fun {lower x} {
-    if (is_str x)
-    {string_case 0 x}
-    {error "lower requiresh a shtring ash input!"}
-    })
+(fun {char_to_lower_case char} {
+    if (is_str char)
+    {case
+    {(== char "A") "a"}
+    {(== char "B") "b"}
+    {(== char "C") "c"}
+    {(== char "D") "d"}
+    {(== char "E") "e"}
+    {(== char "F") "f"}
+    {(== char "G") "g"}
+    {(== char "H") "h"}
+    {(== char "I") "i"}
+    {(== char "J") "j"}
+    {(== char "K") "k"}
+    {(== char "L") "l"}
+    {(== char "M") "m"}
+    {(== char "N") "n"}
+    {(== char "O") "o"}
+    {(== char "P") "p"}
+    {(== char "Q") "q"}
+    {(== char "R") "r"}
+    {(== char "S") "s"}
+    {(== char "T") "t"}
+    {(== char "U") "u"}
+    {(== char "V") "v"}
+    {(== char "W") "w"}
+    {(== char "X") "x"}
+    {(== char "Y") "y"}
+    {(== char "Z") "z"}
+    {Otherwise char}}
+    {error "char_to_lower_case requiresh a shtring ash input!"}
+})
 
+(fun {str_to_upper_loop str_in str_out} {
+     if (== 1 (length str_in))
+        {join str_out (char_to_upper_case (head str_in))}
+        {(str_to_upper_loop (tail str_in) (join str_out (char_to_upper_case (head str_in))))}
+})
+
+(fun {str_to_lower_loop str_in str_out} {
+     if (== 1 (length str_in))
+        {join str_out (char_to_lower_case (head str_in))}
+        {(str_to_lower_loop (tail str_in) (join str_out (char_to_lower_case (head str_in))))}
+})
+
+(fun {upper lower_str} {
+    if (is_str lower_str)
+        {str_to_upper_loop lower_str Empty}
+        {error "upper requiresh a shtring ash input!"}
+})
+
+(fun {lower upper_str} {
+    if (is_str upper_str)
+        {str_to_lower_loop upper_str Empty}
+        {error "lower requiresh a shtring ash input!"}
+})
 
 (fun {caseless_find x y} {
    if (and (is_str x) (is_str y))
       {find (lower x) (lower y)}
       {error "caseless_find requiresh two shtringsh ash input!"}
-      })
+})

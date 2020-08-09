@@ -384,7 +384,7 @@ cval* cval_copy(cval* v) {
         case CVAL_S_EXPRESSION:
         case CVAL_Q_EXPRESSION:
             x->count = v->count;
-            x->cell = malloc(sizeof(cval *) * x->count);
+            x->cell = malloc(sizeof(cval*) * x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = cval_copy(v->cell[i]);
             }
@@ -493,11 +493,12 @@ void cval_print_line(cval* value) {
 }
 
 cval* cval_join(cval* x, cval* y) {
-    while (y->count) {
-        x = cval_add(x, cval_pop(y, 0));
+    for (int i = 0; i < y->count; i++) {
+        x = cval_add(x, y->cell[i]);
     }
 
-    cval_delete(y);
+    free(y->cell);
+    free(y);
     return x;
 }
 
@@ -695,10 +696,12 @@ cval* builtin_head(cenv* e, cval* a) {
 
     if (a->cell[0]->type == CVAL_STRING) {
         char* first_char;
+        first_char = malloc(2);
         first_char[0] = cval_pop(a, 0)->str[0];
         first_char[1] = '\0';
         cval_delete(a);
-        return cval_string(first_char);
+        cval* result = cval_string(first_char);
+        return result;
     }
 
     if (a->cell[0]->type == CVAL_NUMBER) {
@@ -858,18 +861,27 @@ cval* builtin_rand(cenv* e, cval* a) {
 
 cval* builtin_join(cenv* e, cval* a) {
 
+
     if (a->cell[0]->type == CVAL_STRING) {
+        unsigned long new_str_length = 0;
+
         for (int i = 0; i < a->count; i++) {
             CASSERT_TYPE("join", a, i, CVAL_STRING)
+            new_str_length += strlen(a->cell[i]->str);
         }
 
-        char* base_str = a->cell[0]->str;
+        char * new_str;
+        new_str = malloc(new_str_length + 1);
+        new_str[0] = '\0';
 
-        for (int i = 1; i < a->count; i++) {
-            base_str = strcat(base_str, a->cell[i]->str);
+        for (int i = 0; i < a->count; i++) {
+            new_str = strcat(new_str, a->cell[i]->str);
         }
 
-        return cval_string(base_str);
+        cval_delete(a);
+        cval* result = cval_string(new_str);
+        free(new_str);
+        return result;
     }
 
     for (int i = 0; i < a->count; i++) {
@@ -1321,34 +1333,6 @@ cval* builtin_length(cenv* e, cval* a) {
     return cval_error("Function 'length' pashed unshupported type!");
 }
 
-cval* builtin_string_case(cenv* e, cval* a) {
-    CASSERT_TYPE("case", a, 0, CVAL_NUMBER);
-    CASSERT_TYPE("case", a, 1, CVAL_STRING);
-    CASSERT_NUM("case", a, 2);
-
-    long case_modifier = cval_pop(a, 0)->num;
-    char *org_string = cval_pop(a, 0)->str;
-    char cased_string[strlen(org_string) + 1];
-
-    cval_delete(a);
-
-    if (case_modifier >= 2) {
-        return cval_error("Unknown argument %i for case, only 0 (lowercase) and 1 (uppercase) are accepted.", case_modifier);
-    }
-
-    if (case_modifier == 0) {
-        for(int i = 0; org_string[i]; i++){
-            cased_string[i] = tolower(org_string[i]);
-            cased_string[i + 1] = '\0';}
-    } else {
-        for(int i = 0; org_string[i]; i++){
-            cased_string[i] = toupper(org_string[i]);
-            cased_string[i + 1] = '\0';}
-    }
-
-    return cval_string(cased_string);
-}
-
 cval* builtin_type(cenv* e, cval* a) {
     int type = a->cell[0]->type;
     cval_delete(a);
@@ -1381,7 +1365,6 @@ void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
-    cenv_add_builtin(e, "string_case", builtin_string_case);
     cenv_add_builtin(e, "chop", builtin_chop);
     cenv_add_builtin(e, "length", builtin_length);
 }
