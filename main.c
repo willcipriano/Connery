@@ -1205,32 +1205,50 @@ cval* builtin_replace(cenv* e, cval* a) {
     CASSERT_TYPE("replace", a, 0, CVAL_STRING);
     CASSERT_TYPE("replace", a, 1, CVAL_STRING);
     CASSERT_TYPE("replace", a, 2, CVAL_STRING);
-    CASSERT_TYPE("replace", a, 3, CVAL_NUMBER);
-    CASSERT_NUM("replace", a, 4);
+    CASSERT_NUM("replace", a, 3);
 
-    char* str = cval_pop(a, 0)->str;
-    char* orig = cval_pop(a, 0)->str;
-    char* rep = cval_pop(a, 0)->str;
-    long start = cval_pop(a, 0)->num;
-    long maxLen = strlen(str) + strlen(rep);
+    char* orig = a->cell[0]->str;
+    char* rep = a->cell[1]->str;
+    char* with = a->cell[2]->str;
 
-    char temp[maxLen];
-    char buffer[maxLen];
-    char *p;
+    char *result;
+    char *ins;
+    char *tmp;
+    int len_rep;
+    int len_with;
+    int len_front;
+    int count;
 
-    strcpy(temp, str + start);
+    // sanity checks and initialization
+    if (!orig || !rep) {return cval_string(orig);}
 
-    if(!(p = strstr(temp, orig))) {
-        return cval_string(temp); }
+    len_rep = strlen(rep);
+    if (len_rep == 0) {return cval_string(orig);}
 
-    strncpy(buffer, temp, p-temp);
-    buffer[p-temp] = '\0';
+    if (!with) {with = "";}
 
-    sprintf(buffer + (p - temp), "%s%s", rep, p + strlen(orig));
-    sprintf(str + start, "%s", buffer);
+    len_with = strlen(with);
 
+    // count the number of replacements needed
+    ins = orig;
+    for (count = 0; tmp = strstr(ins, rep); ++count) {
+        ins = tmp + len_rep;
+    }
+
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+    if (!result) {return cval_string(orig)}
+
+    while (count--) {
+        ins = strstr(orig, rep);
+        len_front = ins - orig;
+        tmp = strncpy(tmp, orig, len_front) + len_front;
+        tmp = strcpy(tmp, with) + len_with;
+        orig += len_front + len_rep; // move to next "end of rep"
+    }
+    strcpy(tmp, orig);
     cval_delete(a);
-    return cval_string(str);
+    return cval_string(result);
 }
 
 cval* builtin_find(cenv* e, cval* a) {

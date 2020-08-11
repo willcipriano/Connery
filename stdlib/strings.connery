@@ -248,6 +248,12 @@
          {__rand_string_loop__ random_string_length (join str_output (__index_to_char__ (rand 0 75)))}
 })
 
+(fun {__replace_all_loop__ base_string string_to_replace replacement_string}
+     {if (!= -1 (find base_string string_to_replace))
+          {__replace_all_loop__ (replace base_string string_to_replace replacement_string 0) string_to_replace replacement_string}
+          {base_string}
+})
+
 (fun {upper lower_str} {
     if (is_str lower_str)
         {__str_to_upper_loop__ lower_str Empty}
