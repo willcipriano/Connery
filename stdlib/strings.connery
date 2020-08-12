@@ -254,6 +254,14 @@
           {base_string}
 })
 
+(fun {__delimit_loop__ delimiter input_string result} {
+    if (find input_string delimiter)
+        {__delimit_loop__ delimiter (tail (eval (tail (split input_string (find input_string delimiter))))) (join result (head (split input_string (find input_string delimiter)))) }
+        {if (!= input_string Empty)
+        {join result (list input_string)}
+        {result}}
+})
+
 (fun {upper lower_str} {
     if (is_str lower_str)
         {__str_to_upper_loop__ lower_str Empty}
@@ -282,4 +290,10 @@
     if (and (is_str input_str) (is_num indx))
          {eval (head (split input_str indx))}
          {error "chop requiresh a shtringsh and a number ash input!"}
+})
+
+(fun {delimit delimiter input_string} {
+     if (and (is_str delimiter) (is_str input_string))
+         {__delimit_loop__ delimiter input_string None}
+         {error "delimit requiresh two shtringshs ash input!"}
 })
