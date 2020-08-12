@@ -276,4 +276,10 @@
     if (is_num len)
        {__rand_string_loop__ len Empty}
        {error "rand_string requiresh a number ash input!"}
+})chop "Got lost in his own museum huh?" 3
+
+(fun {chop input_str indx} {
+    if (and (is_str input_str) (is_num indx))
+         {eval (head (split input_str indx))}
+         {error "chop requiresh a shtringsh and a number ash input!"}
 })

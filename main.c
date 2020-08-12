@@ -1210,6 +1210,7 @@ cval* builtin_replace(cenv* e, cval* a) {
     char* orig = a->cell[0]->str;
     char* rep = a->cell[1]->str;
     char* with = a->cell[2]->str;
+    cval_delete(a);
 
     char *result;
     char *ins;
@@ -1219,7 +1220,6 @@ cval* builtin_replace(cenv* e, cval* a) {
     int len_front;
     int count;
 
-    // sanity checks and initialization
     if (!orig || !rep) {return cval_string(orig);}
 
     len_rep = strlen(rep);
@@ -1229,7 +1229,6 @@ cval* builtin_replace(cenv* e, cval* a) {
 
     len_with = strlen(with);
 
-    // count the number of replacements needed
     ins = orig;
     for (count = 0; tmp = strstr(ins, rep); ++count) {
         ins = tmp + len_rep;
@@ -1237,17 +1236,16 @@ cval* builtin_replace(cenv* e, cval* a) {
 
     tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
 
-    if (!result) {return cval_string(orig)}
+    if (!result) {return cval_string(orig);}
 
     while (count--) {
         ins = strstr(orig, rep);
         len_front = ins - orig;
         tmp = strncpy(tmp, orig, len_front) + len_front;
         tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
+        orig += len_front + len_rep;
     }
     strcpy(tmp, orig);
-    cval_delete(a);
     return cval_string(result);
 }
 
@@ -1265,7 +1263,7 @@ cval* builtin_find(cenv* e, cval* a) {
     }
     else {
         cval_delete(a);
-        return cval_number(-1);
+        return cval_number(0);
     }
 }
 
@@ -1307,24 +1305,6 @@ cval* builtin_split(cenv* e, cval* a) {
     cval_delete(a);
 
     return list;
-}
-
-cval* builtin_chop(cenv* e, cval* a) {
-    CASSERT_TYPE("chop", a, 0, CVAL_STRING);
-    CASSERT_TYPE("chop", a, 1, CVAL_NUMBER);
-    CASSERT_NUM("chop", a, 2);
-
-    char *original_string = cval_pop(a, 0)->str;
-    long chars_to_chop = cval_pop(a, 0)->num;
-
-    if (strlen(original_string) > chars_to_chop) {
-        cval_delete(a);
-        return cval_string(original_string + chars_to_chop);
-    }
-    else {
-        cval_delete(a);
-        return cval_string("");
-    }
 }
 
 cval* builtin_length(cenv* e, cval* a) {
@@ -1383,8 +1363,6 @@ void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
-    cenv_add_builtin(e, "chop", builtin_chop);
-    cenv_add_builtin(e, "length", builtin_length);
 }
 
 void cenv_add_builtins(cenv* e) {
@@ -1398,6 +1376,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "eval", builtin_eval);
     cenv_add_builtin(e, "join", builtin_join);
     cenv_add_builtin(e, "def", builtin_def);
+    cenv_add_builtin(e, "length", builtin_length);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
