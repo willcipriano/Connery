@@ -143,6 +143,8 @@
     {(== char "_") 73}
     {(== char "+") 74}
     {(== char "=") 75}
+    {(== char " ") 76}
+    {(== char ",") 77}
     {Otherwise char}}
     {error "__char_to_index__ requiresh a shtring ash input!"}
 })
@@ -226,6 +228,8 @@
     {(== index 73) "_"}
     {(== index 74) "+"}
     {(== index 75) "="}
+    {(== index 76) " "}
+    {(== index 77) ","}
     {Otherwise char}}
     {error "__char_to_index__ requiresh a shtring ash input!"}
 })
@@ -270,6 +274,18 @@
          {tail result_string}
 })
 
+(fun {__string_to_indexes_loop__ input_string result_list} {
+     if (> (length input_string) 0)
+         {__string_to_indexes_loop__ (tail input_string) (join result_list (list (__char_to_index__ (head input_string))))}
+         {result_list}
+})
+
+(fun {__indexes_to_string_loop__ index_list result_string} {
+     if (> (length index_list) 0)
+         {__indexes_to_string_loop__ (tail index_list) (join result_string (__index_to_char__ (eval (head index_list))))}
+         {result_string}
+})
+
 (fun {upper lower_str} {
     if (is_str lower_str)
         {__str_to_upper_loop__ lower_str Empty}
@@ -310,4 +326,16 @@
      if (and (is_str relimiter) (is_qexpr input_list))
          {__relimit_loop__ relimiter input_list Empty}
          {error "relimit requiresh a shtring and a lisht ash input!"}
+})
+
+(fun {string_to_index_list input_string} {
+    if (is_str input_string)
+    {__string_to_indexes_loop__ input_string None}
+    {error "string_to_index_list requiresh a shtring ash input!"}
+})
+
+(fun {index_list_to_string index_list} {
+    if (is_qexpr index_list)
+        {__indexes_to_string_loop__ index_list Empty}
+        {error "index_list_to_string requiresh a lisht ash input!"}
 })
