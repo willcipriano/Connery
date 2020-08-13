@@ -262,6 +262,14 @@
         {result}}
 })
 
+(fun {__relimit_loop__ relimiter input_list result_string} {
+     if (> (length input_list) 0)
+         {if (is_str (eval (head input_list)))
+             {__relimit_loop__ relimiter (tail input_list) (join result_string relimiter (eval (head input_list)))}
+             {error "relimit requiresh a lisht of shtringsh ash input!"}}
+         {tail result_string}
+})
+
 (fun {upper lower_str} {
     if (is_str lower_str)
         {__str_to_upper_loop__ lower_str Empty}
@@ -289,11 +297,17 @@
 (fun {chop input_str indx} {
     if (and (is_str input_str) (is_num indx))
          {eval (head (split input_str indx))}
-         {error "chop requiresh a shtringsh and a number ash input!"}
+         {error "chop requiresh a shtring and a number ash input!"}
 })
 
 (fun {delimit delimiter input_string} {
      if (and (is_str delimiter) (is_str input_string))
          {__delimit_loop__ delimiter input_string None}
          {error "delimit requiresh two shtringshs ash input!"}
+})
+
+(fun {relimit relimiter input_list} {
+     if (and (is_str relimiter) (is_qexpr input_list))
+         {__relimit_loop__ relimiter input_list Empty}
+         {error "relimit requiresh a shtring and a lisht ash input!"}
 })
