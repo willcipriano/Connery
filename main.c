@@ -1446,6 +1446,7 @@ int main(int argc, char** argv) {
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
     puts("+-----      Version 0.0.4      ------+\n");
+    puts("           ConneryLang.org             \n");
 
     if (argc == 1) {
         while (1) {
