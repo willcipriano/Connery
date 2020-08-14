@@ -116,6 +116,31 @@ size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_re
     return size*nmemb;
 }
 
+typedef char *multi_tok_t;
+
+char *multi_tok(char *input, multi_tok_t *string, char *delimiter) {
+    if (input != NULL)
+        *string = input;
+
+    if (*string == NULL)
+        return *string;
+
+    char *end = strstr(*string, delimiter);
+    if (end == NULL) {
+        char *temp = *string;
+        *string = NULL;
+        return temp;
+    }
+
+    char *temp = *string;
+
+    *end = '\0';
+    *string = end + strlen(delimiter);
+    return temp;
+}
+
+multi_tok_t multiTok_init() { return NULL; }
+
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
@@ -1398,7 +1423,10 @@ cval* builtin_http(cenv* e, cval* a) {
 
     CURL *curl;
     CURLcode res;
-    cval* response;
+    long response_code;
+    cval* response_list = cval_q_expression();
+    cval* headers_list = cval_q_expression();
+    char* html_body;
 
     char* type = a->cell[0]->str;
     char* url = a->cell[1]->str;
@@ -1417,16 +1445,37 @@ cval* builtin_http(cenv* e, cval* a) {
         res = curl_easy_perform(curl);
 
         if(res == CURLE_OK) {
-            response = cval_string(s.body); }
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+            cval_add(response_list, cval_number(response_code));
+
+            char* response;
+            response = malloc(strlen(s.body) + 1);
+            strcpy(response, s.body);
+
+            multi_tok_t y=multiTok_init();
+            char* headers = multi_tok(response, &y, "\r\n\r\n");
+
+            multi_tok_t x=multiTok_init();
+            char* header = multi_tok(headers, &x, "\r\n");
+
+            while (header != NULL) {
+                cval_add(headers_list, cval_string(header));
+                header = multi_tok(NULL, &x, "\r\n");
+            }
+
+            cval_add(response_list, headers_list);
+            cval_add(response_list, cval_string(strstr(s.body, "\r\n\r\n") + 4));
+        }
         else {
-            response = cval_error("unable to accesh url!");
+            cval_delete(response_list);
+            response_list = cval_error("unable to accesh url!");
         }
 
         free(s.body);
         curl_easy_cleanup(curl);
     }
 
-    return response;
+    return response_list;
 
 }
 

@@ -1,8 +1,4 @@
-(fun {__split_headers__ response} {
-    list (delimit "\r\n" (eval (head (split response (+ (find response "\r\n\r\n") 4))))) (list (tail (split response (+ (find response "\r\n\r\n") 4))))
-})
-
 (fun {http_get url} {
-    __split_headers__ (http "GET" url)
+    http "GET" url
 })
 

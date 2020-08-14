@@ -1,6 +1,8 @@
 ; Constants
 (def {None} {})
 (def {Empty} "")
+(def {\n} "
+")
 (def {True} 1)
 (def {False} 0)
 (def {Otherwise} True)
