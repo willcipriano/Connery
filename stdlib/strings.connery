@@ -286,6 +286,14 @@
          {result_string}
 })
 
+(fun {__string_rep_loop__ input_string rep_result} {
+    if (> (length input_string) 0)
+       {if (is_num (__char_to_index__ (head input_string)))
+           {__string_rep_loop__ (tail input_string) (+ rep_result (__char_to_index__ (head input_string)))}
+           {__string_rep_loop__ (tail input_string) rep_result}}
+       {rep_result}
+})
+
 (fun {upper lower_str} {
     if (is_str lower_str)
         {__str_to_upper_loop__ lower_str Empty}
@@ -338,4 +346,30 @@
     if (is_qexpr index_list)
         {__indexes_to_string_loop__ index_list Empty}
         {error "index_list_to_string requiresh a lisht ash input!"}
+})
+
+(fun {string_rep input_string} {
+    if (is_str input_string)
+        {list (length input_string) (__string_rep_loop__ input_string 0)}
+        {error "string_rep requiresh a shtring ash input!"}
+})
+
+(fun {string_rep_compare string_rep_org string_rep_new} {
+     if (and (and (== 2 (length string_rep_org)) (== 2 (length string_rep_new))) (and (is_qexpr string_rep_org) (is_qexpr string_rep_new)))
+         {if (== (eval (head (string_rep_org))) (eval (head (string_rep_new))))
+             {if (== (eval (tail (string_rep_org))) (eval (tail (string_rep_new))))
+                 {True}
+                 {False}}
+         {False}}
+         {error "string_rep_compare requiresh two lishts ash input!"}
+})
+
+(fun {string_rep_compare_string string_rep_input string_input} {
+     if (and (is_qexpr string_rep_input) (is_str string_input))
+         {if (== (eval (head string_rep_input)) (length string_input))
+             {if (string_rep_compare string_rep_input (string_rep string_input))
+                 {True}
+                 {False}}
+             {False}}
+         {error "string_rep_compare_string requiresh a lisht and a shtring ash input!"}
 })
