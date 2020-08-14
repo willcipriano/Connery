@@ -5,4 +5,5 @@
 (load "stdlib/logic.connery")
 (load "stdlib/lists.connery")
 (load "stdlib/strings.connery")
+(load "stdlib/http.connery")
 (load "stdlib/calendar.connery")

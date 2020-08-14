@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <curl/curl.h>
+#include <string.h>
 #include "mpc.h"
 
 #ifdef _WIN32
@@ -83,6 +85,37 @@ struct cenv {
     char** symbols;
     cval** values;
 };
+
+struct http_response {
+    char *body;
+    size_t len;
+};
+
+void init_http_response(struct http_response *s) {
+    s->len = 0;
+    s->body = malloc(s->len+1);
+    if (s->body == NULL) {
+        fprintf(stderr, "malloc() failed\n");
+        exit(EXIT_FAILURE);
+    }
+    s->body[0] = '\0';
+}
+
+size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_response *s)
+{
+    size_t new_len = s->len + size*nmemb;
+    s->body = realloc(s->body, new_len+1);
+    if (s->body == NULL) {
+        fprintf(stderr, "realloc() failed\n");
+        exit(EXIT_FAILURE);
+    }
+    memcpy(s->body+s->len, ptr, size*nmemb);
+    s->body[new_len] = '\0';
+    s->len = new_len;
+
+    return size*nmemb;
+}
+
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
@@ -1359,6 +1392,44 @@ cval* builtin_type(cenv* e, cval* a) {
     }
 }
 
+cval* builtin_http(cenv* e, cval* a) {
+    CASSERT_TYPE("http", a, 0, CVAL_STRING);
+    CASSERT_TYPE("http", a, 1, CVAL_STRING);
+
+    CURL *curl;
+    CURLcode res;
+    cval* response;
+
+    char* type = a->cell[0]->str;
+    char* url = a->cell[1]->str;
+
+    curl = curl_easy_init();
+    if(curl) {
+        struct http_response s;
+        init_http_response(&s);
+
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+        curl_easy_setopt(curl,CURLOPT_USERAGENT,"Connery");
+        curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
+
+        res = curl_easy_perform(curl);
+
+        if(res == CURLE_OK) {
+            response = cval_string(s.body); }
+        else {
+            response = cval_error("unable to accesh url!");
+        }
+
+        free(s.body);
+        curl_easy_cleanup(curl);
+    }
+
+    return response;
+
+}
+
 void instantiate_string_builtins(cenv* e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
@@ -1398,6 +1469,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "error", builtin_error);
     cenv_add_builtin(e, "print", builtin_print);
     cenv_add_builtin(e, "type", builtin_type);
+    cenv_add_builtin(e, "http", builtin_http);
 
     cenv_add_builtin(e, "read_file", builtin_read_file);
     instantiate_string_builtins(e);
