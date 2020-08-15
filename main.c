@@ -1556,7 +1556,7 @@ int main(int argc, char** argv) {
                             |'+' | '-' | '*' | '/' ;                   \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
-                string  : /\\\"(\\\\\\\\.|[^\\\"])*\\\"/ ;             \
+                string    : /\"(\\\\.|[^\"])*\"/;                      \
                 comment : /;[^\\r\\n]*/  ;                              \
                 expr      : <number> | <symbol> | <comment> | <sexpr> | <qexpr> | <string> ; \
                 connery   : /^/ <expr>* /$/ ;                          \
