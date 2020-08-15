@@ -1420,6 +1420,7 @@ cval* builtin_type(cenv* e, cval* a) {
 cval* builtin_http(cenv* e, cval* a) {
     CASSERT_TYPE("http", a, 0, CVAL_STRING);
     CASSERT_TYPE("http", a, 1, CVAL_STRING);
+    CASSERT_TYPE("http", a, 2, CVAL_Q_EXPRESSION);
 
     CURL *curl;
     CURLcode res;
@@ -1430,17 +1431,26 @@ cval* builtin_http(cenv* e, cval* a) {
 
     char* type = a->cell[0]->str;
     char* url = a->cell[1]->str;
+    cval* request_headers = a->cell[2];
 
     curl = curl_easy_init();
     if(curl) {
         struct http_response s;
         init_http_response(&s);
+        struct curl_slist *chunk = NULL;
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl,CURLOPT_USERAGENT,"Connery");
         curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
+
+        for (int i = 0; i < request_headers->count; i++) {
+            CASSERT_TYPE("http_request_headers", request_headers, 0, CVAL_STRING);
+            chunk = curl_slist_append(chunk, request_headers->cell[i]->str);
+        }
+
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
         res = curl_easy_perform(curl);
 
@@ -1470,13 +1480,10 @@ cval* builtin_http(cenv* e, cval* a) {
             cval_delete(response_list);
             response_list = cval_error("unable to accesh url!");
         }
-
         free(s.body);
         curl_easy_cleanup(curl);
     }
-
     return response_list;
-
 }
 
 void instantiate_string_builtins(cenv* e) {

@@ -1,4 +1,4 @@
 (fun {http_get url} {
-    http "GET" url
+    http "GET" url None
 })
 
