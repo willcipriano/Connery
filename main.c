@@ -141,6 +141,19 @@ char *multi_tok(char *input, multi_tok_t *string, char *delimiter) {
 
 multi_tok_t multiTok_init() { return NULL; }
 
+char *concatenateThree(const char *a, const char *b, const char *c) {
+    size_t alen = strlen(a);
+    size_t blen = strlen(b);
+    size_t clen = strlen(c);
+    char *res = malloc(alen + blen + clen + 1);
+    if (res) {
+        memcpy(res, a, alen);
+        memcpy(res + alen, b, blen);
+        memcpy(res + alen + blen, c, clen + 1);
+    }
+    return res;
+}
+
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
@@ -1268,43 +1281,22 @@ cval* builtin_replace(cenv* e, cval* a) {
     char* orig = a->cell[0]->str;
     char* rep = a->cell[1]->str;
     char* with = a->cell[2]->str;
+
+    cval* result;
+
+    if (strstr(orig, rep)) {
+        multi_tok_t y=multiTok_init();
+        char* start_string = multi_tok(orig, &y, rep);
+        char* new_string = concatenateThree(start_string, with, y);
+
+        result = cval_string(new_string);
+    } else {
+        result = cval_string(orig);
+    }
+
     cval_delete(a);
 
-    char *result;
-    char *ins;
-    char *tmp;
-    int len_rep;
-    int len_with;
-    int len_front;
-    int count;
-
-    if (!orig || !rep) {return cval_string(orig);}
-
-    len_rep = strlen(rep);
-    if (len_rep == 0) {return cval_string(orig);}
-
-    if (!with) {with = "";}
-
-    len_with = strlen(with);
-
-    ins = orig;
-    for (count = 0; tmp = strstr(ins, rep); ++count) {
-        ins = tmp + len_rep;
-    }
-
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result) {return cval_string(orig);}
-
-    while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep;
-    }
-    strcpy(tmp, orig);
-    return cval_string(result);
+    return result;
 }
 
 cval* builtin_find(cenv* e, cval* a) {
