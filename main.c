@@ -99,35 +99,10 @@ if (!(cond)) {\
     "Got %s, Expected %s.", \
     func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
 
-#define CASSERT_TYPE_ITER(func, args, index, iter_index, expect) \
-  CASSERT(args, args->cell[index]->type == expect, \
-    "Function '%s' pashed incorrect type for argument %i. " \
-    "Got %s, Expected %s.", \
-    func, iter_index, ctype_name(args->cell[index]->type), ctype_name(expect))
-
 #define CASSERT_NUM(func, args, num) \
   CASSERT(args, args->count == num, \
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
     func, args->count, num)
-
-int count_digits(long n)
-{
-    if (n == 0)
-        return 0;
-    return 1 + count_digits(n / 10);
-}
-
-long long_power(long x,long exponent)
-{
-    int i;
-    int number = 1;
-
-    for (i = 0; i < exponent; ++i)
-        number *= x;
-
-    return(number);
-}
-
 
 cval* cval_function(cbuiltin func) {
     cval* v = malloc(sizeof(cval));
@@ -165,7 +140,6 @@ cval* cval_error(char* fmt, ...) {
     value->err = realloc(value->err, strlen(value->err)+1);
 
     va_end(va);
-
     return value;
 }
 
@@ -248,7 +222,6 @@ void cenv_delete(cenv* e) {
     free(e->values);
     free(e);
 }
-
 
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
@@ -350,7 +323,6 @@ cenv* cenv_copy(cenv* e) {
 
     return n;
 }
-
 
 cval* cval_copy(cval* v) {
 
@@ -632,7 +604,6 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
     }
 }
 
-
 cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
     for (int i = 0; i < value->count; i++) {
@@ -774,63 +745,10 @@ cval* builtin_tail(cenv* e, cval* a) {
             return cval_error("Function 'tail' pashed shingle digit number!");
         }
 
-        switch (init_digits) {
-            case 2:
-                factor = 10;
-                break;
-            case 3:
-                factor = 100;
-                break;
-            case 4:
-                factor = 1000;
-                break;
-            case 5:
-                factor = 10000;
-                break;
-            case 6:
-                factor = 100000;
-                break;
-            case 7:
-                factor = 1000000;
-                break;
-            case 8:
-                factor = 10000000;
-                break;
-            case 9:
-                factor = 100000000;
-                break;
-            case 10:
-                factor = 1000000000;
-                break;
-            case 11:
-                factor = 10000000000;
-                break;
-            case 12:
-                factor = 100000000000;
-                break;
-            case 13:
-                factor = 1000000000000;
-                break;
-            case 14:
-                factor = 10000000000000;
-                break;
-            case 15:
-                factor = 100000000000000;
-                break;
-            case 16:
-                factor = 1000000000000000;
-                break;
-            case 17:
-                factor = 10000000000000000;
-                break;
-            case 18:
-                factor = 100000000000000000;
-                break;
-            case 19:
-                factor = 1000000000000000000;
-                break;
-            default:
-                return cval_error("Unable to get tail of number.");
+        factor = get_factor(init_digits);
+
+        if (factor == -1) {
+            return cval_error("Unable to get factor for number!");
         }
 
         while (count_digits(number) == init_digits) {
