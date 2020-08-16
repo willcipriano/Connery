@@ -1444,7 +1444,6 @@ int main(int argc, char** argv) {
 
     if (argc >= 2) {
         for (int i = 1; i < argc; i++) {
-
             cval* args = cval_add(cval_s_expression(), cval_string(argv[i]));
             cval* x = builtin_load(e, args);
 

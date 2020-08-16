@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "util.h"
 
 void init_http_response(struct http_response *s) {
