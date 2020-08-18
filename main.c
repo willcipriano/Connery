@@ -1264,6 +1264,7 @@ cval* builtin_http(cenv* e, cval* a) {
     CASSERT_TYPE("http", a, 1, CVAL_STRING);
     CASSERT_TYPE("http", a, 2, CVAL_Q_EXPRESSION);
 
+
     CURL *curl;
     CURLcode res;
     long response_code;
@@ -1288,8 +1289,13 @@ cval* builtin_http(cenv* e, cval* a) {
         curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
 
         for (int i = 0; i < request_headers->count; i++) {
-            CASSERT_TYPE("http_request_headers", request_headers, 0, CVAL_STRING);
+            CASSERT_TYPE("http_request_headers", request_headers, i, CVAL_STRING);
             chunk = curl_slist_append(chunk, request_headers->cell[i]->str);
+        }
+
+        if (strstr(type, "POST")) {
+            CASSERT_TYPE("http", a, 3, CVAL_STRING);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, a->cell[3]->str);
         }
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);

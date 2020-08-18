@@ -1,3 +1,29 @@
+(def {GET} "GET")
+(def {POST} "POST")
+
+(fun {http_status_code_text response} {
+    case
+    {(== (first response) 200) "OK"}
+    {(== (first response) 202) "Accepted"}
+    {(== (first response) 301) "Moved Permanently"}
+    {(== (first response) 400) "Bad Request"}
+    {(== (first response) 401) "Unauthorized"}
+    {(== (first response) 402) "Payment Required"}
+    {(== (first response) 403) "Forbidden"}
+    {(== (first response) 404) "Not Found"}
+    {(== (first response) 405) "Method Not Allowed"}
+    {(== (first response) 406) "Not Acceptable"}
+    {(== (first response) 408) "Request Timeout"}
+    {(== (first response) 500) "Internal Server Error"}
+    {(== (first response) 502) "Bad Gateway"}
+    {(== (first response) 504) "Gateway Timeout"}
+    {(Otherwise) "Unknown"}
+})
+
 (fun {http_get url} {
-    http "GET" url None
+    http GET url None
+})
+
+(fun {http_post url post_body} {
+    http POST url None post_body
 })
