@@ -1,0 +1,15 @@
+(def {READ} "READ")
+(def {SAVE} "SAVE")
+(def {APPEND} "APPEND")
+
+(fun {read_file file_name} {
+     file READ file_name
+})
+
+(fun {save_file file_name file_string} {
+    file SAVE file_name file_string
+})
+
+(fun {append_file file_name file_string} {
+     file APPEND file_name file_string
+})

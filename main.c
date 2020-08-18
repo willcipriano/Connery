@@ -1090,17 +1090,19 @@ cval* builtin_error(cenv* e, cval* a) {
     return err;
 }
 
-cval* builtin_read_file(cenv*e, cval* a) {
-    CASSERT_NUM("read_file", a, 1);
-    CASSERT_TYPE("read_file", a, 0, CVAL_STRING);
+cval* builtin_file(cenv*e, cval* a) {
+    CASSERT_TYPE("file", a, 0, CVAL_STRING);
+    CASSERT_TYPE("file", a, 1, CVAL_STRING);
 
-    cval* fileLocation = cval_pop(a, 0);
-
+    char* operation = cval_pop(a, 0)->str;
+    char* fileLocation = cval_pop(a, 0)->str;
     FILE *file;
+
+    if (strstr(operation, "READ")) {
     char *buffer = 0;
     long length;
 
-    file = fopen(fileLocation->str, "r");
+    file = fopen(fileLocation, "r");
     if (file) {
         fseek(file, 0, SEEK_END);
         length = ftell (file);
@@ -1114,11 +1116,48 @@ cval* builtin_read_file(cenv*e, cval* a) {
     }
 
     if (buffer) {
+        cval_delete(a);
         return cval_string(buffer);
     }
     else {
         cval_delete(a);
         return cval_error("File not found!");
+    } }
+
+    if (strstr(operation, "SAVE")) {
+        CASSERT_TYPE("file", a, 0, CVAL_STRING);
+        char* file_string = cval_pop(a, 0)->str;
+
+        file = fopen(fileLocation, "w+");
+
+        if (file) {
+            int success = fputs(file_string, file);
+            if(success) {
+                fclose(file);
+                cval_delete(a);
+                return cval_number(1);
+            }
+        }
+        cval_delete(a);
+        return cval_error("unable to write to file!");
+    }
+
+    if (strstr(operation, "APPEND")) {
+        CASSERT_TYPE("file", a, 0, CVAL_STRING);
+        char* file_string = cval_pop(a, 0)->str;
+
+        file = fopen(fileLocation, "a");
+
+        if (file) {
+            int success = fputs(file_string, file);
+            if(success) {
+                fclose(file);
+                cval_delete(a);
+                return cval_number(1);
+            }
+        }
+        cval_delete(a);
+        return cval_error("unable to write to file!");
     }
 }
 
@@ -1379,7 +1418,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "type", builtin_type);
     cenv_add_builtin(e, "http", builtin_http);
 
-    cenv_add_builtin(e, "read_file", builtin_read_file);
+    cenv_add_builtin(e, "file", builtin_file);
 }
 
 void load_standard_lib(cenv* e) {
