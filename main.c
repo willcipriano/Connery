@@ -1557,7 +1557,7 @@ int main(int argc, char** argv) {
 
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                 \
-                float     : /-?[0-9]+\\.[0-9]+/ ;                     \
+                float     : /-?[0-9]*\\.[0-9]+/ ;                     \
                 number    : /-?[0-9]+/ ;                              \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
                             |'+' | '-' | '*' | '/' ;                  \
