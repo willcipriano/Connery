@@ -32,9 +32,10 @@ typedef struct cval cval;
 typedef struct cenv cenv;
 
 enum {CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION,
-        CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING};
+        CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT};
 
 mpc_parser_t* Number;
+mpc_parser_t* Float;
 mpc_parser_t* Symbol;
 mpc_parser_t* String;
 mpc_parser_t* Comment;
@@ -59,6 +60,7 @@ char* ctype_name(int t) {
         case CVAL_S_EXPRESSION: return "S-Expression";
         case CVAL_Q_EXPRESSION: return "Q-Expression";
         case CVAL_STRING: return "String";
+        case CVAL_FLOAT: return "Float";
         default: return "Unknown Type";
     }
 }
@@ -67,6 +69,7 @@ struct cval {
     int type;
 
     long num;
+    long double fnum;
     char* err;
     char* sym;
     char* str;
@@ -118,6 +121,14 @@ cval* cval_number(long x) {
     return value;
 }
 
+cval* cval_float(long double x) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_FLOAT;
+    value->fnum = x;
+    return value;
+}
+
+
 cval* cval_string (char* s) {
     cval* v = malloc(sizeof(cval));
     v->type = CVAL_STRING;
@@ -129,16 +140,11 @@ cval* cval_string (char* s) {
 cval* cval_error(char* fmt, ...) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_ERROR;
-
     va_list va;
     va_start(va, fmt);
-
     value->err = malloc(512);
-
     vsnprintf(value->err, 511, fmt, va);
-
     value->err = realloc(value->err, strlen(value->err)+1);
-
     va_end(va);
     return value;
 }
@@ -180,6 +186,9 @@ void cval_delete(cval* value) {
     switch(value->type) {
 
         case CVAL_NUMBER:
+            break;
+
+        case CVAL_FLOAT:
             break;
 
         case CVAL_FUNCTION:
@@ -230,6 +239,13 @@ cval* cval_read_num(mpc_ast_t* t) {
     cval_number(x) : cval_error("that'sh an invalid number");
 }
 
+cval* cval_read_float(mpc_ast_t* t) {
+    errno = 0;
+    long double x = strtold(t->contents, NULL);
+    return errno != ERANGE ?
+    cval_float(x) : cval_error("that'sh a invalid float");
+}
+
 cval* cval_add(cval* v, cval* x) {
     v->count++;
     v->cell = realloc(v->cell, sizeof(cval*) * v->count);
@@ -251,6 +267,10 @@ cval* cval_read(mpc_ast_t* t) {
 
     if (strstr(t->tag, "number")) {
         return cval_read_num(t);
+    }
+
+    if (strstr(t->tag, "float")) {
+        return cval_read_float(t);
     }
 
     if (strstr(t->tag, "symbol")) {
@@ -325,7 +345,6 @@ cenv* cenv_copy(cenv* e) {
 }
 
 cval* cval_copy(cval* v) {
-
     cval* x = malloc(sizeof(cval));
     x->type = v->type;
 
@@ -345,6 +364,9 @@ cval* cval_copy(cval* v) {
         case CVAL_NUMBER:
             x->num = v->num;
             break;
+
+        case CVAL_FLOAT:
+            x->fnum = v->fnum;
 
         case CVAL_ERROR:
             x->err = malloc(strlen(v->err) + 1);
@@ -397,7 +419,6 @@ void cenv_put(cenv* e, cval* k, cval* v) {
             return;
         }
     }
-
     e->count++;
     e->values = realloc(e->values, sizeof(cval*) * e->count);
     e->symbols = realloc(e->symbols, sizeof(char*) * e->count);
@@ -426,6 +447,10 @@ void cval_print(cval* value) {
     switch (value->type) {
         case CVAL_NUMBER:
             printf("%li", value->num);
+            break;
+
+        case CVAL_FLOAT:
+            printf("%Lg", value->fnum);
             break;
 
         case CVAL_FUNCTION:
@@ -478,9 +503,99 @@ cval* cval_join(cval* x, cval* y) {
 }
 
 cval* builtin_op(cenv* e, cval* a, char* op) {
+    int float_support = 0;
+
     for (int i = 0; i < a->count; i++) {
-        CASSERT_TYPE(op, a, i, CVAL_NUMBER);
+        if (a->cell[i]->type == CVAL_FLOAT) {
+            float_support = 1;
+        }
+        else {CASSERT_TYPE(op, a, i, CVAL_NUMBER);}
     }
+
+
+    if (float_support) {
+        cval* x;
+        if (a->cell[0]->type == CVAL_FLOAT) {
+            x = cval_pop(a, 0);
+        } else {
+            x = cval_float(cval_pop(a, 0)->num);
+        }
+
+        if ((strcmp(op, "-") == 0) && a->count == 0) {
+            x->fnum = -x->fnum;
+        }
+
+        while (a->count > 0) {
+            cval* y = cval_pop(a, 0);
+
+            if (strcmp(op, "+") == 0) {
+                if (y->type == CVAL_FLOAT) {
+                    x->fnum += y->fnum;
+                }
+                else {
+                    x->fnum += y->num;
+                }
+            }
+
+            if (strcmp(op, "-") == 0) {
+                if (y->type == CVAL_FLOAT) {
+                    x->fnum -= y->fnum;
+                }
+                else {
+                    x->fnum -= y->num;
+                }
+            }
+
+            if (strcmp(op, "*") == 0) {
+                if (y->type == CVAL_FLOAT) {
+                    x->fnum *= y->fnum;
+                }
+                else {
+                    x->fnum *= y->num;
+                }
+            }
+
+            if (strcmp(op, "/") == 0) {
+                if (y->type == CVAL_FLOAT) {
+                    if (y->fnum == 0) {
+                        cval_delete(x);
+                        cval_delete(y);
+                        x = cval_error("Divishion by zero");
+                        break;
+                    }
+                    x->fnum /= y->fnum;
+                }
+                else {
+                    if (y->num == 0) {
+                        cval_delete(x);
+                        cval_delete(y);
+                        x = cval_error("Divishion by zero");
+                        break;
+                    }
+                    x->fnum /= y->num;
+                }
+            }
+
+            if (strcmp(op, "mod") == 0) {
+                cval_delete(x);
+                cval_delete(y);
+                x = cval_error("mod not shupported on floatsh!");
+                break;
+            }
+
+            if (strcmp(op, "pow") == 0) {
+                cval_delete(x);
+                cval_delete(y);
+                x = cval_error("pow not shupported on floatsh!");
+                break;
+            }
+
+            cval_delete(y);
+    }
+        cval_delete(a);
+        return x;
+    }
+    else {
 
     cval* x = cval_pop(a, 0);
 
@@ -525,7 +640,7 @@ cval* builtin_op(cenv* e, cval* a, char* op) {
     }
     cval_delete(a);
     return x;
-}
+}}
 
 cval* builtin_eval(cenv* e, cval* a) {
     CASSERT_NUM("eval", a, 1);
@@ -1431,6 +1546,7 @@ void load_standard_lib(cenv* e) {
 
 int main(int argc, char** argv) {
     Number = mpc_new("number");
+    Float = mpc_new("float");
     Symbol = mpc_new("symbol");
     Sexpr = mpc_new("sexpr");
     Qexpr = mpc_new("qexpr");
@@ -1441,17 +1557,19 @@ int main(int argc, char** argv) {
 
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                 \
+                float     : /-?[0-9]+\\.[0-9]+/ ;                     \
                 number    : /-?[0-9]+/ ;                              \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
-                            |'+' | '-' | '*' | '/' ;                   \
+                            |'+' | '-' | '*' | '/' ;                  \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
-                string    : /\"(\\\\.|[^\"])*\"/;                      \
-                comment : /;[^\\r\\n]*/  ;                              \
-                expr      : <number> | <symbol> | <comment> | <sexpr> | <qexpr> | <string> ; \
-                connery   : /^/ <expr>* /$/ ;                          \
+                string    : /\"(\\\\.|[^\"])*\"/;                     \
+                comment : /;[^\\r\\n]*/  ;                            \
+                expr      : <float>  | <number> | <symbol>             \
+                          | <comment> | <sexpr> | <qexpr> | <string> ;\
+                connery   : /^/ <expr>* /$/ ;                         \
             ",
-            Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
+            Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
 
     cenv* e = cenv_new();
     cenv_add_builtins(e);
@@ -1499,7 +1617,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    mpc_cleanup(8, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
     cenv_delete(e);
     return 0;
 }
