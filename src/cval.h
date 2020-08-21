@@ -1,6 +1,8 @@
 #ifndef CONNERY_CVAL_H
 #define CONNERY_CVAL_H
 #include "mpc.h"
+#include "hashtable.h"
+
 typedef struct cval cval;
 typedef struct cenv cenv;
 typedef cval*(*cbuiltin)(cenv*, cval*);
@@ -28,9 +30,7 @@ struct cval {
 
 struct cenv {
     cenv* par;
-    int count;
-    char** symbols;
-    cval** values;
+    hash_table* ht;
 };
 
 char* ctype_name(int t);
@@ -50,7 +50,6 @@ cval* cval_copy(cval* v);
 cval* cval_add(cval* v, cval* x);
 cval* cval_call(cenv* e, cval* f, cval* a);
 cval* cval_evaluate_s_expression(cenv* env, cval* value);
-cval* cenv_get(cenv* e, cval* k);
 cval* cval_evaluate(cenv* env, cval* value);
 cval* cval_join(cval* x, cval* y);
 cval* cval_read_num(mpc_ast_t* t);
@@ -61,10 +60,11 @@ void cval_expr_print(cval* value, char open, char close);
 void cval_print(cval* value);
 
 cenv* cenv_new(void);
+void cenv_put(cenv* e, cval* k, cval* v);
+cval* cenv_get(cenv* e, cval* k);
 void cenv_add_builtin(cenv* e, char* name, cbuiltin func);
 void cenv_def(cenv* e, cval* k, cval* v);
 void cenv_delete(cenv* e);
-void cenv_put(cenv* e, cval* k, cval* v);
 cenv* cenv_copy(cenv* e);
 
 cval* builtin_var(cenv* e, cval* a, char* func);

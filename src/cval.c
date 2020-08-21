@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define ENV_HASH_TABLE_SIZE 1000
+
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
     cval* err = cval_error(fmt, ##__VA_ARGS__); \
@@ -108,19 +110,12 @@ cval* cval_q_expression(void) {
 cenv* cenv_new(void) {
     cenv* e = malloc(sizeof(cenv));
     e->par = NULL;
-    e->count = 0;
-    e->symbols = NULL;
-    e->values = NULL;
+    e->ht = hash_table_create(ENV_HASH_TABLE_SIZE);
     return e;
 }
 
 void cenv_delete(cenv* e) {
-    for (int i = 0; i < e->count; i++) {
-        free(e->symbols[i]);
-        cval_delete(e->values[i]);
-    }
-    free(e->symbols);
-    free(e->values);
+    hash_table_destroy(e->ht);
     free(e);
 }
 
@@ -193,16 +188,7 @@ cval* builtin_eval(cenv* e, cval* a) {
 cenv* cenv_copy(cenv* e) {
     cenv* n = malloc(sizeof(cenv));
     n->par = e->par;
-    n->count = e->count;
-    n->symbols = malloc(sizeof(char*) * n->count);
-    n->values = malloc(sizeof(cval*) * n->count);
-
-    for (int i = 0; i < e->count; i++) {
-        n->symbols[i] = malloc(strlen(e->symbols[i]) + 1);
-        strcpy(n->symbols[i], e->symbols[i]);
-        n->values[i] = cval_copy(e->values[i]);
-    }
-
+    n->ht = hash_table_copy(e->ht);
     return n;
 }
 
@@ -259,20 +245,7 @@ cval* cval_copy(cval* v) {
 }
 
 void cenv_put(cenv* e, cval* k, cval* v) {
-    for (int i = 0; i < e->count; i++) {
-        if (strcmp(e->symbols[i], k->sym) == 0) {
-            cval_delete(e->values[i]);
-            e->values[i] = cval_copy(v);
-            return;
-        }
-    }
-    e->count++;
-    e->values = realloc(e->values, sizeof(cval*) * e->count);
-    e->symbols = realloc(e->symbols, sizeof(char*) * e->count);
-
-    e->values[e->count-1] = cval_copy(v);
-    e->symbols[e->count-1] = malloc(strlen(k->sym)+1);
-    strcpy(e->symbols[e->count-1], k->sym);
+    hash_table_set(e->ht, k->sym, v);
 }
 
 cval* builtin_list(cenv* e, cval* a) {
@@ -382,16 +355,15 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 }
 
 cval* cenv_get(cenv* e, cval* k) {
-    for (int i = 0; i < e->count; i++) {
-        if (strcmp(e->symbols[i], k->sym) == 0) {
-            return cval_copy(e->values[i]);
-        }
+    cval* value = hash_table_get(e->ht, k->sym);
+    if (value != NULL) {
+        return cval_copy(value);
     }
 
     if (e->par) {
         return cenv_get(e->par, k);
     } else {
-        return cval_error("Unbound shymbol '%s' not defined in shcope!", k->sym);
+        return cval_error("Unbound shymbol '%s' not defined in shcope!", k);
     }
 }
 
