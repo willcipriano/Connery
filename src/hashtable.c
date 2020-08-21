@@ -61,6 +61,10 @@ void hash_table_set(hash_table* target_hash_table, const char* key, cval* value)
 }
 
 cval* hash_table_get(hash_table* target_hash_table, const char* key) {
+    if (target_hash_table->items == 0) {
+        return NULL;
+    }
+
     unsigned int slot = hash(key, target_hash_table->table_size);
 
     hash_table_entry* entry = target_hash_table->entries[slot];
@@ -128,6 +132,7 @@ void hash_table_entry_delete(hash_table* target_hash_table, const char *key) {
             free(entry->key);
             cval_delete(entry->value);
             free(entry);
+            target_hash_table->items -= 1;
 
             return;
         }
