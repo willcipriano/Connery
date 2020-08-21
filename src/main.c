@@ -869,6 +869,31 @@ cval* builtin_input(cenv* e, cval* a) {
     return cval_string(input);
 }
 
+cval* builtin_dict(cenv* e, cval* a) {
+    if ((a->count % 2) != 0) {
+        return cval_error("Unable to initialize dictionary number of argumentsh musht be even!");
+    }
+
+    cval* result = cval_dictionary();
+
+    for (int i = 0; i < a->count; i += 2) {
+
+        if (a->cell[i]->type == CVAL_STRING) {
+            hash_table_set(result->ht, a->cell[i]->str, cval_evaluate(e, a->cell[i + 1]));
+        } else {
+            cval_delete(a);
+            cval_delete(result);
+            return cval_error("dictionary keysh musht be shtringsh!");
+        }
+
+    }
+
+    cval_delete(a);
+    return result;
+
+
+}
+
 void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "\\",  builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
@@ -885,6 +910,7 @@ void cenv_add_builtins(cenv* e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
+    cenv_add_builtin(e, "dict", builtin_dict);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);

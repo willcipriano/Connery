@@ -21,5 +21,6 @@ cval* hash_table_get(hash_table* target_hash_table, const char* key);
 void hash_table_destroy(hash_table* target_hash_table);
 hash_table* hash_table_copy(hash_table* target_hash_table);
 void hash_table_entry_delete(hash_table* target_hash_table, const char *key);
+void hash_table_print(hash_table* target_hash_table);
 
 #endif //CONNERY_HASHTABLE_H

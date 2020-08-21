@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define ENV_HASH_TABLE_SIZE 1000
+#define DICTIONARY_HASH_TABLE_SIZE 100
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
@@ -38,6 +39,7 @@ char* ctype_name(int t) {
         case CVAL_Q_EXPRESSION: return "Q-Expression";
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
+        case CVAL_DICTIONARY: return "Dictionary";
         default: return "Unknown Type";
     }
 }
@@ -60,6 +62,8 @@ cval* cval_float(long double x) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_FLOAT;
     value->fnum = x;
+    value->count = 0;
+    value->cell = NULL;
     return value;
 }
 
@@ -102,6 +106,15 @@ cval* cval_s_expression(void) {
 cval* cval_q_expression(void) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_Q_EXPRESSION;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
+}
+
+cval* cval_dictionary(void) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_DICTIONARY;
+    value->ht = hash_table_create(DICTIONARY_HASH_TABLE_SIZE);
     value->count = 0;
     value->cell = NULL;
     return value;
@@ -155,6 +168,9 @@ void cval_delete(cval* value) {
         case CVAL_STRING:
             free(value->str);
             break;
+
+        case CVAL_DICTIONARY:
+            hash_table_destroy(value->ht);
     }
     free(value);
 }
@@ -238,6 +254,10 @@ cval* cval_copy(cval* v) {
         case CVAL_STRING:
             x->str = malloc(strlen(v->str) + 1);
             strcpy(x->str, v->str);
+            break;
+
+        case CVAL_DICTIONARY:
+            x->ht = hash_table_copy(v->ht);
             break;
     }
 
@@ -522,7 +542,28 @@ void cval_print_str(cval* v) {
     free(escaped);
 }
 
+void cval_print_ht_str(cval* v, char* key) {
+    char* escaped = malloc(strlen(v->str)+1);
+    strcpy(escaped, v->str);
+    escaped = mpcf_escape(escaped);
+    printf("%s : \"%s\"", key, escaped);
+    free(escaped);
+}
+
 void cval_expr_print(cval* value, char open, char close) {
+    putchar(open);
+    for (int i = 0; i < value->count; i++) {
+        cval_print(value->cell[i]);
+        if (i != (value->count-1)) {
+            putchar(' ');
+        }
+    }
+    putchar(close);
+}
+
+void cval_expr_ht_print(cval* value, char open, char close, char* key) {
+    fputs(key, stdout);
+    fputs(" : ", stdout);
     putchar(open);
     for (int i = 0; i < value->count; i++) {
         cval_print(value->cell[i]);
@@ -575,6 +616,9 @@ void cval_print(cval* value) {
         case CVAL_STRING:
             cval_print_str(value);
             break;
+
+        case CVAL_DICTIONARY:
+            hash_table_print(value->ht);
     }
 }
 void cval_print_line(cval* value) {

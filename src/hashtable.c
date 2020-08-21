@@ -166,5 +166,66 @@ hash_table* hash_table_copy(hash_table* target_hash_table) {
     new_hash_table->items = target_hash_table->items;
 
     return new_hash_table;
+}
+
+void hash_table_print(hash_table* target_hash_table) {
+    int first_row = 1;
+
+    for (long i = 0; i < target_hash_table->table_size; i++) {
+
+        hash_table_entry* cur = target_hash_table->entries[i];
+
+        while (cur != NULL) {
+
+            if (!first_row) {
+                putchar('\n');
+            }
+            else {
+                first_row = 0;
+            }
+
+            switch (cur->value->type) {
+
+                case CVAL_STRING:
+                    cval_print_ht_str(cur->value, cur->key);
+                    break;
+
+                case CVAL_S_EXPRESSION:
+                    cval_expr_ht_print(cur->value, '(', ')', cur->key);
+                    break;
+
+                case CVAL_Q_EXPRESSION:
+                    cval_expr_ht_print(cur->value, '{', '}', cur->key);
+                    break;
+
+                case CVAL_FUNCTION:
+                    if (cur->value->builtin) {
+                        printf("%s : <builtin>", cur->key);
+                    } else {
+                        printf("%s : (\\ ", cur->key);
+                        cval_print(cur->value->formals);
+                        putchar(' ');
+                        cval_print(cur->value->body);
+                        putchar(')');
+                    }
+                    break;
+
+                case CVAL_NUMBER:
+                    printf("%s : %li", cur->key, cur->value->num);
+                    break;
+
+                case CVAL_FLOAT:
+                    printf("%s : %Lg", cur->key, cur->value->fnum);
+                    break;
+
+                default:
+                    printf("%s : %s", cur->key, ctype_name(cur->value->type));
+                    break;
+
+            }
+            cur = cur->next;
+        }
+
+    }
 
 }
