@@ -90,6 +90,7 @@ hash_table* hash_table_create(const long table_size) {
     hash_table *ht = malloc(sizeof(hash_table) * 1);
     ht->table_size = table_size;
     ht->entries = malloc(sizeof(hash_table_entry*) * table_size);
+    ht->items = 0;
 
     for (int i = 0; i < table_size; ++i) {
         ht->entries[i] = NULL;
