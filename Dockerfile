@@ -7,4 +7,5 @@ RUN apt-get -y install libedit-dev
 WORKDIR /Connery
 COPY src/. .
 RUN cmake .
-ENTRYPOINT "./cmake-build-debug/Connery" && /bin/bash
+RUN cp /Connery/cmake-build-debug/Connery /Connery/Connery
+ENTRYPOINT ./Connery
