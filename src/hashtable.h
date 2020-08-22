@@ -4,8 +4,8 @@
 typedef struct cval cval;
 
 typedef struct hash_table_entry {
-    char* key;
-    cval* value;
+    char *key;
+    cval *value;
     struct hash_table_entry *next;
 } hash_table_entry;
 
@@ -15,12 +15,18 @@ typedef struct {
     hash_table_entry **entries;
 } hash_table;
 
-hash_table* hash_table_create(long table_size);
-void hash_table_set(hash_table* target_hash_table, const char* key, cval* value);
-cval* hash_table_get(hash_table* target_hash_table, const char* key);
-void hash_table_destroy(hash_table* target_hash_table);
-hash_table* hash_table_copy(hash_table* target_hash_table);
-void hash_table_entry_delete(hash_table* target_hash_table, const char *key);
-void hash_table_print(hash_table* target_hash_table);
+hash_table *hash_table_create(long table_size);
+
+void hash_table_set(hash_table *target_hash_table, const char *key, cval *value);
+
+cval *hash_table_get(hash_table *target_hash_table, const char *key);
+
+void hash_table_destroy(hash_table *target_hash_table);
+
+hash_table *hash_table_copy(hash_table *target_hash_table);
+
+void hash_table_entry_delete(hash_table *target_hash_table, const char *key);
+
+void hash_table_print(hash_table *target_hash_table);
 
 #endif //CONNERY_HASHTABLE_H

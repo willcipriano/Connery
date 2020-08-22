@@ -17,7 +17,7 @@ unsigned int hash(const char *key, const long table_size) {
     return value;
 }
 
-hash_table_entry* hash_table_pair(const char *key, cval* value) {
+hash_table_entry *hash_table_pair(const char *key, cval *value) {
     hash_table_entry *entry = malloc(sizeof(hash_table_entry) * 1);
 
     entry->key = malloc(strlen(key) + 1);
@@ -30,10 +30,10 @@ hash_table_entry* hash_table_pair(const char *key, cval* value) {
     return entry;
 }
 
-void hash_table_set(hash_table* target_hash_table, const char* key, cval* value) {
+void hash_table_set(hash_table *target_hash_table, const char *key, cval *value) {
     unsigned int slot = hash(key, target_hash_table->table_size);
 
-    hash_table_entry* entry = target_hash_table->entries[slot];
+    hash_table_entry *entry = target_hash_table->entries[slot];
 
     if (entry == NULL) {
         target_hash_table->entries[slot] = hash_table_pair(key, value);
@@ -41,7 +41,7 @@ void hash_table_set(hash_table* target_hash_table, const char* key, cval* value)
         return;
     }
 
-    hash_table_entry* prev;
+    hash_table_entry *prev;
 
     while (entry != NULL) {
 
@@ -60,14 +60,14 @@ void hash_table_set(hash_table* target_hash_table, const char* key, cval* value)
     target_hash_table->items += 1;
 }
 
-cval* hash_table_get(hash_table* target_hash_table, const char* key) {
+cval *hash_table_get(hash_table *target_hash_table, const char *key) {
     if (target_hash_table->items == 0) {
         return NULL;
     }
 
     unsigned int slot = hash(key, target_hash_table->table_size);
 
-    hash_table_entry* entry = target_hash_table->entries[slot];
+    hash_table_entry *entry = target_hash_table->entries[slot];
 
     if (entry == NULL) {
         return NULL;
@@ -85,11 +85,11 @@ cval* hash_table_get(hash_table* target_hash_table, const char* key) {
     return NULL;
 }
 
-hash_table* hash_table_create(const long table_size) {
+hash_table *hash_table_create(const long table_size) {
 
     hash_table *ht = malloc(sizeof(hash_table) * 1);
     ht->table_size = table_size;
-    ht->entries = malloc(sizeof(hash_table_entry*) * table_size);
+    ht->entries = malloc(sizeof(hash_table_entry *) * table_size);
     ht->items = 0;
 
     for (int i = 0; i < table_size; ++i) {
@@ -99,16 +99,16 @@ hash_table* hash_table_create(const long table_size) {
     return ht;
 }
 
-void hash_table_entry_delete(hash_table* target_hash_table, const char *key) {
+void hash_table_entry_delete(hash_table *target_hash_table, const char *key) {
     unsigned int slot = hash(key, target_hash_table->table_size);
 
-    hash_table_entry* entry = target_hash_table->entries[slot];
+    hash_table_entry *entry = target_hash_table->entries[slot];
 
     if (entry == NULL) {
-        return ;
+        return;
     }
 
-    hash_table_entry* prev;
+    hash_table_entry *prev;
     int idx = 0;
 
     while (entry != NULL) {
@@ -145,7 +145,7 @@ void hash_table_entry_delete(hash_table* target_hash_table, const char *key) {
     }
 }
 
-void hash_table_destroy(hash_table* target_hash_table) {
+void hash_table_destroy(hash_table *target_hash_table) {
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
         if (target_hash_table->entries[i] != NULL) {
@@ -156,8 +156,8 @@ void hash_table_destroy(hash_table* target_hash_table) {
     free(target_hash_table);
 }
 
-hash_table* hash_table_copy(hash_table* target_hash_table) {
-    hash_table* new_hash_table = hash_table_create(target_hash_table->table_size);
+hash_table *hash_table_copy(hash_table *target_hash_table) {
+    hash_table *new_hash_table = hash_table_create(target_hash_table->table_size);
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
         new_hash_table->entries[i] = target_hash_table->entries[i];
@@ -168,19 +168,18 @@ hash_table* hash_table_copy(hash_table* target_hash_table) {
     return new_hash_table;
 }
 
-void hash_table_print(hash_table* target_hash_table) {
+void hash_table_print(hash_table *target_hash_table) {
     int first_row = 1;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
 
-        hash_table_entry* cur = target_hash_table->entries[i];
+        hash_table_entry *cur = target_hash_table->entries[i];
 
         while (cur != NULL) {
 
             if (!first_row) {
                 putchar('\n');
-            }
-            else {
+            } else {
                 first_row = 0;
             }
 
