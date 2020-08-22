@@ -5,7 +5,6 @@
 #include "mpc.h"
 #include "util.h"
 #include "cval.h"
-#include "hashtable.h"
 
 #ifdef _WIN32
 #include <string.h>
@@ -921,7 +920,7 @@ int main(int argc, char **argv) {
     Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-              "                                                 \
+              "                                               \
                 float     : /-?[0-9]*\\.[0-9]+/ ;                     \
                 number    : /-?[0-9]+/ ;                              \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
