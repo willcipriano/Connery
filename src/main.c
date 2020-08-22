@@ -784,7 +784,6 @@ cval *builtin_http(cenv *e, cval *a) {
     CASSERT_TYPE("http", a, 1, CVAL_STRING);
     CASSERT_TYPE("http", a, 2, CVAL_Q_EXPRESSION);
 
-
     CURL *curl;
     CURLcode res;
     long response_code;
@@ -947,7 +946,7 @@ int main(int argc, char **argv) {
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
-    puts("+-----      Version 0.0.4      ------+\n");
+    puts("+-----      Version 0.0.1      ------+\n");
     puts("           ConneryLang.org             \n");
 
     if (argc == 1) {
