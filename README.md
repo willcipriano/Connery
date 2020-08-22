@@ -1,10 +1,7 @@
 <p align="center">
-  <img width="298" height="341.5" src="/img/ConneryLogo_70.jpg">
+  <img width="368" height="414.5" src="http://connerylang.org/img/ConneryLogo.jpg">
 </p>
-
-<p align="center">
-Connery is an experimental lisp. Check out <a href="http://connerylang.org">ConneryLang.org</a> for docs.
-</p>
+<p align="center">Connery is a experimental lisp-like interpreted programming language that is somewhat themed after veteran actor Sean Connery.</p>
 
 Build and run Connery with docker:
 1. _git clone https://github.com/willcipriano/Connery.git_
