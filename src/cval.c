@@ -45,16 +45,29 @@ char* ctype_name(int t) {
 }
 
 cval* cval_function(cbuiltin func) {
-    cval* v = malloc(sizeof(cval));
-    v->type = CVAL_FUNCTION;
-    v->builtin = func;
-    return v;
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_FUNCTION;
+    value->builtin = func;
+    value->ht = NULL;
+    value->str = NULL;
+    value->err = NULL;
+    value->sym = NULL;
+    value->formals = NULL;
+    value->body = NULL;
+    return value;
 }
 
 cval* cval_number(long x) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_NUMBER;
     value->num = x;
+    value->ht = NULL;
+    value->str = NULL;
+    value->err = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
@@ -64,15 +77,31 @@ cval* cval_float(long double x) {
     value->fnum = x;
     value->count = 0;
     value->cell = NULL;
+    value->num = -1;
+    value->ht = NULL;
+    value->str = NULL;
+    value->err = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
 cval* cval_string (char* s) {
-    cval* v = malloc(sizeof(cval));
-    v->type = CVAL_STRING;
-    v->str = malloc(strlen(s) + 1);
-    strcpy(v->str, s);
-    return v;
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_STRING;
+    value->str = malloc(strlen(s) + 1);
+    strcpy(value->str, s);
+    value->num = -1;
+    value->fnum = -1.0;
+    value->ht = NULL;
+    value->err = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
+    return value;
 }
 
 cval* cval_error(char* fmt, ...) {
@@ -84,6 +113,14 @@ cval* cval_error(char* fmt, ...) {
     vsnprintf(value->err, 511, fmt, va);
     value->err = realloc(value->err, strlen(value->err)+1);
     va_end(va);
+    value->num = -1;
+    value->fnum = -1.0;
+    value->ht = NULL;
+    value->str = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
@@ -92,6 +129,13 @@ cval* cval_symbol(char* s) {
     value->type = CVAL_SYMBOL;
     value->sym = malloc(strlen(s) + 1);
     strcpy(value->sym, s);
+    value->num = -1;
+    value->fnum = -1.0;
+    value->ht = NULL;
+    value->str = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
@@ -100,6 +144,14 @@ cval* cval_s_expression(void) {
     value->type = CVAL_S_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
+    value->num = -1;
+    value->fnum = -1.0;
+    value->ht = NULL;
+    value->str = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
@@ -108,6 +160,14 @@ cval* cval_q_expression(void) {
     value->type = CVAL_Q_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
+    value->num = -1;
+    value->fnum = -1.0;
+    value->ht = NULL;
+    value->str = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
@@ -117,6 +177,13 @@ cval* cval_dictionary(void) {
     value->ht = hash_table_create(DICTIONARY_HASH_TABLE_SIZE);
     value->count = 0;
     value->cell = NULL;
+    value->num = -1;
+    value->fnum = -1.0;
+    value->str = NULL;
+    value->sym = NULL;
+    value->builtin = NULL;
+    value->formals = NULL;
+    value->body = NULL;
     return value;
 }
 
