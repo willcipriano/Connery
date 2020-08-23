@@ -12,6 +12,8 @@ The best way to get up and running is clone this repo and allow the Dockerfile t
 3. docker build --tag connery .
 4. docker run -it connery
 ```
+## Documentation
+All documentation is located at <a href="http://connerylang.org">ConneryLang.org</a>
 
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/willcipriano/connery?style=for-the-badge)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/willcipriano/Connery?style=for-the-badge)
