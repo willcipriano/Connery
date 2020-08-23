@@ -15,6 +15,9 @@ The best way to get up and running is clone this repo and allow the Dockerfile t
 ## Documentation
 All documentation is located at <a href="http://connerylang.org">ConneryLang.org</a>
 
+## Credits
+Connery is based on the work of [Daniel Holden](http://www.theorangeduck.com/page/about), his fantastic book [Build Your Own Lisp](http://www.buildyourownlisp.com/) and library [mpc](https://github.com/orangeduck/mpc). It is also inspired by [ArnoldC](https://lhartikk.github.io/ArnoldC/) as well as countless other joke programming languages. It was created by [Will Cipriano](https://thoughts.willcipriano.com/contact/).
+
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/willcipriano/connery?style=for-the-badge)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/willcipriano/Connery?style=for-the-badge)
 ![Website](https://img.shields.io/website?style=for-the-badge&url=http%3A%2F%2Fconnerylang.org)
