@@ -38,6 +38,7 @@ char* ctype_name(int t) {
         case CVAL_Q_EXPRESSION: return "Q-Expression";
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
+        case CVAL_BOOLEAN: return "Boolean";
         default: return "Unknown Type";
     }
 }
@@ -107,6 +108,20 @@ cval* cval_q_expression(void) {
     return value;
 }
 
+cval* cval_boolean(bool b) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_BOOLEAN;
+    value->boolean = b;
+    if (b) {
+        value->num = 1;
+    }
+    else {
+        value->num = 0;
+    }
+    value->count = 0;
+    value->cell = NULL;
+    return value;
+}
 
 
 cenv* cenv_new(void) {
@@ -440,6 +455,13 @@ cval* cval_join(cval* x, cval* y) {
     return x;
 }
 
+cval* cval_read_boolean(mpc_ast_t* t) {
+    if(strstr(t->contents, "True")) {
+        return cval_boolean(true);
+    }
+    return cval_boolean(false);
+}
+
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -466,6 +488,9 @@ cval* cval_read_string(mpc_ast_t* t) {
 
 cval* cval_read(mpc_ast_t* t) {
 
+    if (strstr(t->tag, "boolean")) {
+        return cval_read_boolean(t);
+    }
     if (strstr(t->tag, "number")) {
         return cval_read_num(t);
     }
@@ -560,6 +585,13 @@ void cval_expr_ht_print(cval* value, char open, char close, char* key) {
 
 void cval_print(cval* value) {
     switch (value->type) {
+        case CVAL_BOOLEAN:
+            if (value->boolean) {
+                printf("True");
+            } else {
+                printf("False");}
+            break;
+
         case CVAL_NUMBER:
             printf("%li", value->num);
             break;

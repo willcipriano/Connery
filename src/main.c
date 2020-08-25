@@ -29,6 +29,7 @@ void add_history(char* unused) {}
 #endif
 mpc_parser_t *Number;
 mpc_parser_t *Float;
+mpc_parser_t *Boolean;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
 mpc_parser_t *Comment;
@@ -471,9 +472,12 @@ cval *builtin_ne(cenv *e, cval *a) {
 
 cval *builtin_if(cenv *e, cval *a) {
     CASSERT_NUM("if", a, 3)
-    CASSERT_TYPE("if", a, 0, CVAL_NUMBER)
-    CASSERT_TYPE("if", a, 1, CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("if", a, 1,CVAL_Q_EXPRESSION)
     CASSERT_TYPE("if", a, 2, CVAL_Q_EXPRESSION)
+
+    if (a->cell[0]->type != CVAL_NUMBER) {
+        CASSERT_TYPE("if", a, 0, CVAL_BOOLEAN)
+    }
 
     cval *x;
     a->cell[1]->type = CVAL_S_EXPRESSION;
@@ -774,6 +778,12 @@ cval *builtin_type(cenv *e, cval *a) {
         case CVAL_SYMBOL:
             return cval_number(5);
 
+        case CVAL_FLOAT:
+            return cval_number(6);
+
+        case CVAL_BOOLEAN:
+            return cval_number(7);
+
         default:
             return cval_error("Type not defined!");
     }
@@ -912,6 +922,7 @@ void load_standard_lib(cenv *e) {
 int main(int argc, char **argv) {
     Number = mpc_new("number");
     Float = mpc_new("float");
+    Boolean = mpc_new("boolean");
     Symbol = mpc_new("symbol");
     Sexpr = mpc_new("sexpr");
     Qexpr = mpc_new("qexpr");
@@ -921,20 +932,22 @@ int main(int argc, char **argv) {
     Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-              "                                                 \
-                float     : /-?[0-9]*\\.[0-9]+/ ;                     \
-                number    : /-?[0-9]+/ ;                              \
-                symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
-                            |'+' | '-' | '*' | '/' ;                  \
-                sexpr     : '(' <expr>* ')' ;                         \
-                qexpr     : '{' <expr>* '}' ;                         \
-                string    : /\"(\\\\.|[^\"])*\"/;                     \
-                comment : /;[^\\r\\n]*/  ;                            \
-                expr      : <float>  | <number> | <symbol>             \
-                          | <comment> | <sexpr> | <qexpr> | <string> ;\
-                connery   : /^/ <expr>* /$/ ;                         \
+              "                                                \
+                boolean   : \"True\" | \"False\" ;                     \
+                float     : /-?[0-9]*\\.[0-9]+/ ;                      \
+                number    : /-?[0-9]+/ ;                               \
+                symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/           \
+                            |'+' | '-' | '*' | '/' ;                   \
+                sexpr     : '(' <expr>* ')' ;                          \
+                qexpr     : '{' <expr>* '}' ;                          \
+                string    : /\"(\\\\.|[^\"])*\"/;                      \
+                comment : /;[^\\r\\n]*/  ;                             \
+                expr      : <float>  | <number> | <boolean> | <symbol> \
+                          | <comment> | <sexpr> | <qexpr> | <string> ; \
+                connery   : /^/ <expr>* /$/ ;                          \
             ",
-              Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
+              Boolean, Float, Number, Symbol, Sexpr, Qexpr, Expr, String,
+              Comment, Connery);
 
     cenv *e = cenv_new();
     cenv_add_builtins(e);
@@ -981,7 +994,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    mpc_cleanup(8, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    mpc_cleanup(10, Boolean, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
     cenv_delete(e);
     return 0;
 }
