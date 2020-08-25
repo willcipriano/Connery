@@ -3,16 +3,5 @@
     def (head f) (\ (tail f) b)
 }))
 
-; Currying
-(fun {unpack f l} {
-    eval (join (list f) l)
-})
-(fun {pack f & xs} {f xs})
-(def {curry} unpack)
-(def {uncurry} pack)
-
 ; flipargs
 (fun {flipargs f a b} {f b a})
-
-; addfunc
-(fun {addfunc f g x} {f (g x)})
