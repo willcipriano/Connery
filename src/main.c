@@ -483,10 +483,18 @@ cval *builtin_if(cenv *e, cval *a) {
     a->cell[1]->type = CVAL_S_EXPRESSION;
     a->cell[2]->type = CVAL_S_EXPRESSION;
 
-    if (a->cell[0]->num) {
-        x = cval_evaluate(e, cval_pop(a, 1));
+    if (a->cell[0]->type == CVAL_BOOLEAN) {
+        if (a->cell[0]->boolean) {
+            x = cval_evaluate(e, cval_pop(a, 1));
+        } else {
+            x = cval_evaluate(e, cval_pop(a, 2));
+        }
     } else {
-        x = cval_evaluate(e, cval_pop(a, 2));
+        if (a->cell[0]->num) {
+            x = cval_evaluate(e, cval_pop(a, 1));
+        } else {
+            x = cval_evaluate(e, cval_pop(a, 2));
+        }
     }
 
     cval_delete(a);
@@ -622,7 +630,7 @@ cval *builtin_file(cenv *e, cval *a) {
             if (success) {
                 fclose(file);
                 cval_delete(a);
-                return cval_number(1);
+                return cval_boolean(true);
             }
         }
         cval_delete(a);
@@ -640,7 +648,7 @@ cval *builtin_file(cenv *e, cval *a) {
             if (success) {
                 fclose(file);
                 cval_delete(a);
-                return cval_number(1);
+                return cval_boolean(true);
             }
         }
         cval_delete(a);
@@ -688,7 +696,7 @@ cval *builtin_find(cenv *e, cval *a) {
         return cval_number(pos - org);
     } else {
         cval_delete(a);
-        return cval_number(0);
+        return cval_boolean(false);
     }
 }
 

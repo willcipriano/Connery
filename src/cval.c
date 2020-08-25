@@ -112,12 +112,6 @@ cval* cval_boolean(bool b) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_BOOLEAN;
     value->boolean = b;
-    if (b) {
-        value->num = 1;
-    }
-    else {
-        value->num = 0;
-    }
     value->count = 0;
     value->cell = NULL;
     return value;
