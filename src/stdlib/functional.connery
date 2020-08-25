@@ -11,28 +11,8 @@
 (def {curry} unpack)
 (def {uncurry} pack)
 
-; do
-(fun {do & l} {
-    if (== l None)
-    {None}
-    {last l}
-})
-
-; shcope
-  (fun {shcope b} {
-  ((\ {_} b) ())
-  })
-
 ; flipargs
 (fun {flipargs f a b} {f b a})
 
 ; addfunc
 (fun {addfunc f g x} {f (g x)})
-
-(fun {case & cs} {
-   if (== cs None)
-   {None}
-   {if (first (first cs))
-        {second (first cs)}
-        {unpack case (tail cs)}}
-})
