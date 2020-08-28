@@ -5,7 +5,6 @@
 #include "mpc.h"
 #include "util.h"
 #include "cval.h"
-#include "hashtable.h"
 
 #ifdef _WIN32
 #include <string.h>
@@ -29,7 +28,6 @@ void add_history(char* unused) {}
 #endif
 mpc_parser_t *Number;
 mpc_parser_t *Float;
-mpc_parser_t *Boolean;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
 mpc_parser_t *Comment;
@@ -930,7 +928,6 @@ void load_standard_lib(cenv *e) {
 int main(int argc, char **argv) {
     Number = mpc_new("number");
     Float = mpc_new("float");
-    Boolean = mpc_new("boolean");
     Symbol = mpc_new("symbol");
     Sexpr = mpc_new("sexpr");
     Qexpr = mpc_new("qexpr");
@@ -941,7 +938,6 @@ int main(int argc, char **argv) {
 
     mpca_lang(MPCA_LANG_DEFAULT,
               "                                                \
-                boolean   : \"True\" | \"False\" ;                     \
                 float     : /-?[0-9]*\\.[0-9]+/ ;                      \
                 number    : /-?[0-9]+/ ;                               \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/           \
@@ -950,11 +946,11 @@ int main(int argc, char **argv) {
                 qexpr     : '{' <expr>* '}' ;                          \
                 string    : /\"(\\\\.|[^\"])*\"/;                      \
                 comment : /;[^\\r\\n]*/  ;                             \
-                expr      : <float>  | <number> | <boolean> | <symbol> \
+                expr      : <float>  | <number> | <symbol> \
                           | <comment> | <sexpr> | <qexpr> | <string> ; \
                 connery   : /^/ <expr>* /$/ ;                          \
             ",
-              Boolean, Float, Number, Symbol, Sexpr, Qexpr, Expr, String,
+              Float, Number, Symbol, Sexpr, Qexpr, Expr, String,
               Comment, Connery);
 
     cenv *e = cenv_new();
@@ -1002,7 +998,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    mpc_cleanup(10, Boolean, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    mpc_cleanup(9, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
     cenv_delete(e);
     return 0;
 }

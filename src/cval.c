@@ -480,6 +480,17 @@ cval* cval_read_string(mpc_ast_t* t) {
     return str;
 }
 
+cval* cval_read_symbol(char* symbol) {
+
+    if(strcmp(symbol, "True") == 0) {
+        return cval_boolean(true);
+    } else if (strcmp(symbol, "False") == 0) {
+        return cval_boolean(false);
+    } else {
+        return cval_symbol(symbol);
+    }
+}
+
 cval* cval_read(mpc_ast_t* t) {
 
     if (strstr(t->tag, "boolean")) {
@@ -494,7 +505,7 @@ cval* cval_read(mpc_ast_t* t) {
     }
 
     if (strstr(t->tag, "symbol")) {
-        return cval_symbol(t->contents);
+        return cval_read_symbol(t->contents);
     }
 
     cval* x = NULL;
