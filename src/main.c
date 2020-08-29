@@ -874,6 +874,17 @@ cval *builtin_input(cenv *e, cval *a) {
     return cval_string(input);
 }
 
+cval *builtin_exit(cenv* e, cval *a) {
+    CASSERT_TYPE("exit", a, 0, CVAL_NUMBER);
+
+    int exit_code = a->cell[0]->num;
+    cval_delete(a);
+
+    mpc_cleanup(9, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    cenv_delete(e);
+    exit(exit_code);
+}
+
 
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
@@ -915,6 +926,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "http", builtin_http);
 
     cenv_add_builtin(e, "file", builtin_file);
+    cenv_add_builtin(e, "exit", builtin_exit);
 }
 
 void load_standard_lib(cenv *e) {
