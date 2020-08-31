@@ -1,0 +1,3 @@
+(fun {parse_csv csv} {
+    (delimit "," (delimit "\n" csv))
+})

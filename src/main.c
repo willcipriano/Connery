@@ -851,6 +851,7 @@ cval *builtin_http(cenv *e, cval *a) {
             multi_tok_t x = multiTok_init();
             char *header = multi_tok(headers, &x, "\r\n");
 
+
             while (header != NULL) {
                 cval_add(headers_list, cval_string(header));
                 header = multi_tok(NULL, &x, "\r\n");
@@ -884,7 +885,6 @@ cval *builtin_exit(cenv* e, cval *a) {
     cenv_delete(e);
     exit(exit_code);
 }
-
 
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
@@ -924,7 +924,6 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "print", builtin_print);
     cenv_add_builtin(e, "type", builtin_type);
     cenv_add_builtin(e, "http", builtin_http);
-
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "exit", builtin_exit);
 }

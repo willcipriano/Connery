@@ -5,3 +5,11 @@
 
 ; flipargs
 (fun {flipargs f a b} {f b a})
+
+(fun {case & cs} {
+   if (== cs None)
+   {None}
+   {if (first (first cs))
+        {second (first cs)}
+        {unpack case (tail cs)}}
+})
