@@ -251,6 +251,10 @@ cval* cval_copy(cval* v) {
             x->str = malloc(strlen(v->str) + 1);
             strcpy(x->str, v->str);
             break;
+
+        case CVAL_BOOLEAN:
+            x->boolean = v->boolean;
+            break;
     }
 
     return x;
