@@ -8,3 +8,4 @@
 (load "stdlib/io.connery")
 (load "stdlib/http.connery")
 (load "stdlib/csv.connery")
+(load "stdlib/Q.connery")

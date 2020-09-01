@@ -1,3 +1,21 @@
-(def {Q package_name} {
-     (print "attempting to pull package")
+(def {__Q_packages__} False)
+(def {__Q_package_list_url__} "http://q.connerylang.org/packages/packages_list.csv")
+
+
+(fun {__Q_get_packages__ refresh} {
+     if (or __Q_packages__ refresh)
+     {def {__Q_packages__} (tail (csv (third (http_get __Q_package_list_url__))))}
+     {False}
+})
+
+(fun {__Q_package_scan__ packages package_name} {
+    if (>= (length packages) 1)
+        {if (== (first (first (head packages))) package_name)
+           {first (head packages)}
+           {__Q_package_scan__ (tail packages) package_name}}
+        {False}
+})
+
+(fun {Q package_name} {
+     print "OK"
 })
