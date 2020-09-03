@@ -471,7 +471,7 @@ cval *builtin_ne(cenv *e, cval *a) {
 
 cval *builtin_if(cenv *e, cval *a) {
     CASSERT_NUM("if", a, 3)
-    CASSERT_TYPE("if", a, 1,CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("if", a, 1, CVAL_Q_EXPRESSION)
     CASSERT_TYPE("if", a, 2, CVAL_Q_EXPRESSION)
 
     if (a->cell[0]->type != CVAL_NUMBER) {
@@ -876,7 +876,7 @@ cval *builtin_input(cenv *e, cval *a) {
     return cval_string(input);
 }
 
-cval *builtin_exit(cenv* e, cval *a) {
+cval *builtin_exit(cenv *e, cval *a) {
     CASSERT_TYPE("exit", a, 0, CVAL_NUMBER);
 
     int exit_code = a->cell[0]->num;
@@ -887,7 +887,7 @@ cval *builtin_exit(cenv* e, cval *a) {
     exit(exit_code);
 }
 
-cval *builtin_mkdir(cenv* e, cval *a) {
+cval *builtin_mkdir(cenv *e, cval *a) {
     CASSERT_NUM("mkdir", a, 1);
     CASSERT_TYPE("mkdir", a, 0, CVAL_STRING);
     char *path = a->cell[0]->str;
@@ -909,7 +909,7 @@ cval *builtin_mkdir(cenv* e, cval *a) {
     }
 }
 
-cval *builtin_chkdir(cenv* e,cval* a) {
+cval *builtin_chkdir(cenv *e, cval *a) {
     CASSERT_NUM("chkdir", a, 1);
     CASSERT_TYPE("chkdir", a, 0, CVAL_STRING);
     struct stat st = {0};
