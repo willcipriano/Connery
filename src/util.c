@@ -139,7 +139,7 @@ int mkpath(const char *path, mode_t mode) {
         if (*p == '/') {
             *p = 0;
 #if defined(_WIN32)
-            if (_mkdir(tmp, mode) < 0 && errno != EEXIST)
+            if (_mkdir(tmp) < 0 && errno != EEXIST)
 #else
             if (mkdir(tmp, mode) < 0 && errno != EEXIST)
 #endif
@@ -147,7 +147,7 @@ int mkpath(const char *path, mode_t mode) {
             *p = '/';
         }
 #if defined(_WIN32)
-    if (_mkdir(tmp, mode) < 0 && errno != EEXIST)
+    if (_mkdir(tmp) < 0 && errno != EEXIST)
 #else
     if (mkdir(tmp, mode) < 0 && errno != EEXIST)
 #endif
