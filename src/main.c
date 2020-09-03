@@ -915,14 +915,16 @@ cval *builtin_chkdir(cenv *e, cval *a) {
     struct stat st = {0};
 
     char *path = a->cell[0]->str;
+    cval* result;
 
     if (stat(path, &st) == -1) {
-        cval_delete(a);
-        return cval_boolean(false);
+        result = cval_boolean(false);
     } else {
-        cval_delete(a);
-        return cval_boolean(true);
+        result = cval_boolean(true);
     }
+
+    cval_delete(a);
+    return result;
 }
 
 void cenv_add_builtins(cenv *e) {
