@@ -1,10 +1,10 @@
 (def {__Q_packages__} False)
-(def {__Q_package_list_url__} "http://q.connerylang.org/packages/packages_list.csv")
-
+(def {__Q_location__} "http://q.connerylang.org")
+(def {__Q_package_list_url_slug__} "/packages/packages_list.csv")
 
 (fun {__Q_get_packages__ refresh} {
      if (or __Q_packages__ refresh)
-     {def {__Q_packages__} (tail (csv (third (http_get __Q_package_list_url__))))}
+     {def {__Q_packages__} (tail (csv (third (http_get (join __Q_location__ __Q_package_list_url_slug__)))))}
      {False}
 })
 

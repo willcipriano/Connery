@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <values.h>
+#include <sys/stat.h>
+#include <errno.h>
 #include "util.h"
 
 void init_http_response(struct http_response *s) {
@@ -124,4 +127,26 @@ long get_factor(int init_digits) {
         default:
             return -1;
     }
+}
+
+int mkpath(const char *path, mode_t mode)
+{
+	char tmp[PATH_MAX];
+	char *p = NULL;
+	size_t len;
+
+	snprintf(tmp, sizeof(tmp),"%s",path);
+	len = strlen(tmp);
+	if(tmp[len - 1] == '/')
+		tmp[len - 1] = 0;
+	for(p = tmp + 1; *p; p++)
+		if(*p == '/') {
+			*p = 0;
+			if (mkdir(tmp, mode) < 0 && errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	if (mkdir(tmp, mode) < 0 && errno != EEXIST)
+		return -1;
+	return 1;
 }

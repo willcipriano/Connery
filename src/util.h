@@ -24,4 +24,7 @@ long long_power(long x,long exponent);
 int count_digits(long n);
 long get_factor(int init_digits);
 
+//mkpath
+int mkpath(const char *path, mode_t mode);
+
 #endif //CONNERY_UTIL_H

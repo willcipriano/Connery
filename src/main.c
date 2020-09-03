@@ -24,6 +24,7 @@ void add_history(char* unused) {}
 #else
 
 #include <editline/history.h>
+#include <sys/stat.h>
 
 #endif
 mpc_parser_t *Number;
@@ -886,6 +887,44 @@ cval *builtin_exit(cenv* e, cval *a) {
     exit(exit_code);
 }
 
+cval *builtin_mkdir(cenv* e, cval *a) {
+    CASSERT_NUM("mkdir", a, 1);
+    CASSERT_TYPE("mkdir", a, 0, CVAL_STRING);
+    char *path = a->cell[0]->str;
+    struct stat st = {0};
+    int result;
+
+    if (stat(path, &st) == -1) {
+        result = mkpath(path, 0700);
+    } else {
+        result = -1;
+    }
+
+    cval_delete(a);
+
+    if (result == 1) {
+        return cval_boolean(true);
+    } else {
+        return cval_boolean(false);
+    }
+}
+
+cval *builtin_chkdir(cenv* e,cval* a) {
+    CASSERT_NUM("chkdir", a, 1);
+    CASSERT_TYPE("chkdir", a, 0, CVAL_STRING);
+    struct stat st = {0};
+
+    char *path = a->cell[0]->str;
+
+    if (stat(path, &st) == -1) {
+        cval_delete(a);
+        return cval_boolean(false);
+    } else {
+        cval_delete(a);
+        return cval_boolean(true);
+    }
+}
+
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
@@ -926,6 +965,9 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "http", builtin_http);
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "exit", builtin_exit);
+
+    cenv_add_builtin(e, "mkdir", builtin_mkdir);
+    cenv_add_builtin(e, "chkdir", builtin_chkdir);
 }
 
 void load_standard_lib(cenv *e) {
