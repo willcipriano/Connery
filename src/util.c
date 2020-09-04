@@ -30,6 +30,12 @@ size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_re
     return size * nmemb;
 }
 
+size_t http_download_writer(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
+    return written;
+}
+
 typedef char *multi_tok_t;
 
 char *multi_tok(char *input, multi_tok_t *string, char *delimiter) {

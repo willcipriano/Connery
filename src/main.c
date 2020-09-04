@@ -819,10 +819,8 @@ cval *builtin_http(cenv *e, cval *a) {
         struct curl_slist *chunk = NULL;
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "Connery");
-        curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
 
         for (int i = 0; i < request_headers->count; i++) {
             CASSERT_TYPE("http_request_headers", request_headers, i, CVAL_STRING);
@@ -834,8 +832,32 @@ cval *builtin_http(cenv *e, cval *a) {
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, a->cell[3]->str);
         }
 
+        if (strstr(type, "DOWN")) {
+            CASSERT_TYPE("http", a, 3, CVAL_STRING);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_download_writer);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
+        }
+
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
+        if (strstr(type, "DOWN")) {
+            bool success = false;
+            FILE *pagefile;
+            pagefile = fopen(a->cell[3]->str, "wb");
+
+            if (pagefile) {
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, pagefile);
+            curl_easy_perform(curl);
+            fclose(pagefile);
+            success = true;}
+
+            cval_delete(a);
+            curl_easy_cleanup(curl);
+
+            return cval_boolean(success);
+        }
         res = curl_easy_perform(curl);
 
         if (res == CURLE_OK) {
@@ -861,11 +883,13 @@ cval *builtin_http(cenv *e, cval *a) {
             cval_add(response_list, headers_list);
             cval_add(response_list, cval_string(strstr(s.body, "\r\n\r\n") + 4));
         } else {
+            cval_delete(a);
             cval_delete(response_list);
             response_list = cval_error("unable to accesh url!");
         }
         free(s.body);
         curl_easy_cleanup(curl);
+        cval_delete(a);
     }
     return response_list;
 }
