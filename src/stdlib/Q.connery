@@ -1,14 +1,9 @@
-(def {__Q_packages__} False)
+(def {__Q_package_location__} "Q")
 (def {__Q_location__} "http://q.connerylang.org")
 (def {__Q_package_list_url_slug__} "/packages/packages_list.csv")
 
-(mkdir "Q")
-
-(fun {__Q_get_packages__ refresh} {
-     if (or __Q_packages__ refresh)
-     {def {__Q_packages__} (tail (csv (third (http_get (join __Q_location__ __Q_package_list_url_slug__)))))}
-     {False}
-})
+(mkdir __Q_package_location__)
+(def {__Q_packages__} (tail (csv (third (http_get (join __Q_location__ __Q_package_list_url_slug__))))))
 
 (fun {__Q_package_scan__ packages package_name} {
     if (>= (length packages) 1)
@@ -19,5 +14,5 @@
 })
 
 (fun {Q package_name} {
-     print "OK"
+     (__Q_package_scan__ __Q_packages__ package_name)
 })
