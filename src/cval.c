@@ -380,11 +380,11 @@ cval *cval_evaluate_s_expression(cenv *env, cval *value) {
 
     cval *f = cval_pop(value, 0);
     if (f->type != CVAL_FUNCTION) {
-        cval *err = cval_error("S-Expression starts with incorrect type. Got %s, Expected %s", ctype_name(f->type),
-                               ctype_name(CVAL_FUNCTION));
+//        cval *err = cval_error("S-Expression starts with incorrect type. Got %s, Expected %s", ctype_name(f->type),
+//                               ctype_name(CVAL_FUNCTION));
         cval_delete(f);
         cval_delete(value);
-        return err;
+        return cval_null();
     }
 
     cval *result = cval_call(env, f, value);
@@ -626,10 +626,6 @@ void cval_print(cval *value) {
             } else {
                 printf("False");
             }
-            break;
-
-        case CVAL_NULL:
-            printf("NULL");
             break;
 
         case CVAL_NUMBER:
