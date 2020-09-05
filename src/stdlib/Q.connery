@@ -14,5 +14,6 @@
 })
 
 (fun {Q package_name} {
-     (__Q_package_scan__ __Q_packages__ package_name)
+     (= {__package_result__} (__Q_package_scan__ __Q_packages__ package_name))
+     (print __package_result__)
 })

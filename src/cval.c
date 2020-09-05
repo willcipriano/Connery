@@ -50,6 +50,8 @@ char *ctype_name(int t) {
             return "Float";
         case CVAL_BOOLEAN:
             return "Boolean";
+        case CVAL_NULL:
+            return "Null";
         default:
             return "Unknown Type";
     }
@@ -129,6 +131,13 @@ cval *cval_boolean(bool b) {
     return value;
 }
 
+cval *cval_null() {
+    cval *value = malloc(sizeof(cval));
+    value->type = CVAL_NULL;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
+}
 
 cenv *cenv_new(void) {
     cenv *e = malloc(sizeof(cenv));
@@ -267,6 +276,7 @@ cval *cval_copy(cval *v) {
         case CVAL_BOOLEAN:
             x->boolean = v->boolean;
             break;
+
     }
 
     return x;
@@ -504,6 +514,8 @@ cval *cval_read_symbol(char *symbol) {
         return cval_boolean(true);
     } else if (strcmp(symbol, "False") == 0) {
         return cval_boolean(false);
+    } else if (strcmp(symbol, "Null") == 0) {
+        return cval_null();
     } else {
         return cval_symbol(symbol);
     }
@@ -614,6 +626,10 @@ void cval_print(cval *value) {
             } else {
                 printf("False");
             }
+            break;
+
+        case CVAL_NULL:
+            printf("NULL");
             break;
 
         case CVAL_NUMBER:

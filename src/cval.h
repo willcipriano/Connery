@@ -13,7 +13,7 @@ typedef cval *(*cbuiltin)(cenv *, cval *);
 enum {
     CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION,
     CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT,
-    CVAL_BOOLEAN
+    CVAL_BOOLEAN, CVAL_NULL
 };
 
 struct cval {
@@ -55,6 +55,8 @@ cval *cval_error(char *fmt, ...);
 cval *cval_symbol(char *s);
 
 cval *cval_boolean(bool b);
+
+cval *cval_null();
 
 cval *cval_s_expression(void);
 
