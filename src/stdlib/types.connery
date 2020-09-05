@@ -8,6 +8,7 @@
         {(== i 5) "Symbol"}
         {(== i 6) "Float"}
         {(== i 7) "Boolean"}
+        {(== i 8) "Null"}
         {(Otherwise) "Unknown"}
 })
 
@@ -55,6 +56,12 @@
 
 (fun {is_bool i} {
     if (== 7 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_null i} {
+    if (== 8 (type i))
         {True}
         {False}
 })

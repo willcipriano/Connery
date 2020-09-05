@@ -791,6 +791,9 @@ cval *builtin_type(cenv *e, cval *a) {
         case CVAL_BOOLEAN:
             return cval_number(7);
 
+        case CVAL_NULL:
+            return cval_number(8);
+
         default:
             return cval_error("Type not defined!");
     }
