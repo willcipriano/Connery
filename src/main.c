@@ -847,8 +847,20 @@ cval *builtin_http(cenv *e, cval *a) {
 
         if (strstr(type, "DOWN")) {
             bool success = false;
+            struct stat st = {0};
+            char* full_path = malloc(strlen(a->cell[3]->str));
+            char* path = malloc(strlen(a->cell[3]->str));
+            memcpy(full_path, a->cell[3]->str, strlen(a->cell[3]->str)+1);
+
+            char* pos = strrchr(a->cell[3]->str, '/');
+            memcpy(path, a->cell[3]->str, pos-a->cell[3]->str);
+
+            if (stat(path, &st) == -1) {
+                mkpath(path, 0700);
+            }
+
             FILE *pagefile;
-            pagefile = fopen(a->cell[3]->str, "wb");
+            pagefile = fopen(full_path, "wb");
 
             if (pagefile) {
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, pagefile);
@@ -858,6 +870,8 @@ cval *builtin_http(cenv *e, cval *a) {
 
             cval_delete(a);
             curl_easy_cleanup(curl);
+            free(full_path);
+            free(path);
 
             return cval_boolean(success);
         }

@@ -672,6 +672,7 @@ void cval_print(cval *value) {
 
 void cval_print_line(cval *value) {
     cval_print(value);
-    putchar('\n');
+    if (value->type != CVAL_NULL) {
+    putchar('\n'); }
 }
 
