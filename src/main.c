@@ -7,10 +7,11 @@
 #include "cval.h"
 #include "hashtable.h"
 
-#define SYSTEM_LANG 1
+#define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.1"
 #define CONNERY_VER_INT 1
 #define REPORT_STATEMENT_NUMBERS 1
+#define LOG_LEVEL 3
 
 #ifdef _WIN32
 #include <string.h>
@@ -1084,6 +1085,8 @@ int main(int argc, char **argv) {
 
     puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
+
+    hash_table_set(e ->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
 
 #if REPORT_STATEMENT_NUMBERS==1
     int statement_number = 1;

@@ -1,20 +1,34 @@
 (fun {__log_level_num__ i}
     {case
-    {(== i 0) "ALL"}
-    {(== i 1) "TRACE"}
-    {(== i 2) "DEBUG"}
+    {(== i 1) "ERROR"}
+    {(== i 2) "WARN"}
     {(== i 3) "INFO"}
-    {(== i 4) "WARN"}
-    {(== i 5) "ERROR"}
+    {(== i 4) "DEBUG"}
+    {(== i 5) "TRACE"}
     {Otherwise "FATAL"}})
 
+(fun {__log_level_connery_num__ i}
+    {case
+    {(== i 1) "Mishtake"}
+    {(== i 2) "Shtired"}
+    {(== i 3) "For Your Eyesh Only"}
+    {(== i 4) "Shocking"}
+    {(== i 5) "Without A Trashe"}
+    {Otherwise "Lishenshe To Kill"}})
+
 (fun {__LOG__ level msg} {
-(print (join (join (__log_level_num__ level) ": ") msg))
+if (>= __LOG_LEVEL__ level)
+    {
+    (if (!= connery_system_lang "Connery Classic")
+        {(print (join (join (__log_level_num__ level) ": ") msg))}
+        {(print (join (join (__log_level_connery_num__ level) ": ") msg))})
+    }
+    {}
 })
 
-(fun {log_fatal msg} {__LOG__ 6 msg})
-(fun {log_error msg} {__LOG__ 5 msg})
-(fun {log_warn msg} {__LOG__ 4 msg})
+(fun {log_fatal msg} {__LOG__ 0 msg})
+(fun {log_error msg} {__LOG__ 1 msg})
+(fun {log_warn msg} {__LOG__ 2 msg})
 (fun {log_info msg} {__LOG__ 3 msg})
-(fun {log_debug msg} {__LOG__ 2 msg})
-(fun {log_trace msg} {__LOG__ 1 msg})
+(fun {log_debug msg} {__LOG__ 4 msg})
+(fun {log_trace msg} {__LOG__ 5 msg})
