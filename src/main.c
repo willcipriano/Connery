@@ -7,9 +7,10 @@
 #include "cval.h"
 #include "hashtable.h"
 
-#define SYSTEM_LANG 0
+#define SYSTEM_LANG 1
 #define CONNERY_VERSION "0.0.1"
 #define CONNERY_VER_INT 1
+#define REPORT_STATEMENT_NUMBERS 1
 
 #ifdef _WIN32
 #include <string.h>
@@ -584,10 +585,18 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
+
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
         cval *expr = cval_read(r.output);
         mpc_ast_delete(r.output);
+
+# if REPORT_STATEMENT_NUMBERS
+        int statement_number = 1;
+        hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
+#else
+        hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(-1));
+#endif
 
         while (expr->count) {
             cval *x = cval_evaluate(e, cval_pop(expr, 0));
@@ -596,6 +605,11 @@ cval *builtin_load(cenv *e, cval *a) {
                 cval_print_line(x);
             }
             cval_delete(x);
+#if REPORT_STATEMENT_NUMBERS
+            statement_number += 1;
+            hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
+#endif
+
         }
 
         cval_delete(expr);
@@ -625,9 +639,9 @@ cval *builtin_print(cenv *e, cval *a) {
     return cval_s_expression();
 }
 
-cval *builtin_error(cenv *e, cval *a) {
-    CASSERT_NUM("error", a, 1);
-    CASSERT_TYPE("error", a, 0, CVAL_STRING);
+cval *builtin_fault(cenv *e, cval *a) {
+    CASSERT_NUM("fault", a, 1);
+    CASSERT_TYPE("fault", a, 0, CVAL_STRING);
 
     cval *err = cval_error(a->cell[0]->str);
 
@@ -929,6 +943,18 @@ cval *builtin_input(cenv *e, cval *a) {
     return cval_string(input);
 }
 
+cval *builtin_convert_string(cenv *e, cval *a) {
+
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        int length = snprintf( NULL, 0, "%ld", a->cell[0]->num );
+        char* str = malloc( length + 1 );
+        snprintf( str, length + 1, "%ld", a->cell[0]->num );
+
+        return cval_string(str);
+    }
+
+}
+
 cval *builtin_sys(cenv *e, cval *a) {
     CASSERT_TYPE("stats", a, 0, CVAL_STRING);
     CASSERT_NUM("stats", a, 1);
@@ -953,6 +979,10 @@ cval *builtin_sys(cenv *e, cval *a) {
 
     if (strcmp(cmd, "SOFT_EXIT") == 0) {
         exit(0);
+    }
+
+    if (strcmp(cmd, "SYSTEM_LANGUAGE_INT") == 0) {
+        return cval_number(SYSTEM_LANG);
     }
 
     return cval_error("invalid input to stats");
@@ -993,12 +1023,14 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "<=", builtin_less_than_or_equal);
 
     cenv_add_builtin(e, "load", builtin_load);
-    cenv_add_builtin(e, "error", builtin_error);
     cenv_add_builtin(e, "print", builtin_print);
     cenv_add_builtin(e, "type", builtin_type);
     cenv_add_builtin(e, "http", builtin_http);
 
     cenv_add_builtin(e, "file", builtin_file);
+    cenv_add_builtin(e, "convert_string", builtin_convert_string);
+
+    cenv_add_builtin(e, "__FAULT__", builtin_fault);
 }
 
 void load_standard_lib(cenv *e) {
@@ -1053,7 +1085,15 @@ int main(int argc, char **argv) {
     puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
 
+#if REPORT_STATEMENT_NUMBERS==1
+    int statement_number = 1;
+    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
+#else
+    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(-1));
+#endif
+
     if (argc == 1) {
+        hash_table_set(e ->ht, "__SOURCE__", cval_string("INTERACTIVE"));
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
@@ -1063,6 +1103,11 @@ int main(int argc, char **argv) {
                 cval *output = cval_evaluate(e, cval_read(result.output));
                 cval_print_line(output);
                 cval_delete(output);
+
+#if REPORT_STATEMENT_NUMBERS==1
+                statement_number += 1;
+                hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
+#endif
 
                 mpc_ast_delete(result.output);
             } else {
@@ -1074,8 +1119,10 @@ int main(int argc, char **argv) {
     }
 
     if (argc >= 2) {
+        hash_table_set(e ->ht, "__SOURCE__", cval_string("FILE"));
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
+            hash_table_set(e ->ht, "__SOURCE_FILE__", cval_string(argv[i]));
             cval *x = builtin_load(e, args);
 
             if (x->type == CVAL_ERROR) {
