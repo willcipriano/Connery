@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define ENV_HASH_TABLE_SIZE 1000
+#define ENV_HASH_TABLE_SIZE 10000
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\

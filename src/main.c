@@ -7,6 +7,8 @@
 #include "cval.h"
 #include "hashtable.h"
 
+#define SYSTEM_LANG 0
+
 #ifdef _WIN32
 #include <string.h>
 
@@ -43,16 +45,31 @@ if (!(cond)) {\
     cval_delete(args); \
     return err;}
 
+#if SYSTEM_LANG==0
 #define CASSERT_TYPE(func, args, index, expect) \
   CASSERT(args, args->cell[index]->type == expect, \
     "Function '%s' pashed incorrect type for argument %i. " \
     "Got %s, Expected %s.", \
     func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
+#else
+#define CASSERT_TYPE(func, args, index, expect) \
+  CASSERT(args, args->cell[index]->type == expect, \
+    "Function '%s' passed incorrect type for argument %i. " \
+    "Got %s, Expected %s.", \
+    func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
+#endif
 
+#if SYSTEM_LANG==0
 #define CASSERT_NUM(func, args, num) \
   CASSERT(args, args->count == num, \
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
     func, args->count, num)
+#else
+#define CASSERT_NUM(func, args, num) \
+CASSERT(args, args->count == num, \
+    "function '%s' passed incorrect number of arguments. got %i, expected %i.", \
+    func, args->count, num)
+#endif
 
 cval *builtin_op(cenv *e, cval *a, char *op) {
     int float_support = 0;
@@ -107,7 +124,11 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                     if (y->fnum == 0) {
                         cval_delete(x);
                         cval_delete(y);
+#if SYSTEM_LANG==0
                         x = cval_error("Divishion by zero");
+#else
+                        x = cval_error("Division by zero");
+#endif
                         break;
                     }
                     x->fnum /= y->fnum;
@@ -115,7 +136,11 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                     if (y->num == 0) {
                         cval_delete(x);
                         cval_delete(y);
+#if SYSTEM_LANG==0
                         x = cval_error("Divishion by zero");
+#else
+                        x = cval_error("Division by zero");
+#endif
                         break;
                     }
                     x->fnum /= y->num;
@@ -125,14 +150,22 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
             if (strcmp(op, "mod") == 0) {
                 cval_delete(x);
                 cval_delete(y);
+#if SYSTEM_LANG==0
                 x = cval_error("mod not shupported on floatsh!");
+#else
+                x = cval_error("mod not supported on floats!");
+#endif
                 break;
             }
 
             if (strcmp(op, "pow") == 0) {
                 cval_delete(x);
                 cval_delete(y);
+#if SYSTEM_LANG==0
                 x = cval_error("pow not shupported on floatsh!");
+#else
+                x = cval_error("pow not supported on floats!");
+#endif
                 break;
             }
 
@@ -167,7 +200,11 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                 if (y->num == 0) {
                     cval_delete(x);
                     cval_delete(y);
+#if SYSTEM_LANG==0
                     x = cval_error("Divishion by zero");
+#else
+                    x = cval_error("Division by zero");
+#endif
                     break;
                 }
                 x->num /= y->num;
@@ -214,7 +251,11 @@ cval *builtin_head(cenv *e, cval *a) {
     }
 
     if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+#if SYSTEM_LANG==0
         CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
+#else
+        CASSERT(a, a->cell[0]->count != 0, "Function 'head' passed empty list!");
+#endif
 
         cval *v = cval_take(a, 0);
 
@@ -226,7 +267,12 @@ cval *builtin_head(cenv *e, cval *a) {
     }
 
     cval_delete(a);
+#if SYSTEM_LANG==0
     return cval_error("Function 'head' pashed unshupported type!");
+#else
+    return cval_error("Function 'head' passed unsupported type!");
+#endif
+
 }
 
 cval *builtin_tail(cenv *e, cval *a) {
@@ -240,12 +286,19 @@ cval *builtin_tail(cenv *e, cval *a) {
             str++;
             return (cval_string(str));
         }
+#if SYSTEM_LANG==0
         return (cval_error("Function 'tail' pashed empty shtring!"));
+#else
+        return (cval_error("Function 'tail' passed empty string!"));
+#endif
     }
 
     if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+#if SYSTEM_LANG==0
         CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
-
+#else
+        CASSERT(a, a->cell[0]->count != 0, "Function 'tail' passed empty list!");
+#endif
         cval *v = cval_take(a, 0);
 
         cval_delete(cval_pop(v, 0));
@@ -266,7 +319,11 @@ cval *builtin_tail(cenv *e, cval *a) {
         cval_delete(a);
 
         if (init_digits == 1) {
+#if SYSTEM_LANG==0
             return cval_error("Function 'tail' pashed shingle digit number!");
+#else
+            return cval_error("Function 'tail' passed single digit number!");
+#endif
         }
 
         factor = get_factor(init_digits);
@@ -286,7 +343,11 @@ cval *builtin_tail(cenv *e, cval *a) {
     }
 
     cval_delete(a);
+#if SYSTEM_LANG==0
     return cval_error("Function 'head' pashed unshupported type!");
+#else
+    return cval_error("Function 'head' passed unsupported type!");
+#endif
 }
 
 cval *builtin_rand(cenv *e, cval *a) {
@@ -305,7 +366,6 @@ cval *builtin_rand(cenv *e, cval *a) {
 }
 
 cval *builtin_join(cenv *e, cval *a) {
-
 
     if (a->cell[0]->type == CVAL_STRING) {
         unsigned long new_str_length = 0;
@@ -748,7 +808,12 @@ cval *builtin_length(cenv *e, cval *a) {
     }
 
     cval_delete(a);
+#if SYSTEM_LANG==0
     return cval_error("Function 'length' pashed unshupported type!");
+#else
+    return cval_error("Function 'length' passed unsupported type!");
+#endif
+
 }
 
 cval *builtin_type(cenv *e, cval *a) {
@@ -869,7 +934,6 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "tail", builtin_tail);
     cenv_add_builtin(e, "eval", builtin_eval);
     cenv_add_builtin(e, "join", builtin_join);
-    cenv_add_builtin(e, "def", builtin_def);
     cenv_add_builtin(e, "length", builtin_length);
     cenv_add_builtin(e, "input", builtin_input);
     cenv_add_builtin(e, "replace", builtin_replace);
