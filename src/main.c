@@ -8,6 +8,8 @@
 #include "hashtable.h"
 
 #define SYSTEM_LANG 0
+#define CONNERY_VERSION "0.0.1"
+#define CONNERY_VER_INT 1
 
 #ifdef _WIN32
 #include <string.h>
@@ -909,7 +911,11 @@ cval *builtin_http(cenv *e, cval *a) {
             cval_add(response_list, cval_string(strstr(s.body, "\r\n\r\n") + 4));
         } else {
             cval_delete(response_list);
+#if SYSTEM_LANG==0
             response_list = cval_error("unable to accesh url!");
+#else
+            response_list = cval_error("unable to access url!");
+#endif
         }
         free(s.body);
         curl_easy_cleanup(curl);
@@ -921,6 +927,23 @@ cval *builtin_input(cenv *e, cval *a) {
     CASSERT_TYPE("input", a, 0, CVAL_STRING);
     char *input = readline(a->cell[0]->str);
     return cval_string(input);
+}
+
+cval *builtin_stats(cenv *e, cval *a) {
+    CASSERT_TYPE("stats", a, 0, CVAL_STRING);
+    CASSERT_NUM("stats", a, 1);
+
+    char *cmd = a->cell[0]->str;
+
+    if (strstr(cmd, "VERSION")) {
+        return cval_string(CONNERY_VERSION);
+    }
+
+    if (strstr(cmd, "VERSION_INT")) {
+        return cval_number(CONNERY_VER_INT);
+    }
+
+    return cval_error("invalid input to stats");
 }
 
 
@@ -939,6 +962,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
+    cenv_add_builtin(e, "stats", builtin_stats);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
@@ -1010,7 +1034,11 @@ int main(int argc, char **argv) {
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
-    puts("+-----      Version 0.0.1      ------+\n");
+#if SYSTEM_LANG==1
+    puts("_____________ English Mode _____________");
+#endif
+
+    puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
 
     if (argc == 1) {
