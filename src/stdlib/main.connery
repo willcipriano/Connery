@@ -8,3 +8,11 @@
 (load "stdlib/io.connery")
 (load "stdlib/http.connery")
 (load "stdlib/calendar.connery")
+
+(load "stdlib/versions.connery")
+(def {CONNERY_VERSION_INT} (sys "VERSION_INT"))
+(def {CONNERY_VERSION} (sys "VERSION"))
+(def {connery_version} (connery_version_num CONNERY_VERSION_INT))
+
+
+
