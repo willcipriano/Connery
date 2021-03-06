@@ -1,0 +1,20 @@
+(fun {__log_level_num__ i}
+    {case
+    {(== i 0) "ALL"}
+    {(== i 1) "TRACE"}
+    {(== i 2) "DEBUG"}
+    {(== i 3) "INFO"}
+    {(== i 4) "WARN"}
+    {(== i 5) "ERROR"}
+    {Otherwise "FATAL"}})
+
+(fun {__LOG__ level msg} {
+(print (join (join (__log_level_num__ level) ": ") msg))
+})
+
+(fun {log_fatal msg} {(if (is_str msg) {__LOG__ 10 msg} {__LOG__ 10 convert_string(msg)})})
+(fun {log_error msg} {(if (is_str msg) {__LOG__ 5 msg} {__LOG__ 5 convert_string(msg)})})
+(fun {log_warn msg} {(if (is_str msg) {__LOG__ 4 msg} {__LOG__ 4 convert_string(msg)})})
+(fun {log_info msg} {(if (is_str msg) {__LOG__ 3 msg} {__LOG__ 3 convert_string(msg)})})
+(fun {log_debug msg} {(if (is_str msg) {__LOG__ 2 msg} {__LOG__ 2 convert_string(msg)})})
+(fun {log_trace msg} {(if (is_str msg) {__LOG__ 1 msg} {__LOG__ 1 convert_string(msg)})})
