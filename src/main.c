@@ -943,6 +943,18 @@ cval *builtin_input(cenv *e, cval *a) {
     return cval_string(input);
 }
 
+cval *builtin_convert_string(cenv *e, cval *a) {
+
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        int length = snprintf( NULL, 0, "%ld", a->cell[0]->num );
+        char* str = malloc( length + 1 );
+        snprintf( str, length + 1, "%ld", a->cell[0]->num );
+
+        return cval_string(str);
+    }
+
+}
+
 cval *builtin_sys(cenv *e, cval *a) {
     CASSERT_TYPE("stats", a, 0, CVAL_STRING);
     CASSERT_NUM("stats", a, 1);
@@ -1016,6 +1028,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "http", builtin_http);
 
     cenv_add_builtin(e, "file", builtin_file);
+    cenv_add_builtin(e, "convert_string", builtin_convert_string);
 
     cenv_add_builtin(e, "__FAULT__", builtin_fault);
 }
