@@ -4,7 +4,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define ENV_HASH_TABLE_SIZE 1000
+#define ENV_HASH_TABLE_SIZE 10000
+#define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
@@ -581,7 +582,11 @@ void cval_print(cval* value) {
             break;
 
         case CVAL_ERROR:
+#if SYSTEM_LANG==0
             printf("shtirred: %s", value->err);
+#else
+            printf("error: %s", value->err);
+#endif
             break;
 
         case CVAL_SYMBOL:

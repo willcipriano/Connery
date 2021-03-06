@@ -168,8 +168,9 @@ hash_table *hash_table_copy(hash_table *target_hash_table) {
     return new_hash_table;
 }
 
-void hash_table_print(hash_table *target_hash_table) {
+int hash_table_print(hash_table *target_hash_table) {
     int first_row = 1;
+    int count = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
 
@@ -226,5 +227,8 @@ void hash_table_print(hash_table *target_hash_table) {
         }
 
     }
+
+    printf("\ntotal items: ");
+    return target_hash_table -> items;
 
 }

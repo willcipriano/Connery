@@ -1,0 +1,34 @@
+(fun {__ERROR__ msg critical} {
+
+(if (!= connery_system_lang "Connery Classic")
+    {(if (!= __STATEMENT_NUMBER__ -1)
+        {(if (== __SOURCE__ "FILE")
+            {log_error (join (join (join "during statement: " (convert_string __STATEMENT_NUMBER__)) (join " while attempting to load file: " __SOURCE_FILE__)) (join " with cause: " msg))}
+            {log_error (join (join "during statement: " (convert_string __STATEMENT_NUMBER__)) (join " with cause: " msg))})}
+        {(if (== __SOURCE__ "FILE")
+            {log_error (join (join "during file: " __SOURCE_FILE__) (join " with cause: " msg))}
+            {log_error (join "with cause: " msg)})})}
+
+    {(if (!= __STATEMENT_NUMBER__ -1)
+             {(if (== __SOURCE__ "FILE")
+                 {log_error (join (join (join "during shtatement: " (convert_string __STATEMENT_NUMBER__)) (join " while attempting to load file: " __SOURCE_FILE__)) (join " with caushe: " msg))}
+                 {log_error (join (join "during shtatement: " (convert_string __STATEMENT_NUMBER__)) (join " with caushe: " msg))})}
+             {(if (== __SOURCE__ "FILE")
+                 {log_error (join (join "during file: " __SOURCE_FILE__) (join " with caushe: " msg))}
+                 {log_error (join "with caushe: " msg)})})})
+
+(if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {__FAULT__ msg})
+})
+
+(fun {ERROR msg} {
+if (is_str msg)
+    {__ERROR__ msg 1}
+    {__ERROR__ (string_convert msg) 1}
+})
+
+(fun {error msg} {
+if (is_str msg)
+    {__ERROR__ msg 0}
+    {__ERROR__ (string_convert msg) 0}
+})
+
