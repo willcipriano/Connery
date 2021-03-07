@@ -1,12 +1,11 @@
 local.install:
-		sudo apt-get update || true
-		sudo apt-get -y install build-essential || true
-		sudo apt-get -y install cmake || true
-		sudo apt-get -y install libcurl4-openssl-dev || true
-		sudo apt-get -y install libedit-dev || true
+		sudo apt-get -y install build-essential
+		sudo apt-get -y install cmake
+		sudo apt-get -y install libcurl4-openssl-dev
+		sudo apt-get -y install libedit-dev
 
 local.build:
-		cmake src/. || true
+		cmake src/.
 		make Connery
 
 local.clean:
@@ -24,7 +23,7 @@ docker.build:
 		docker build --tag connerylang .
 
 docker.clean:
-		docker rmi connerylang
+		docker rmi connerylang --force
 
 docker.run:
 		docker run -it connerylang
