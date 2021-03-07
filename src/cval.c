@@ -347,11 +347,10 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
     cval* f = cval_pop(value, 0);
     if (f->type != CVAL_FUNCTION) {
-        cval* err = cval_error("S-Expression starts with incorrect type. Got %s, Expected %s", ctype_name(f->type), ctype_name(CVAL_FUNCTION));
-        cval_delete(f);
-        cval_delete(value);
-        return err;
-    }
+            if (f->type == CVAL_S_EXPRESSION) {
+                return cval_evaluate_s_expression(env, f);
+            }
+        }
 
     cval* result = cval_call(env, f, value);
     cval_delete(f);
@@ -522,7 +521,7 @@ void cval_print_str(cval* v) {
     char* escaped = malloc(strlen(v->str)+1);
     strcpy(escaped, v->str);
     escaped = mpcf_escape(escaped);
-    printf("\"%s\"", escaped);
+    printf("%s", escaped);
     free(escaped);
 }
 
@@ -594,7 +593,7 @@ void cval_print(cval* value) {
             break;
 
         case CVAL_S_EXPRESSION:
-            cval_expr_print(value, '(', ')');
+            cval_expr_print(value, ' ', ' ');
             break;
 
         case CVAL_Q_EXPRESSION:

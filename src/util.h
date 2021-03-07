@@ -1,7 +1,3 @@
-//
-// Created by dev on 8/15/20.
-//
-
 #ifndef CONNERY_UTIL_H
 #define CONNERY_UTIL_H
 

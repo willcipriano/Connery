@@ -11,7 +11,7 @@
 #define CONNERY_VERSION "0.0.1"
 #define CONNERY_VER_INT 1
 #define REPORT_STATEMENT_NUMBERS 1
-#define LOG_LEVEL 3
+#define LOG_LEVEL 4
 
 #ifdef _WIN32
 #include <string.h>
@@ -586,7 +586,6 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
-
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
         cval *expr = cval_read(r.output);
@@ -600,11 +599,18 @@ cval *builtin_load(cenv *e, cval *a) {
 #endif
 
         while (expr->count) {
-            cval *x = cval_evaluate(e, cval_pop(expr, 0));
+            cval *expression = cval_pop(expr, 0);
+
+            hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__"));
+            hash_table_set(e->ht, "__PREV_EXPRESSION__", hash_table_get(e->ht, "__EXPRESSION__"));
+            hash_table_set(e->ht, "__EXPRESSION__", expression);
+
+            cval *x = cval_evaluate(e, expression);
 
             if (x->type == CVAL_ERROR) {
                 cval_print_line(x);
             }
+
             cval_delete(x);
 #if REPORT_STATEMENT_NUMBERS
             statement_number += 1;
@@ -1070,6 +1076,9 @@ int main(int argc, char **argv) {
               Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
 
     cenv *e = cenv_new();
+    hash_table_set(e->ht, "__EXPRESSION__", cval_string("interpreter_start"));
+    hash_table_set(e->ht, "__PREV_EXPRESSION__", cval_string("interpreter_start"));
+
     cenv_add_builtins(e);
     load_standard_lib(e);
 
@@ -1100,6 +1109,10 @@ int main(int argc, char **argv) {
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
+
+            hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__"));
+            hash_table_set(e->ht, "__PREV_EXPRESSION__", hash_table_get(e->ht, "__EXPRESSION__"));
+            hash_table_set(e->ht, "__EXPRESSION__", cval_string(input));
 
             mpc_result_t result;
             if (mpc_parse("<stdin>", input, Connery, &result)) {
