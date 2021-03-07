@@ -19,7 +19,6 @@
 
     (if (>= __LOG_LEVEL__ 4)
     {
-             (print "")
              (print "TRACE: ")
 
              (if (>= __STATEMENT_NUMBER__ 3) {
