@@ -1,8 +1,6 @@
 ; Constants
 (def {None} {})
 (def {Empty} "")
-(def {True} 1)
-(def {False} 0)
 (def {Otherwise} True)
 (def {std_lib_main_location} "stdlib/main.connery")
 

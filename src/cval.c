@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #define ENV_HASH_TABLE_SIZE 10000
 #define SYSTEM_LANG 1
@@ -39,6 +40,7 @@ char* ctype_name(int t) {
         case CVAL_Q_EXPRESSION: return "Q-Expression";
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
+        case CVAL_BOOLEAN: return "Boolean";
         default: return "Unknown Type";
     }
 }
@@ -48,6 +50,15 @@ cval* cval_function(cbuiltin func) {
     v->type = CVAL_FUNCTION;
     v->builtin = func;
     return v;
+}
+
+cval *cval_boolean(bool b) {
+    cval *value = malloc(sizeof(cval));
+    value->type = CVAL_BOOLEAN;
+    value->boolean = b;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
 }
 
 cval* cval_number(long x) {
@@ -242,6 +253,11 @@ cval* cval_copy(cval* v) {
         case CVAL_STRING:
             x->str = malloc(strlen(v->str) + 1);
             strcpy(x->str, v->str);
+            break;
+
+
+        case CVAL_BOOLEAN:
+            x->boolean = v->boolean;
             break;
     }
 
@@ -440,6 +456,13 @@ cval* cval_join(cval* x, cval* y) {
     return x;
 }
 
+cval *cval_read_boolean(mpc_ast_t *t) {
+    if (strstr(t->contents, "True")) {
+        return cval_boolean(true);
+    }
+    return cval_boolean(false);
+}
+
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -464,7 +487,22 @@ cval* cval_read_string(mpc_ast_t* t) {
     return str;
 }
 
+cval *cval_read_symbol(char *symbol) {
+
+    if (strcmp(symbol, "True") == 0) {
+        return cval_boolean(true);
+    } else if (strcmp(symbol, "False") == 0) {
+        return cval_boolean(false);
+    } else {
+        return cval_symbol(symbol);
+    }
+}
+
 cval* cval_read(mpc_ast_t* t) {
+
+    if (strstr(t->tag, "boolean")) {
+        return cval_read_boolean(t);
+    }
 
     if (strstr(t->tag, "number")) {
         return cval_read_num(t);
@@ -475,7 +513,7 @@ cval* cval_read(mpc_ast_t* t) {
     }
 
     if (strstr(t->tag, "symbol")) {
-        return cval_symbol(t->contents);
+        return cval_read_symbol(t->contents);
     }
 
     cval* x = NULL;
@@ -560,6 +598,16 @@ void cval_expr_ht_print(cval* value, char open, char close, char* key) {
 
 void cval_print(cval* value) {
     switch (value->type) {
+
+        case CVAL_BOOLEAN:
+            if (value->boolean) {
+                printf("True");
+            } else {
+                printf("False");
+            }
+            break;
+
+
         case CVAL_NUMBER:
             printf("%li", value->num);
             break;

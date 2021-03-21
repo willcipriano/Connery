@@ -535,18 +535,29 @@ cval *builtin_ne(cenv *e, cval *a) {
 
 cval *builtin_if(cenv *e, cval *a) {
     CASSERT_NUM("if", a, 3)
-    CASSERT_TYPE("if", a, 0, CVAL_NUMBER)
     CASSERT_TYPE("if", a, 1, CVAL_Q_EXPRESSION)
     CASSERT_TYPE("if", a, 2, CVAL_Q_EXPRESSION)
+
+    if (a->cell[0]->type != CVAL_NUMBER) {
+        CASSERT_TYPE("if", a, 0, CVAL_BOOLEAN)
+    }
 
     cval *x;
     a->cell[1]->type = CVAL_S_EXPRESSION;
     a->cell[2]->type = CVAL_S_EXPRESSION;
 
-    if (a->cell[0]->num) {
-        x = cval_evaluate(e, cval_pop(a, 1));
+    if (a->cell[0]->type == CVAL_BOOLEAN) {
+        if (a->cell[0]->boolean) {
+            x = cval_evaluate(e, cval_pop(a, 1));
+        } else {
+            x = cval_evaluate(e, cval_pop(a, 2));
+        }
     } else {
-        x = cval_evaluate(e, cval_pop(a, 2));
+        if (a->cell[0]->num) {
+            x = cval_evaluate(e, cval_pop(a, 1));
+        } else {
+            x = cval_evaluate(e, cval_pop(a, 2));
+        }
     }
 
     cval_delete(a);
@@ -861,6 +872,9 @@ cval *builtin_type(cenv *e, cval *a) {
 
         case CVAL_SYMBOL:
             return cval_number(5);
+
+        case CVAL_BOOLEAN:
+            return cval_number(6);
 
         default:
             return cval_error("Type not defined!");
