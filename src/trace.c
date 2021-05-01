@@ -21,7 +21,7 @@ void record_trace(trace* t, cval* data) {
 
     te->position=t->current->position + 1;
     te->prev=t->current;
-    te->data=data;
+    te->data=cval_copy(data);
 
     t->current->next=te;
     t->current=te;

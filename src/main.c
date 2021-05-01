@@ -612,17 +612,13 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
+    hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(-1));
+
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
         cval *expr = cval_read(r.output);
         mpc_ast_delete(r.output);
 
-# if REPORT_STATEMENT_NUMBERS
-        int statement_number = 1;
-        hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
-#else
-        hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(-1));
-#endif
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
@@ -634,10 +630,6 @@ cval *builtin_load(cenv *e, cval *a) {
             }
 
             cval_delete(x);
-#if REPORT_STATEMENT_NUMBERS
-            statement_number += 1;
-            hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
-#endif
 
         }
 
@@ -657,8 +649,8 @@ cval *builtin_load(cenv *e, cval *a) {
 }
 
 cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
-    CASSERT_NUM("load", a, 1)
-    CASSERT_TYPE("load", a, 0, CVAL_STRING)
+    CASSERT_NUM("traced_load", a, 1)
+    CASSERT_TYPE("traced_load", a, 0, CVAL_STRING)
 
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
@@ -677,9 +669,6 @@ cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
             }
 
             cval_delete(x);
-#if REPORT_STATEMENT_NUMBERS
-#endif
-
         }
 
         cval_delete(expr);
@@ -1191,7 +1180,7 @@ int main(int argc, char **argv) {
 
     if (argc >= 2) {
         hash_table_set(e ->ht, "__SOURCE__", cval_string("FILE"));
-        trace* trace = start_trace("file");
+        trace* trace = start_trace("FILE");
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
             hash_table_set(e ->ht, "__SOURCE_FILE__", cval_string(argv[i]));

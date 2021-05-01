@@ -1,5 +1,6 @@
 #include "cval.h"
 #include "util.h"
+#include "trace.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -407,6 +408,7 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
     cval_delete(k);
     cval_delete(v);
 }
+
 
 void cenv_def(cenv* e, cval* k, cval* v) {
     while (e->par) {
