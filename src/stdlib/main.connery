@@ -5,7 +5,18 @@
 (load "stdlib/logic.connery")
 (load "stdlib/lists.connery")
 (load "stdlib/strings.connery")
+(load "stdlib/logs.connery")
+(load "stdlib/errors.connery")
 (load "stdlib/io.connery")
 (load "stdlib/http.connery")
-(load "stdlib/csv.connery")
-(load "stdlib/Q.connery")
+
+
+(load "stdlib/versions.connery")
+(def {CONNERY_VERSION_INT} (sys "VERSION_INT"))
+(def {CONNERY_VERSION} (sys "VERSION"))
+(def {connery_version} (connery_version_num CONNERY_VERSION_INT))
+(def {CONNERY_SYSTEM_LANG_INT} (sys "SYSTEM_LANGUAGE_INT"))
+(def {connery_system_lang} (system_lang_version_num CONNERY_SYSTEM_LANG_INT))
+
+
+

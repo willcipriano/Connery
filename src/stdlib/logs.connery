@@ -1,0 +1,58 @@
+(fun {__log_level_num__ i}
+    {case
+    {(== i 1) "ERROR"}
+    {(== i 2) "WARN"}
+    {(== i 3) "INFO"}
+    {(== i 4) "DEBUG"}
+    {(== i 5) "TRACE"}
+    {Otherwise "FATAL"}})
+
+(fun {__log_level_connery_num__ i}
+    {case
+    {(== i 1) "Mishtake"}
+    {(== i 2) "Shtired"}
+    {(== i 3) "For Your Eyesh Only"}
+    {(== i 4) "Shocking"}
+    {(== i 5) "Without A Trashe"}
+    {Otherwise "Lishenshe To Kill"}})
+
+(fun {__LEVELED_STANDARD_OUTPUT_LOG_HANDLER__ level msg} {
+if (>= log_level level)
+    {
+    (if (!= connery_system_lang "Connery Classic")
+        {(print (join (join (__log_level_num__ level) ": ") msg))}
+        {(print (join (join (__log_level_connery_num__ level) ": ") msg))})
+    }
+    {}
+})
+
+(fun {__NOOP_LOG_HANDLER__ level msg} {})
+
+(def {__DEFAULT_LOGGER__} __LEVELED_STANDARD_OUTPUT_LOG_HANDLER__)
+(def {interpreter_log_handler} __DEFAULT_LOGGER__)
+(def {__LOGGER_INIT_COMPLETE__} False)
+
+(fun {__LOG__ level msg} {
+if (__LOGGER_INIT_COMPLETE__) {
+interpreter_log_handler level msg
+} {
+(def {log_level} __LOG_LEVEL__)
+(interpreter_log_handler level msg)
+(def {__LOGGER_INIT_COMPLETE__} True)
+}})
+
+(fun {go_loud loud_bool} {
+(if (loud_bool)
+    {def {interpreter_log_handler} __DEFAULT_LOGGER__}
+    {def {interpreter_log_handler} __NOOP_LOG_HANDLER__})
+(if (loud_bool)
+    {if (< log_level 4) {(if (> __LOG_LEVEL__ 4) {(def {log_level} __LOG_LEVEL__)} {def {log_level} 4})} {}}
+    {if (> log_level 3) {(if (< __LOG_LEVEL__ 3) {(def {log_level} __LOG_LEVEL__)} {def {log_level} 3})} {}}
+)})
+
+(fun {log_fatal msg} {__LOG__ 0 msg})
+(fun {log_error msg} {__LOG__ 1 msg})
+(fun {log_warn msg} {__LOG__ 2 msg})
+(fun {log_info msg} {__LOG__ 3 msg})
+(fun {log_debug msg} {__LOG__ 4 msg})
+(fun {log_trace msg} {__LOG__ 5 msg})

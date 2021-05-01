@@ -1,0 +1,15 @@
+(fun {connery_version_num i} {
+    case
+    {(== i 0) "Connery - Unspecified Version"}
+    {(== i 1) "Connery - 0.0.1 - The Legend Begins"}
+    {(== i 2) "Connery - 0.0.2"}
+    {(== i 9999) "Connery - Future Version"}
+    {Otherwise (error "Connery version is undefined.")}
+})
+
+(fun {system_lang_version_num i} {
+    case
+    {(== i 0) "Connery Classic"}
+    {(== i 1) "English"}
+    {Otherwise (error "Connery lang version is undefined.")}
+})

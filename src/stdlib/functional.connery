@@ -13,3 +13,11 @@
         {second (first cs)}
         {unpack case (tail cs)}}
 })
+
+; Currying
+(fun {unpack f l} {
+    eval (join (list f) l)
+})
+(fun {pack f & xs} {f xs})
+(def {curry} unpack)
+(def {uncurry} pack)

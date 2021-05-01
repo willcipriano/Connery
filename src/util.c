@@ -1,14 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <values.h>
-#include <sys/stat.h>
-#include <errno.h>
 #include "util.h"
 
 void init_http_response(struct http_response *s) {
     s->len = 0;
-    s->body = malloc(s->len + 1);
+    s->body = malloc(s->len+1);
     if (s->body == NULL) {
         fprintf(stderr, "malloc() failed\n");
         exit(EXIT_FAILURE);
@@ -16,24 +13,19 @@ void init_http_response(struct http_response *s) {
     s->body[0] = '\0';
 }
 
-size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_response *s) {
-    size_t new_len = s->len + size * nmemb;
-    s->body = realloc(s->body, new_len + 1);
+size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_response *s)
+{
+    size_t new_len = s->len + size*nmemb;
+    s->body = realloc(s->body, new_len+1);
     if (s->body == NULL) {
         fprintf(stderr, "realloc() failed\n");
         exit(EXIT_FAILURE);
     }
-    memcpy(s->body + s->len, ptr, size * nmemb);
+    memcpy(s->body+s->len, ptr, size*nmemb);
     s->body[new_len] = '\0';
     s->len = new_len;
 
-    return size * nmemb;
-}
-
-size_t http_download_writer(void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
-    return written;
+    return size*nmemb;
 }
 
 typedef char *multi_tok_t;
@@ -74,15 +66,17 @@ char *concatenateThree(const char *a, const char *b, const char *c) {
     return res;
 }
 
-long long_power(long x, long exponent) {
+long long_power(long x,long exponent)
+{
     int i;
     int number = 1;
     for (i = 0; i < exponent; ++i)
         number *= x;
-    return (number);
+    return(number);
 }
 
-int count_digits(long n) {
+int count_digits(long n)
+{
     if (n == 0)
         return 0;
     return 1 + count_digits(n / 10);
@@ -132,31 +126,4 @@ long get_factor(int init_digits) {
     }
 }
 
-int mkpath(const char *path, mode_t mode) {
-    char tmp[PATH_MAX];
-    char *p = NULL;
-    size_t len;
 
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-    for (p = tmp + 1; *p; p++)
-        if (*p == '/') {
-            *p = 0;
-#if defined(_WIN32)
-            if (_mkdir(tmp) < 0 && errno != EEXIST)
-#else
-            if (mkdir(tmp, mode) < 0 && errno != EEXIST)
-#endif
-                return -1;
-            *p = '/';
-        }
-#if defined(_WIN32)
-    if (_mkdir(tmp) < 0 && errno != EEXIST)
-#else
-    if (mkdir(tmp, mode) < 0 && errno != EEXIST)
-#endif
-        return -1;
-    return 1;
-}

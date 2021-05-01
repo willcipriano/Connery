@@ -1,9 +1,9 @@
 #ifndef CONNERY_CVAL_H
 #define CONNERY_CVAL_H
 
+#include <stdbool.h>
 #include "mpc.h"
 #include "hashtable.h"
-#include <stdbool.h>
 
 typedef struct cval cval;
 typedef struct cenv cenv;
@@ -13,7 +13,7 @@ typedef cval *(*cbuiltin)(cenv *, cval *);
 enum {
     CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION,
     CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT,
-    CVAL_BOOLEAN, CVAL_NULL
+    CVAL_BOOLEAN
 };
 
 struct cval {
@@ -25,6 +25,7 @@ struct cval {
     char *sym;
     char *str;
     bool boolean;
+    hash_table *ht;
 
     cbuiltin builtin;
     cenv *env;
@@ -56,8 +57,6 @@ cval *cval_symbol(char *s);
 
 cval *cval_boolean(bool b);
 
-cval *cval_null();
-
 cval *cval_s_expression(void);
 
 cval *cval_q_expression(void);
@@ -88,9 +87,9 @@ cval *cval_read(mpc_ast_t *t);
 
 void cval_print_line(cval *value);
 
-void cval_expr_print(cval *value, char open, char close);
+bool cval_expr_print(cval *value, char open, char close);
 
-void cval_print(cval *value);
+bool cval_print(cval *value);
 
 void cval_print_ht_str(cval *v, char *key);
 
