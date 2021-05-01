@@ -1,3 +1,21 @@
-(fun {not x} {- 1 x})
-(fun {or x y} {+ x y})
-(fun {and x y} {* x y})
+(fun {not x} {
+     if (x)
+     {False}
+     {True}
+})
+
+(fun {or x y} {
+ if (x)
+    {True}
+    {if (y)
+        {True}
+        {False}}
+ })
+
+(fun {and x y} {
+    if (x)
+        {if (y)
+            {True}
+            {False}}
+        {False}
+})

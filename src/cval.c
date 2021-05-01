@@ -1,8 +1,11 @@
 #include "cval.h"
+#include "util.h"
+#include "trace.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #define ENV_HASH_TABLE_SIZE 10000
 #define SYSTEM_LANG 1
@@ -39,6 +42,7 @@ char* ctype_name(int t) {
         case CVAL_Q_EXPRESSION: return "Q-Expression";
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
+        case CVAL_BOOLEAN: return "Boolean";
         default: return "Unknown Type";
     }
 }
@@ -48,6 +52,15 @@ cval* cval_function(cbuiltin func) {
     v->type = CVAL_FUNCTION;
     v->builtin = func;
     return v;
+}
+
+cval *cval_boolean(bool b) {
+    cval *value = malloc(sizeof(cval));
+    value->type = CVAL_BOOLEAN;
+    value->boolean = b;
+    value->count = 0;
+    value->cell = NULL;
+    return value;
 }
 
 cval* cval_number(long x) {
@@ -243,6 +256,11 @@ cval* cval_copy(cval* v) {
             x->str = malloc(strlen(v->str) + 1);
             strcpy(x->str, v->str);
             break;
+
+
+        case CVAL_BOOLEAN:
+            x->boolean = v->boolean;
+            break;
     }
 
     return x;
@@ -347,11 +365,10 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
 
     cval* f = cval_pop(value, 0);
     if (f->type != CVAL_FUNCTION) {
-        cval* err = cval_error("S-Expression starts with incorrect type. Got %s, Expected %s", ctype_name(f->type), ctype_name(CVAL_FUNCTION));
-        cval_delete(f);
-        cval_delete(value);
-        return err;
-    }
+            if (f->type == CVAL_S_EXPRESSION) {
+                return cval_evaluate_s_expression(env, f);
+            }
+        }
 
     cval* result = cval_call(env, f, value);
     cval_delete(f);
@@ -391,6 +408,7 @@ void cenv_add_builtin(cenv* e, char* name, cbuiltin func) {
     cval_delete(k);
     cval_delete(v);
 }
+
 
 void cenv_def(cenv* e, cval* k, cval* v) {
     while (e->par) {
@@ -441,6 +459,13 @@ cval* cval_join(cval* x, cval* y) {
     return x;
 }
 
+cval *cval_read_boolean(mpc_ast_t *t) {
+    if (strstr(t->contents, "True")) {
+        return cval_boolean(true);
+    }
+    return cval_boolean(false);
+}
+
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -465,7 +490,22 @@ cval* cval_read_string(mpc_ast_t* t) {
     return str;
 }
 
+cval *cval_read_symbol(char *symbol) {
+
+    if (strcmp(symbol, "True") == 0) {
+        return cval_boolean(true);
+    } else if (strcmp(symbol, "False") == 0) {
+        return cval_boolean(false);
+    } else {
+        return cval_symbol(symbol);
+    }
+}
+
 cval* cval_read(mpc_ast_t* t) {
+
+    if (strstr(t->tag, "boolean")) {
+        return cval_read_boolean(t);
+    }
 
     if (strstr(t->tag, "number")) {
         return cval_read_num(t);
@@ -476,7 +516,7 @@ cval* cval_read(mpc_ast_t* t) {
     }
 
     if (strstr(t->tag, "symbol")) {
-        return cval_symbol(t->contents);
+        return cval_read_symbol(t->contents);
     }
 
     cval* x = NULL;
@@ -522,7 +562,7 @@ void cval_print_str(cval* v) {
     char* escaped = malloc(strlen(v->str)+1);
     strcpy(escaped, v->str);
     escaped = mpcf_escape(escaped);
-    printf("\"%s\"", escaped);
+    printf("%s", v->str);
     free(escaped);
 }
 
@@ -534,7 +574,8 @@ void cval_print_ht_str(cval* v, char* key) {
     free(escaped);
 }
 
-void cval_expr_print(cval* value, char open, char close) {
+bool cval_expr_print(cval* value, char open, char close) {
+    if (value->count >= 1) {
     putchar(open);
     for (int i = 0; i < value->count; i++) {
         cval_print(value->cell[i]);
@@ -543,6 +584,8 @@ void cval_expr_print(cval* value, char open, char close) {
         }
     }
     putchar(close);
+    return true;}
+    return false;
 }
 
 void cval_expr_ht_print(cval* value, char open, char close, char* key) {
@@ -559,8 +602,18 @@ void cval_expr_ht_print(cval* value, char open, char close, char* key) {
 }
 
 
-void cval_print(cval* value) {
+bool cval_print(cval* value) {
     switch (value->type) {
+
+        case CVAL_BOOLEAN:
+            if (value->boolean) {
+                printf("True");
+            } else {
+                printf("False");
+            }
+            break;
+
+
         case CVAL_NUMBER:
             printf("%li", value->num);
             break;
@@ -594,8 +647,7 @@ void cval_print(cval* value) {
             break;
 
         case CVAL_S_EXPRESSION:
-            cval_expr_print(value, '(', ')');
-            break;
+            return cval_expr_print(value, '(', ')');
 
         case CVAL_Q_EXPRESSION:
             cval_expr_print(value, '{', '}');
@@ -605,9 +657,11 @@ void cval_print(cval* value) {
             cval_print_str(value);
             break;
     }
+
+    return true;
 }
 void cval_print_line(cval* value) {
-    cval_print(value);
-    putchar('\n');
+    if (cval_print(value)) {
+    putchar('\n'); }
 }
 

@@ -2482,11 +2482,10 @@ mpc_val_t *mpcf_strtrim(mpc_val_t *x) {
 
 static const char mpc_escape_input_c[]  = {
   '\a', '\b', '\f', '\n', '\r',
-  '\t', '\v', '\\', '\'', '\"', '\0'};
+  '\t', '\v', '\0'};
 
 static const char *mpc_escape_output_c[] = {
-  "\\a", "\\b", "\\f", "\\n", "\\r", "\\t",
-  "\\v", "\\\\", "\\'", "\\\"", "\\0", NULL};
+  "\\a", "\\b", "\\f", "\\n", "\\r", "\\t", NULL};
 
 static const char mpc_escape_input_raw_re[] = { '/' };
 static const char *mpc_escape_output_raw_re[] = { "\\/", NULL };

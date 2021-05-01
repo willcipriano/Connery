@@ -6,6 +6,9 @@
         {(== i 3) "Q Expression"}
         {(== i 4) "Function"}
         {(== i 5) "Symbol"}
+        {(== i 6) "Float"}
+        {(== i 7) "Boolean"}
+        {(== i 8) "Null"}
         {(Otherwise) "Unknown"}
 })
 
@@ -41,6 +44,24 @@
 
 (fun {is_sym i} {
     if (== 5 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_float i} {
+    if (== 6 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_bool i} {
+    if (== 7 (type i))
+        {True}
+        {False}
+})
+
+(fun {is_null i} {
+    if (== 8 (type i))
         {True}
         {False}
 })

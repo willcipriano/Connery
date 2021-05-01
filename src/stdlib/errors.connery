@@ -1,4 +1,4 @@
-(fun {__ERROR__ msg critical} {
+(fun {__STANDARD_ERROR_HANDLER__ msg critical} {
 
 (if (!= connery_system_lang "Connery Classic")
     {(if (!= __STATEMENT_NUMBER__ -1)
@@ -17,10 +17,40 @@
                  {log_error (join (join "during file: " __SOURCE_FILE__) (join " with caushe: " msg))}
                  {log_error (join "with caushe: " msg)})})})
 
-(if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {__FAULT__ msg})
+    (if (>= log_level 4)
+    {
+             (print "TRACE: ")
+
+             (if (>= __STATEMENT_NUMBER__ 3) {
+                 (print __PREV_PREV_EXPRESSION__)
+             }{})
+
+             (if (>= __STATEMENT_NUMBER__ 2) {
+                  (print __PREV_EXPRESSION__)
+             }{})
+
+             (if (>= __STATEMENT_NUMBER__ 1) {
+                  (print __EXPRESSION__)
+             }{}) }
+    {})
+
+(if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {})
 })
 
-(fun {ERROR msg} {
+(fun {__NOOP_ERROR_HANDLER__ msg critical} { })
+
+(def {standard_error_handler} __STANDARD_ERROR_HANDLER__)
+
+(fun {__ERROR__ msg critical} {
+(standard_error_handler msg critical)
+})
+
+(fun {mistakes mistake_bool} {
+if (mistake_bool)
+    {def {standard_error_handler} __STANDARD_ERROR_HANDLER__}
+    {def {standard_error_handler} __NOOP_ERROR_HANDLER__}})
+
+(fun {panic msg} {
 if (is_str msg)
     {__ERROR__ msg 1}
     {__ERROR__ (string_convert msg) 1}
@@ -31,4 +61,3 @@ if (is_str msg)
     {__ERROR__ msg 0}
     {__ERROR__ (string_convert msg) 0}
 })
-
