@@ -37,7 +37,7 @@
 (if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {})
 })
 
-(fun {ERROR msg} {
+(fun {panic msg} {
 if (is_str msg)
     {__ERROR__ msg 1}
     {__ERROR__ (string_convert msg) 1}

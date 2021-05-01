@@ -13,6 +13,7 @@
 #define CONNERY_VER_INT 1
 #define REPORT_STATEMENT_NUMBERS 1
 #define LOG_LEVEL 4
+#define ENABLE_FULL_TRACE false
 
 #ifdef _WIN32
 #include <string.h>
@@ -285,15 +286,9 @@ cval *set_trace_data(cenv *e, trace *t) {
 
     if (t->current->position > 2) {
     hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__")); }
-    else {
-        hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", cval_string(""));
-    }
 
     if (t->current->position > 1) {
         hash_table_set(e->ht, "__PREV_EXPRESSION__", t->current->prev->data); }
-    else {
-            hash_table_set(e->ht, "__PREV_EXPRESSION__", cval_string(""));
-    }
 
     hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
@@ -1169,13 +1164,6 @@ int main(int argc, char **argv) {
 
     hash_table_set(e ->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
 
-#if REPORT_STATEMENT_NUMBERS==1
-    int statement_number = 1;
-    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
-#else
-    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(-1));
-#endif
-
     if (argc == 1) {
         hash_table_set(e ->ht, "__SOURCE__", cval_string("INTERACTIVE"));
         trace* trace = start_trace("interactive");
@@ -1191,11 +1179,6 @@ int main(int argc, char **argv) {
                 cval *output = cval_evaluate(e, cval_read(result.output));
                 cval_print_line(output);
                 cval_delete(output);
-
-#if REPORT_STATEMENT_NUMBERS==1
-                statement_number += 1;
-                hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(statement_number));
-#endif
 
                 mpc_ast_delete(result.output);
             } else {

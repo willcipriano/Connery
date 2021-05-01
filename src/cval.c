@@ -1,4 +1,5 @@
 #include "cval.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
