@@ -612,7 +612,7 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
-    hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(-1));
+    trace* t = start_trace(a->cell[0]->str);
 
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
@@ -622,6 +622,8 @@ cval *builtin_load(cenv *e, cval *a) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
+            record_trace(t, expression);
+            set_trace_data(e, t);
 
             cval *x = cval_evaluate(e, expression);
 

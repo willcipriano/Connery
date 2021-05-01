@@ -562,7 +562,7 @@ void cval_print_str(cval* v) {
     char* escaped = malloc(strlen(v->str)+1);
     strcpy(escaped, v->str);
     escaped = mpcf_escape(escaped);
-    printf("%s", escaped);
+    printf("%s", v->str);
     free(escaped);
 }
 
@@ -574,7 +574,8 @@ void cval_print_ht_str(cval* v, char* key) {
     free(escaped);
 }
 
-void cval_expr_print(cval* value, char open, char close) {
+bool cval_expr_print(cval* value, char open, char close) {
+    if (value->count >= 1) {
     putchar(open);
     for (int i = 0; i < value->count; i++) {
         cval_print(value->cell[i]);
@@ -583,6 +584,8 @@ void cval_expr_print(cval* value, char open, char close) {
         }
     }
     putchar(close);
+    return true;}
+    return false;
 }
 
 void cval_expr_ht_print(cval* value, char open, char close, char* key) {
@@ -599,7 +602,7 @@ void cval_expr_ht_print(cval* value, char open, char close, char* key) {
 }
 
 
-void cval_print(cval* value) {
+bool cval_print(cval* value) {
     switch (value->type) {
 
         case CVAL_BOOLEAN:
@@ -644,8 +647,7 @@ void cval_print(cval* value) {
             break;
 
         case CVAL_S_EXPRESSION:
-            cval_expr_print(value, ' ', ' ');
-            break;
+            return cval_expr_print(value, '(', ')');
 
         case CVAL_Q_EXPRESSION:
             cval_expr_print(value, '{', '}');
@@ -655,9 +657,11 @@ void cval_print(cval* value) {
             cval_print_str(value);
             break;
     }
+
+    return true;
 }
 void cval_print_line(cval* value) {
-    cval_print(value);
-    putchar('\n');
+    if (cval_print(value)) {
+    putchar('\n'); }
 }
 

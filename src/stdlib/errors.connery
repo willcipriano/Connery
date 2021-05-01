@@ -22,15 +22,15 @@
              (print "TRACE: ")
 
              (if (>= __STATEMENT_NUMBER__ 3) {
-                 (print __PREV_PREV_EXPRESSION__)
+                 (print (join " " __PREV_PREV_EXPRESSION__))
              }{print "***"})
 
              (if (>= __STATEMENT_NUMBER__ 2) {
-                  (print __PREV_EXPRESSION__)
+                  (print (join "     " __PREV_EXPRESSION__))
              }{print "**"})
 
              (if (>= __STATEMENT_NUMBER__ 1) {
-                  (print __EXPRESSION__)
+                  (print (join "         " __EXPRESSION__))
              }{print "*"}) }
     {})
 

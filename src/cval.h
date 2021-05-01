@@ -87,9 +87,9 @@ cval *cval_read(mpc_ast_t *t);
 
 void cval_print_line(cval *value);
 
-void cval_expr_print(cval *value, char open, char close);
+bool cval_expr_print(cval *value, char open, char close);
 
-void cval_print(cval *value);
+bool cval_print(cval *value);
 
 void cval_print_ht_str(cval *v, char *key);
 
