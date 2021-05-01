@@ -17,7 +17,7 @@
                  {log_error (join (join "during file: " __SOURCE_FILE__) (join " with caushe: " msg))}
                  {log_error (join "with caushe: " msg)})})})
 
-    (if (>= __LOG_LEVEL__ 4)
+    (if (>= log_level 4)
     {
              (print "TRACE: ")
 

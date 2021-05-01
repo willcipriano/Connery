@@ -11,9 +11,7 @@
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.1"
 #define CONNERY_VER_INT 1
-#define REPORT_STATEMENT_NUMBERS 1
 #define LOG_LEVEL 4
-#define ENABLE_FULL_TRACE false
 
 #ifdef _WIN32
 #include <string.h>
