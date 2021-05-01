@@ -8,6 +8,7 @@ struct http_response {
 };
 void init_http_response(struct http_response *s);
 size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_response *s);
+size_t http_download_writer(void *ptr, size_t size, size_t nmemb, void *stream);
 
 //multitok
 typedef char *multi_tok_t;
@@ -20,5 +21,10 @@ long long_power(long x,long exponent);
 int count_digits(long n);
 long get_factor(int init_digits);
 char *replace_str(char *str, char *orig, char *rep);
+
+//mkpath
+int mkpath(const char *path, mode_t mode);
+
+
 
 #endif //CONNERY_UTIL_H

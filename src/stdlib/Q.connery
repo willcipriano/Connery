@@ -1,0 +1,26 @@
+(def {__Q_package_location__} "Q")
+(def {__Q_location__} "http://q.connerylang.org")
+(def {__Q_package_list_url_slug__} "/packages/packages_list.csv")
+(def {__Q_packages__} Null)
+
+(mkdir __Q_package_location__)
+
+(fun {__Q_package_scan__ packages package_name} {
+    if (>= (length packages) 1)
+        {if (== (first (first (head packages))) package_name)
+           {first (head packages)}
+           {__Q_package_scan__ (tail packages) package_name}}
+        {Null}
+})
+
+(fun {Q package_name} {
+     (if (is_null __Q_packages__)
+         {def {__Q_packages__} (tail (csv (third (http_get (join __Q_location__ __Q_package_list_url_slug__)))))}
+         {})
+
+     (= {__package_result__} (__Q_package_scan__ __Q_packages__ package_name))
+
+     (if (is_null __package_result__)
+              {error (join "Package " package_name " not found!")}
+              {print "False"})
+})

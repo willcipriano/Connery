@@ -16,7 +16,7 @@
 ;third - get third item of a list
 ;usage: third List
 (fun {third l} {
- if (is_qexpr l)
+ if (or (is_qexpr l) (is_sexpr l))
  {eval (head (tail (tail l))) }
  {error "third requiresh a lisht ash input!"}
  })
