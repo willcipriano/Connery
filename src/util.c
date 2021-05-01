@@ -126,22 +126,4 @@ long get_factor(int init_digits) {
     }
 }
 
-char *replace_str(char *str, char *orig, char *rep)
-{
-    static char buffer[4096];
-    char *p;
-    int i=0;
-
-    while(str[i]){
-        if (!(p=strstr(str+i,orig)))  return str;
-        strncpy(buffer+strlen(buffer),str+i,(p-str)-i);
-        buffer[p-str] = '\0';
-        strcat(buffer,rep);
-        printf("STR:%s\n",buffer);
-        i=(p-str)+strlen(orig);
-    }
-
-    return buffer;
-}
-
 

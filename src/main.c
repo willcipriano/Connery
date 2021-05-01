@@ -1010,7 +1010,6 @@ cval *builtin_input(cenv *e, cval *a) {
 }
 
 cval *builtin_convert_string(cenv *e, cval *a) {
-
     if (a->cell[0]->type == CVAL_NUMBER) {
         int length = snprintf( NULL, 0, "%ld", a->cell[0]->num );
         char* str = malloc( length + 1 );
