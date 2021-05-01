@@ -1,9 +1,0 @@
-(fun {__parse_csv_loop__ csv_lines output}{
-        if (== 0 (length csv_lines))
-        {output}
-        {__parse_csv_loop__ (tail csv_lines) (join output (list (delimit "," (eval (head csv_lines)))))}
-})
-
-(fun {csv csv_string} {
-    __parse_csv_loop__ (delimit "\n" csv_string) None
-})
