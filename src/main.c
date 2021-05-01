@@ -6,6 +6,7 @@
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
+#include "trace.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.1"
@@ -277,6 +278,24 @@ cval *builtin_head(cenv *e, cval *a) {
     return cval_error("Function 'head' passed unsupported type!");
 #endif
 
+}
+
+cval *set_trace_data(cenv *e, trace *t) {
+    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
+
+    if (t->current->position > 2) {
+    hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__")); }
+    else {
+        hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", cval_string(""));
+    }
+
+    if (t->current->position > 1) {
+        hash_table_set(e->ht, "__PREV_EXPRESSION__", t->current->prev->data); }
+    else {
+            hash_table_set(e->ht, "__PREV_EXPRESSION__", cval_string(""));
+    }
+
+    hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
 
 cval *builtin_tail(cenv *e, cval *a) {
@@ -593,6 +612,7 @@ cval *builtin_lambda(cenv *e, cval *a) {
     return cval_lambda(formals, body);
 }
 
+
 cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
@@ -611,10 +631,6 @@ cval *builtin_load(cenv *e, cval *a) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
-
-            hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__"));
-            hash_table_set(e->ht, "__PREV_EXPRESSION__", hash_table_get(e->ht, "__EXPRESSION__"));
-            hash_table_set(e->ht, "__EXPRESSION__", expression);
 
             cval *x = cval_evaluate(e, expression);
 
@@ -643,6 +659,49 @@ cval *builtin_load(cenv *e, cval *a) {
         cval_delete(a);
         return err;
     }
+}
+
+cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
+    CASSERT_NUM("load", a, 1)
+    CASSERT_TYPE("load", a, 0, CVAL_STRING)
+
+    mpc_result_t r;
+    if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
+        cval *expr = cval_read(r.output);
+        mpc_ast_delete(r.output);
+
+        while (expr->count) {
+            cval *expression = cval_pop(expr, 0);
+            record_trace(t, expression);
+            set_trace_data(e, t);
+
+            cval *x = cval_evaluate(e, expression);
+
+            if (x->type == CVAL_ERROR) {
+                cval_print_line(x);
+            }
+
+            cval_delete(x);
+#if REPORT_STATEMENT_NUMBERS
+#endif
+
+        }
+
+        cval_delete(expr);
+        cval_delete(a);
+
+        return cval_s_expression();
+    } else {
+        char *err_msg = mpc_err_string(r.error);
+        mpc_err_delete(r.error);
+
+        cval *err = cval_error("Could not load library '%s'", err_msg);
+        free(err_msg);
+        cval_delete(a);
+        return err;
+    }
+
+
 }
 
 cval *builtin_print(cenv *e, cval *a) {
@@ -1010,6 +1069,7 @@ cval *builtin_sys(cenv *e, cval *a) {
 }
 
 
+
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
@@ -1090,8 +1150,6 @@ int main(int argc, char **argv) {
               Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
 
     cenv *e = cenv_new();
-    hash_table_set(e->ht, "__EXPRESSION__", cval_string("interpreter_start"));
-    hash_table_set(e->ht, "__PREV_EXPRESSION__", cval_string("interpreter_start"));
 
     cenv_add_builtins(e);
     load_standard_lib(e);
@@ -1120,13 +1178,13 @@ int main(int argc, char **argv) {
 
     if (argc == 1) {
         hash_table_set(e ->ht, "__SOURCE__", cval_string("INTERACTIVE"));
+        trace* trace = start_trace("interactive");
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
 
-            hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__"));
-            hash_table_set(e->ht, "__PREV_EXPRESSION__", hash_table_get(e->ht, "__EXPRESSION__"));
-            hash_table_set(e->ht, "__EXPRESSION__", cval_string(input));
+            record_trace(trace, cval_string(input));
+            set_trace_data(e, trace);
 
             mpc_result_t result;
             if (mpc_parse("<stdin>", input, Connery, &result)) {
@@ -1150,10 +1208,11 @@ int main(int argc, char **argv) {
 
     if (argc >= 2) {
         hash_table_set(e ->ht, "__SOURCE__", cval_string("FILE"));
+        trace* trace = start_trace("file");
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
             hash_table_set(e ->ht, "__SOURCE_FILE__", cval_string(argv[i]));
-            cval *x = builtin_load(e, args);
+            cval *x = builtin_traced_load(e, args, trace);
 
             if (x->type == CVAL_ERROR) {
                 cval_print_line(x);
