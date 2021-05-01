@@ -9,8 +9,8 @@
 #include "trace.h"
 
 #define SYSTEM_LANG 0
-#define CONNERY_VERSION "0.0.1"
-#define CONNERY_VER_INT 1
+#define CONNERY_VERSION "0.0.2"
+#define CONNERY_VER_INT 2
 #define LOG_LEVEL 4
 
 #ifdef _WIN32

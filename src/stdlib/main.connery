@@ -9,7 +9,6 @@
 (load "stdlib/errors.connery")
 (load "stdlib/io.connery")
 (load "stdlib/http.connery")
-(load "stdlib/calendar.connery")
 
 
 (load "stdlib/versions.connery")

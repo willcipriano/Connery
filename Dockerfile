@@ -1,9 +1,11 @@
 FROM debian:buster
-WORKDIR /Connery
-COPY . .
 RUN apt-get update
-RUN apt-get -y install make
-RUN apt-get -y install sudo
-RUN make -f Buildfile local.install
-RUN make -f Buildfile local.build
-ENTRYPOINT make -f Buildfile local.run
+RUN apt-get -y install build-essential
+RUN apt-get -y install cmake
+RUN apt-get -y install libcurl4-openssl-dev
+RUN apt-get -y install libedit-dev
+WORKDIR /Connery
+COPY src/. .
+RUN cmake .
+RUN cmake --build .
+ENTRYPOINT "./Connery" && /bin/bash
