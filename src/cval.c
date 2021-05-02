@@ -367,6 +367,8 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
     if (f->type != CVAL_FUNCTION) {
             if (f->type == CVAL_S_EXPRESSION) {
                 return cval_evaluate_s_expression(env, f);
+            } else {
+                return cval_error("I'm afraid thatsh not valid connery, lad.");
             }
         }
 
