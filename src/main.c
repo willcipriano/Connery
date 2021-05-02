@@ -7,6 +7,7 @@
 #include "cval.h"
 #include "hashtable.h"
 #include "trace.h"
+#include "strings.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.2"
@@ -467,7 +468,11 @@ cval *builtin_order(cenv *e, cval *a, char *op) {
         result = (a->cell[0]->num <= a->cell[1]->num);
     }
     cval_delete(a);
-    return cval_number(result);
+
+    if (result == 0) {
+        return cval_boolean(false);
+    }
+    return cval_boolean(true);
 }
 
 cval *builtin_greater_than_or_equal(cenv *e, cval *a) {
@@ -534,7 +539,11 @@ cval *builtin_cmp(cenv *e, cval *a, char *op) {
     }
 
     cval_delete(a);
-    return cval_number(r);
+
+    if (r == 0) {
+        return cval_boolean(false);
+    }
+    return cval_boolean(true);
 }
 
 cval *builtin_eq(cenv *e, cval *a) {
@@ -572,6 +581,80 @@ cval *builtin_if(cenv *e, cval *a) {
         }
     }
 
+    cval_delete(a);
+    return x;
+}
+
+cval *builtin_while(cenv *e, cval *a) {
+    CASSERT_NUM("while", a, 2)
+    CASSERT_TYPE("while", a, 0, CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("while", a, 1, CVAL_Q_EXPRESSION)
+
+    cval *x;
+    a->cell[0]->type = CVAL_S_EXPRESSION;
+    a->cell[1]->type = CVAL_S_EXPRESSION;
+
+    cval* condition_org = cval_pop(a, 0);
+    cval* loop_org = cval_pop(a, 0);
+
+    cval* condition = cval_copy(condition_org);
+    cval* loop = cval_copy(loop_org);
+
+    if (cval_evaluate(e, condition)->boolean) {
+        bool condition_status = true;
+        while (condition_status) {
+            x = cval_evaluate(e, loop);
+
+            condition = cval_copy(condition_org);
+            condition_status = cval_evaluate(e, condition)->boolean;
+
+            if (condition_status) {
+                cval_delete(x);
+                loop = cval_copy(loop_org);
+            }
+        }
+    } else {
+        return cval_s_expression();
+    }
+
+    cval_delete(loop_org);
+    cval_delete(condition_org);
+    cval_delete(a);
+    return x;
+}
+
+cval *builtin_return(cenv *e, cval *a) {
+    CASSERT_NUM("while", a, 1)
+    CASSERT_TYPE("while", a, 0, CVAL_Q_EXPRESSION)
+
+    cval *x;
+    a->cell[0]->type = CVAL_S_EXPRESSION;
+
+    cval* condition_org = cval_pop(a, 0);
+    cval* loop_org = cval_pop(a, 0);
+
+    cval* condition = cval_copy(condition_org);
+    cval* loop = cval_copy(loop_org);
+
+    if (cval_evaluate(e, condition)->boolean) {
+        bool condition_status = true;
+        while (condition_status) {
+            x = cval_evaluate(e, loop);
+
+            condition = cval_copy(condition_org);
+            condition_status = cval_evaluate(e, condition)->boolean;
+
+            if (condition_status) {
+                cval_delete(x);
+                loop = cval_copy(loop_org);
+            }
+        }
+    } else {
+        return cval_s_expression();
+    }
+
+    cval_delete(loop_org);
+    cval_delete(condition_org);
     cval_delete(a);
     return x;
 }
@@ -700,7 +783,7 @@ cval *builtin_print(cenv *e, cval *a) {
     return cval_s_expression();
 }
 
-cval *builtin_fault(cenv *e, cval *a) {
+cval *builtin_panic(cenv *e, cval *a) {
     CASSERT_NUM("fault", a, 1);
     CASSERT_TYPE("fault", a, 0, CVAL_STRING);
 
@@ -779,88 +862,6 @@ cval *builtin_file(cenv *e, cval *a) {
         cval_delete(a);
         return cval_error("unable to write to file!");
     }
-}
-
-cval *builtin_replace(cenv *e, cval *a) {
-    CASSERT_TYPE("replace", a, 0, CVAL_STRING);
-    CASSERT_TYPE("replace", a, 1, CVAL_STRING);
-    CASSERT_TYPE("replace", a, 2, CVAL_STRING);
-    CASSERT_NUM("replace", a, 3);
-
-    char *orig = a->cell[0]->str;
-    char *rep = a->cell[1]->str;
-    char *with = a->cell[2]->str;
-
-    cval *result;
-
-    if (strstr(orig, rep)) {
-        multi_tok_t y = multiTok_init();
-        char *start_string = multi_tok(orig, &y, rep);
-        char *new_string = concatenateThree(start_string, with, y);
-
-        result = cval_string(new_string);
-    } else {
-        result = cval_string(orig);
-    }
-
-    cval_delete(a);
-
-    return result;
-}
-
-cval *builtin_find(cenv *e, cval *a) {
-    CASSERT_TYPE("find", a, 0, CVAL_STRING);
-    CASSERT_TYPE("find", a, 1, CVAL_STRING);
-    CASSERT_NUM("find", a, 2);
-
-    char *pos;
-    char *org = cval_pop(a, 0)->str;
-
-    if ((pos = strstr(org, cval_pop(a, 0)->str))) {
-        cval_delete(a);
-        return cval_number(pos - org);
-    } else {
-        cval_delete(a);
-        return cval_number(0);
-    }
-}
-
-cval *builtin_split(cenv *e, cval *a) {
-    CASSERT_TYPE("split", a, 0, CVAL_STRING);
-    CASSERT_TYPE("split", a, 1, CVAL_NUMBER);
-    CASSERT_NUM("split", a, 2);
-
-    char *original_string = cval_pop(a, 0)->str;
-    long split_index = cval_pop(a, 0)->num;
-    long str_length = strlen(original_string);
-
-    if (str_length <= split_index) {
-        cval_delete(a);
-        return cval_error("Index %i out of bounds", split_index);
-    }
-
-    char first_half[split_index];
-    char second_half[str_length - split_index];
-
-    for (int i = 0; i <= str_length; ++i) {
-        if (i < split_index) {
-            first_half[i] = original_string[i];
-            first_half[i + 1] = '\0';
-        } else {
-            second_half[i - split_index] = original_string[i];
-        }
-    }
-
-    cval *list = cval_q_expression();
-    cval *first = cval_string(first_half);
-    cval *second = cval_string(second_half);
-
-    cval_add(list, first);
-    cval_add(list, second);
-
-    cval_delete(a);
-
-    return list;
 }
 
 cval *builtin_length(cenv *e, cval *a) {
@@ -1051,7 +1052,11 @@ cval *builtin_sys(cenv *e, cval *a) {
     return cval_error("invalid input to stats");
 }
 
-
+void cenv_add_string_functions(cenv *e) {
+    cenv_add_builtin(e, "string_replace_all", builtin_string_replace_all);
+    cenv_add_builtin(e, "string_replace_first_char", builtin_string_replace_first_char);
+    cenv_add_builtin(e, "string_concat", builtin_concat);
+}
 
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
@@ -1065,7 +1070,6 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "join", builtin_join);
     cenv_add_builtin(e, "length", builtin_length);
     cenv_add_builtin(e, "input", builtin_input);
-    cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
@@ -1094,7 +1098,11 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "convert_string", builtin_convert_string);
 
-    cenv_add_builtin(e, "__FAULT__", builtin_fault);
+    cenv_add_string_functions(e);
+
+    cenv_add_builtin(e, "while", builtin_while);
+
+    cenv_add_builtin(e, "__FAULT__", builtin_panic);
 }
 
 void load_standard_lib(cenv *e) {
