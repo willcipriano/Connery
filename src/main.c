@@ -594,18 +594,68 @@ cval *builtin_while(cenv *e, cval *a) {
     a->cell[0]->type = CVAL_S_EXPRESSION;
     a->cell[1]->type = CVAL_S_EXPRESSION;
 
-    cval* condition = cval_pop(a, 0);
-    cval* loop = cval_pop(a, 0);
+    cval* condition_org = cval_pop(a, 0);
+    cval* loop_org = cval_pop(a, 0);
 
-    if (cval_evaluate(e, cval_copy(condition))->boolean) {
-        while (cval_evaluate(e, cval_copy(condition))->boolean) {
-            cval* x_int = hash_table_get(e->ht, "x");
-            x = cval_evaluate(e, cval_copy(loop));
+    cval* condition = cval_copy(condition_org);
+    cval* loop = cval_copy(loop_org);
+
+    if (cval_evaluate(e, condition)->boolean) {
+        bool condition_status = true;
+        while (condition_status) {
+            x = cval_evaluate(e, loop);
+
+            condition = cval_copy(condition_org);
+            condition_status = cval_evaluate(e, condition)->boolean;
+
+            if (condition_status) {
+                cval_delete(x);
+                loop = cval_copy(loop_org);
+            }
         }
     } else {
         return cval_s_expression();
     }
 
+    cval_delete(loop_org);
+    cval_delete(condition_org);
+    cval_delete(a);
+    return x;
+}
+
+cval *builtin_return(cenv *e, cval *a) {
+    CASSERT_NUM("while", a, 1)
+    CASSERT_TYPE("while", a, 0, CVAL_Q_EXPRESSION)
+
+    cval *x;
+    a->cell[0]->type = CVAL_S_EXPRESSION;
+
+    cval* condition_org = cval_pop(a, 0);
+    cval* loop_org = cval_pop(a, 0);
+
+    cval* condition = cval_copy(condition_org);
+    cval* loop = cval_copy(loop_org);
+
+    if (cval_evaluate(e, condition)->boolean) {
+        bool condition_status = true;
+        while (condition_status) {
+            x = cval_evaluate(e, loop);
+
+            condition = cval_copy(condition_org);
+            condition_status = cval_evaluate(e, condition)->boolean;
+
+            if (condition_status) {
+                cval_delete(x);
+                loop = cval_copy(loop_org);
+            }
+        }
+    } else {
+        return cval_s_expression();
+    }
+
+    cval_delete(loop_org);
+    cval_delete(condition_org);
+    cval_delete(a);
     return x;
 }
 
