@@ -468,7 +468,11 @@ cval *builtin_order(cenv *e, cval *a, char *op) {
         result = (a->cell[0]->num <= a->cell[1]->num);
     }
     cval_delete(a);
-    return cval_number(result);
+
+    if (result == 0) {
+        return cval_boolean(false);
+    }
+    return cval_boolean(true);
 }
 
 cval *builtin_greater_than_or_equal(cenv *e, cval *a) {
@@ -535,7 +539,11 @@ cval *builtin_cmp(cenv *e, cval *a, char *op) {
     }
 
     cval_delete(a);
-    return cval_number(r);
+
+    if (r == 0) {
+        return cval_boolean(false);
+    }
+    return cval_boolean(true);
 }
 
 cval *builtin_eq(cenv *e, cval *a) {
@@ -574,6 +582,30 @@ cval *builtin_if(cenv *e, cval *a) {
     }
 
     cval_delete(a);
+    return x;
+}
+
+cval *builtin_while(cenv *e, cval *a) {
+    CASSERT_NUM("while", a, 2)
+    CASSERT_TYPE("while", a, 0, CVAL_Q_EXPRESSION)
+    CASSERT_TYPE("while", a, 1, CVAL_Q_EXPRESSION)
+
+    cval *x;
+    a->cell[0]->type = CVAL_S_EXPRESSION;
+    a->cell[1]->type = CVAL_S_EXPRESSION;
+
+    cval* condition = cval_pop(a, 0);
+    cval* loop = cval_pop(a, 0);
+
+    if (cval_evaluate(e, cval_copy(condition))->boolean) {
+        while (cval_evaluate(e, cval_copy(condition))->boolean) {
+            cval* x_int = hash_table_get(e->ht, "x");
+            x = cval_evaluate(e, cval_copy(loop));
+        }
+    } else {
+        return cval_s_expression();
+    }
+
     return x;
 }
 
@@ -701,7 +733,7 @@ cval *builtin_print(cenv *e, cval *a) {
     return cval_s_expression();
 }
 
-cval *builtin_fault(cenv *e, cval *a) {
+cval *builtin_panic(cenv *e, cval *a) {
     CASSERT_NUM("fault", a, 1);
     CASSERT_TYPE("fault", a, 0, CVAL_STRING);
 
@@ -970,7 +1002,11 @@ cval *builtin_sys(cenv *e, cval *a) {
     return cval_error("invalid input to stats");
 }
 
-
+void cenv_add_string_functions(cenv *e) {
+    cenv_add_builtin(e, "string_replace_all", builtin_string_replace_all);
+    cenv_add_builtin(e, "string_replace_first_char", builtin_string_replace_first_char);
+    cenv_add_builtin(e, "string_concat", builtin_concat);
+}
 
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
@@ -1012,11 +1048,11 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "convert_string", builtin_convert_string);
 
-    cenv_add_builtin(e, "replace_all", builtin_string_replace_all);
-    cenv_add_builtin(e, "replace_first_char", builtin_string_replace_first_char);
-    cenv_add_builtin(e, "concat", builtin_concat);
+    cenv_add_string_functions(e);
 
-    cenv_add_builtin(e, "__FAULT__", builtin_fault);
+    cenv_add_builtin(e, "while", builtin_while);
+
+    cenv_add_builtin(e, "__FAULT__", builtin_panic);
 }
 
 void load_standard_lib(cenv *e) {
