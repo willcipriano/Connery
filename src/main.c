@@ -7,6 +7,7 @@
 #include "cval.h"
 #include "hashtable.h"
 #include "trace.h"
+#include "strings.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.2"
@@ -781,88 +782,6 @@ cval *builtin_file(cenv *e, cval *a) {
     }
 }
 
-cval *builtin_replace(cenv *e, cval *a) {
-    CASSERT_TYPE("replace", a, 0, CVAL_STRING);
-    CASSERT_TYPE("replace", a, 1, CVAL_STRING);
-    CASSERT_TYPE("replace", a, 2, CVAL_STRING);
-    CASSERT_NUM("replace", a, 3);
-
-    char *orig = a->cell[0]->str;
-    char *rep = a->cell[1]->str;
-    char *with = a->cell[2]->str;
-
-    cval *result;
-
-    if (strstr(orig, rep)) {
-        multi_tok_t y = multiTok_init();
-        char *start_string = multi_tok(orig, &y, rep);
-        char *new_string = concatenateThree(start_string, with, y);
-
-        result = cval_string(new_string);
-    } else {
-        result = cval_string(orig);
-    }
-
-    cval_delete(a);
-
-    return result;
-}
-
-cval *builtin_find(cenv *e, cval *a) {
-    CASSERT_TYPE("find", a, 0, CVAL_STRING);
-    CASSERT_TYPE("find", a, 1, CVAL_STRING);
-    CASSERT_NUM("find", a, 2);
-
-    char *pos;
-    char *org = cval_pop(a, 0)->str;
-
-    if ((pos = strstr(org, cval_pop(a, 0)->str))) {
-        cval_delete(a);
-        return cval_number(pos - org);
-    } else {
-        cval_delete(a);
-        return cval_number(0);
-    }
-}
-
-cval *builtin_split(cenv *e, cval *a) {
-    CASSERT_TYPE("split", a, 0, CVAL_STRING);
-    CASSERT_TYPE("split", a, 1, CVAL_NUMBER);
-    CASSERT_NUM("split", a, 2);
-
-    char *original_string = cval_pop(a, 0)->str;
-    long split_index = cval_pop(a, 0)->num;
-    long str_length = strlen(original_string);
-
-    if (str_length <= split_index) {
-        cval_delete(a);
-        return cval_error("Index %i out of bounds", split_index);
-    }
-
-    char first_half[split_index];
-    char second_half[str_length - split_index];
-
-    for (int i = 0; i <= str_length; ++i) {
-        if (i < split_index) {
-            first_half[i] = original_string[i];
-            first_half[i + 1] = '\0';
-        } else {
-            second_half[i - split_index] = original_string[i];
-        }
-    }
-
-    cval *list = cval_q_expression();
-    cval *first = cval_string(first_half);
-    cval *second = cval_string(second_half);
-
-    cval_add(list, first);
-    cval_add(list, second);
-
-    cval_delete(a);
-
-    return list;
-}
-
 cval *builtin_length(cenv *e, cval *a) {
     CASSERT_NUM("length", a, 1);
 
@@ -1065,7 +984,6 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "join", builtin_join);
     cenv_add_builtin(e, "length", builtin_length);
     cenv_add_builtin(e, "input", builtin_input);
-    cenv_add_builtin(e, "replace", builtin_replace);
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
@@ -1093,6 +1011,10 @@ void cenv_add_builtins(cenv *e) {
 
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "convert_string", builtin_convert_string);
+
+    cenv_add_builtin(e, "replace_all", builtin_string_replace_all);
+    cenv_add_builtin(e, "replace_first_char", builtin_string_replace_first_char);
+    cenv_add_builtin(e, "concat", builtin_concat);
 
     cenv_add_builtin(e, "__FAULT__", builtin_fault);
 }

@@ -122,3 +122,7 @@
         {fold * 0 l}
         {error "product requiresh a lisht ash input!"}
 })
+
+(fun {insert l target} {
+   (join l (list target))
+})
