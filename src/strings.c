@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "cval.h"
 
 #define SYSTEM_LANG 0
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
-    cval* err = cval_error(fmt, ##__VA_ARGS__); \
+    cval* err = cval_fault(fmt, ##__VA_ARGS__); \
     cval_delete(args); \
     return err;}
 
@@ -185,9 +186,9 @@ cval *builtin_string_replace_first_char(cenv *e, cval *a) {
     }
 
 #if SYSTEM_LANG==0
-    return cval_error("replace first char takesh three shtringsh, and the shecond and third musht be only one character long!");
+    return cval_fault("replace first char takesh three shtringsh, and the shecond and third musht be only one character long!");
 #else
-    return cval_error("replace first char takes three strings, and the second and third must be only one character long!");
+    return cval_fault("replace first char takes three strings, and the second and third must be only one character long!");
 #endif
 }
 
@@ -231,7 +232,7 @@ cval *builtin_split(cenv *e, cval *a) {
 
     if (str_length <= split_index) {
         cval_delete(a);
-        return cval_error("Index %i out of bounds", split_index);
+        return cval_fault("Index %i out of bounds", split_index);
     }
 
     char first_half[split_index];
@@ -266,20 +267,17 @@ cval *builtin_concat(cenv *e, cval *a) {
 
     switch (a->count) {
         case 2:
-            CASSERT_TYPE("concat", a, 2, CVAL_STRING);
             new_cval = cval_string(concat(2, a->cell[0]->str, a->cell[1]->str));
             break;
 
         case 3:
             CASSERT_TYPE("concat", a, 2, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 3, CVAL_STRING);
             new_cval = cval_string(concat(3, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str));
             break;
 
         case 4:
             CASSERT_TYPE("concat", a, 2, CVAL_STRING);
             CASSERT_TYPE("concat", a, 3, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 4, CVAL_STRING);
             new_cval = cval_string(concat(4, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str));
             break;
 
@@ -287,7 +285,6 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 2, CVAL_STRING);
             CASSERT_TYPE("concat", a, 3, CVAL_STRING);
             CASSERT_TYPE("concat", a, 4, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 5, CVAL_STRING);
             new_cval = cval_string(concat(5, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str));
             break;
 
@@ -296,7 +293,6 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 3, CVAL_STRING);
             CASSERT_TYPE("concat", a, 4, CVAL_STRING);
             CASSERT_TYPE("concat", a, 5, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 6, CVAL_STRING);
             new_cval = cval_string(concat(6, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str, a->cell[5]->str));
             break;
 
@@ -306,7 +302,6 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 4, CVAL_STRING);
             CASSERT_TYPE("concat", a, 5, CVAL_STRING);
             CASSERT_TYPE("concat", a, 6, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 7, CVAL_STRING);
             new_cval = cval_string(concat(7, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str, a->cell[5]->str, a->cell[6]->str));
             break;
 
@@ -317,7 +312,6 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 5, CVAL_STRING);
             CASSERT_TYPE("concat", a, 6, CVAL_STRING);
             CASSERT_TYPE("concat", a, 7, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 8, CVAL_STRING);
             new_cval = cval_string(concat(8, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str, a->cell[5]->str, a->cell[6]->str, a->cell[7]->str));
             break;
 
@@ -329,7 +323,6 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 6, CVAL_STRING);
             CASSERT_TYPE("concat", a, 7, CVAL_STRING);
             CASSERT_TYPE("concat", a, 8, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 9, CVAL_STRING);
             new_cval = cval_string(concat(9, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str, a->cell[5]->str, a->cell[6]->str, a->cell[7]->str, a->cell[8]->str));
             break;
 
@@ -342,12 +335,11 @@ cval *builtin_concat(cenv *e, cval *a) {
             CASSERT_TYPE("concat", a, 7, CVAL_STRING);
             CASSERT_TYPE("concat", a, 8, CVAL_STRING);
             CASSERT_TYPE("concat", a, 9, CVAL_STRING);
-            CASSERT_TYPE("concat", a, 10, CVAL_STRING);
             new_cval = cval_string(concat(10, a->cell[0]->str, a->cell[1]->str, a->cell[2]->str, a->cell[3]->str, a->cell[4]->str, a->cell[5]->str, a->cell[6]->str, a->cell[7]->str, a->cell[8]->str, a->cell[9]->str));
             break;
 
         default:
-            new_cval = cval_error("concat accepts between 2 and 10 strings.");
+            new_cval = cval_fault("concat accepts between 2 and 10 strings.");
     }
 
     cval_delete(a);
