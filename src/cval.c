@@ -12,7 +12,7 @@
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
-    cval* err = cval_error(fmt, ##__VA_ARGS__); \
+    cval* err = cval_fault(fmt, ##__VA_ARGS__); \
     cval_delete(args); \
     return err;}
 
@@ -36,7 +36,7 @@ char* ctype_name(int t) {
     switch(t) {
         case CVAL_FUNCTION: return "Function";
         case CVAL_NUMBER: return "Number";
-        case CVAL_ERROR: return "Error";
+        case CVAL_FAULT: return "Fault";
         case CVAL_SYMBOL: return "Symbol";
         case CVAL_S_EXPRESSION: return "S-Expression";
         case CVAL_Q_EXPRESSION: return "Q-Expression";
@@ -85,9 +85,9 @@ cval* cval_string (char* s) {
     return v;
 }
 
-cval* cval_error(char* fmt, ...) {
+cval* cval_fault(char* fmt, ...) {
     cval* value = malloc(sizeof(cval));
-    value->type = CVAL_ERROR;
+    value->type = CVAL_FAULT;
     va_list va;
     va_start(va, fmt);
     value->err = malloc(512);
@@ -152,7 +152,7 @@ void cval_delete(cval* value) {
             }
             break;
 
-        case CVAL_ERROR:
+        case CVAL_FAULT:
             free(value->err);
             break;
 
@@ -233,7 +233,7 @@ cval* cval_copy(cval* v) {
         case CVAL_FLOAT:
             x->fnum = v->fnum;
 
-        case CVAL_ERROR:
+        case CVAL_FAULT:
             x->err = malloc(strlen(v->err) + 1);
             strcpy(x->err, v->err);
             break;
@@ -292,7 +292,7 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
         if(f->formals->count == 0) {
             cval_delete(a);
-            return cval_error("Function pashed too many argumentsh. Got %i, Expected %s", given, total);
+            return cval_fault("Function pashed too many argumentsh. Got %i, Expected %s", given, total);
         }
 
         cval* sym = cval_pop(f->formals, 0);
@@ -301,7 +301,7 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
             if (f->formals->count != 1) {
                 cval_delete(a);
-                return cval_error("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+                return cval_fault("Function format invalid. shymbol '&' not followed by shingle shymbol.");
             }
 
             cval* nsym = cval_pop(f->formals, 0);
@@ -323,7 +323,7 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
     if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
 
         if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
-            return cval_error("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+            return cval_fault("Function format invalid. shymbol '&' not followed by shingle shymbol.");
         }
 
         cval_delete(cval_pop(f->formals, 0));
@@ -352,7 +352,7 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
     }
 
     for (int i = 0; i < value->count; i++) {
-        if (value->cell[i]->type == CVAL_ERROR) {return cval_take(value, i);}
+        if (value->cell[i]->type == CVAL_FAULT) {return cval_take(value, i);}
     }
 
     if (value->count == 0) {
@@ -367,6 +367,9 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
     if (f->type != CVAL_FUNCTION) {
             if (f->type == CVAL_S_EXPRESSION) {
                 return cval_evaluate_s_expression(env, f);
+            }
+            else {
+                return cval_fault("I'm afraid thatsh not valid connery, lad.");
             }
         }
 
@@ -384,7 +387,7 @@ cval* cenv_get(cenv* e, cval* k) {
     if (e->par) {
         return cenv_get(e->par, k);
     } else {
-        return cval_error("Unbound shymbol '%s' not defined in shcope!", k->sym);
+        return cval_fault("Unbound shymbol '%s' not defined in shcope!", k->sym);
     }
 }
 
@@ -397,6 +400,7 @@ cval* cval_evaluate(cenv* env, cval* value) {
 
     if (value->type == CVAL_S_EXPRESSION) {
         return cval_evaluate_s_expression(env, value);
+
     }
     return value;
 }
@@ -425,7 +429,8 @@ cval* builtin_var(cenv* e, cval* a, char* func) {
         CASSERT_TYPE("def", syms, i, CVAL_SYMBOL)
     }
 
-    CASSERT(a, (syms->count == a->count-1), "Function '%s' pashed too many arguments for symbols. Got %i, Expected %i", func, syms->count, a->count-1);
+    CASSERT(a, (syms->count == a->count - 1),
+            "Function '%s' pashed too many arguments for symbols. Got %i, Expected %i", func, syms->count, a->count - 1);
 
     for (int i = 0; i < syms->count; i++) {
         if (strcmp(func, "def") == 0) {
@@ -470,14 +475,14 @@ cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
     return errno != ERANGE ?
-           cval_number(x) : cval_error("that'sh an invalid number");
+           cval_number(x) : cval_fault("that'sh an invalid number");
 }
 
 cval* cval_read_float(mpc_ast_t* t) {
     errno = 0;
     long double x = strtold(t->contents, NULL);
     return errno != ERANGE ?
-           cval_float(x) : cval_error("that'sh a invalid float");
+           cval_float(x) : cval_fault("that'sh a invalid float");
 }
 
 cval* cval_read_string(mpc_ast_t* t) {
@@ -634,11 +639,11 @@ bool cval_print(cval* value) {
             }
             break;
 
-        case CVAL_ERROR:
+        case CVAL_FAULT:
 #if SYSTEM_LANG==0
             printf("shtirred: %s", value->err);
 #else
-            printf("error: %s", value->err);
+            printf("fault: %s", value->err);
 #endif
             break;
 

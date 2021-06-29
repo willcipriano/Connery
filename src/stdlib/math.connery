@@ -9,3 +9,9 @@
     {(not (== 0 (mod number 2)))}
     {error "is_even requiresh a number ash input!"}
 })
+
+(fun {is_zero number} {
+    if (is_num number)
+    {== 0 number}
+    {error "is_zero requiresh a number ash input!"}
+})

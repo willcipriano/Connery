@@ -21,3 +21,13 @@
 (fun {pack f & xs} {f xs})
 (def {curry} unpack)
 (def {uncurry} pack)
+
+(fun {create_range location start end} {
+(= {end} (+ end 1))
+((def {_x} (list start))
+(def {_y} (+ start 1))
+(while {< _y end} {
+    (= {_x} (join _x (list _y)))
+    (= {_y} (+ 1 _y))}))
+    (def location _x)
+})

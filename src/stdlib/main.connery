@@ -10,7 +10,6 @@
 (load "stdlib/io.connery")
 (load "stdlib/http.connery")
 
-
 (load "stdlib/versions.connery")
 (def {CONNERY_VERSION_INT} (sys "VERSION_INT"))
 (def {CONNERY_VERSION} (sys "VERSION"))

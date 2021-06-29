@@ -34,7 +34,9 @@
              }{}) }
     {})
 
-(if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {})
+    (return (def {__last_fault__} (__FAULT__ msg)))
+
+    (if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {})
 })
 
 (fun {__NOOP_ERROR_HANDLER__ msg critical} { })
@@ -50,13 +52,13 @@ if (mistake_bool)
     {def {standard_error_handler} __STANDARD_ERROR_HANDLER__}
     {def {standard_error_handler} __NOOP_ERROR_HANDLER__}})
 
-(fun {panic msg} {
+(fun {error msg} {
 if (is_str msg)
     {__ERROR__ msg 1}
     {__ERROR__ (string_convert msg) 1}
 })
 
-(fun {error msg} {
+(fun {warning msg} {
 if (is_str msg)
     {__ERROR__ msg 0}
     {__ERROR__ (string_convert msg) 0}
