@@ -11,7 +11,7 @@ typedef struct cenv cenv;
 typedef cval *(*cbuiltin)(cenv *, cval *);
 
 enum {
-    CVAL_NUMBER, CVAL_ERROR, CVAL_SYMBOL, CVAL_FUNCTION,
+    CVAL_NUMBER, CVAL_FAULT, CVAL_SYMBOL, CVAL_FUNCTION,
     CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT,
     CVAL_BOOLEAN
 };
@@ -51,7 +51,7 @@ cval *cval_float(long double x);
 
 cval *cval_string(char *s);
 
-cval *cval_error(char *fmt, ...);
+cval *cval_fault(char *fmt, ...);
 
 cval *cval_symbol(char *s);
 

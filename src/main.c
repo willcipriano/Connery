@@ -46,11 +46,11 @@ mpc_parser_t *Connery;
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
-    cval* err = cval_error(fmt, ##__VA_ARGS__); \
+    cval* err = cval_fault(fmt, ##__VA_ARGS__); \
     cval_delete(args); \
     return err;}
 
-#if SYSTEM_LANG==0
+#if SYSTEM_LANG == 0
 #define CASSERT_TYPE(func, args, index, expect) \
   CASSERT(args, args->cell[index]->type == expect, \
     "Function '%s' pashed incorrect type for argument %i. " \
@@ -64,7 +64,7 @@ if (!(cond)) {\
     func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
 #endif
 
-#if SYSTEM_LANG==0
+#if SYSTEM_LANG == 0
 #define CASSERT_NUM(func, args, num) \
   CASSERT(args, args->count == num, \
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
@@ -129,10 +129,10 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                     if (y->fnum == 0) {
                         cval_delete(x);
                         cval_delete(y);
-#if SYSTEM_LANG==0
-                        x = cval_error("Divishion by zero");
+#if SYSTEM_LANG == 0
+                        x = cval_fault("Divishion by zero");
 #else
-                        x = cval_error("Division by zero");
+                        x = cval_fault("Division by zero");
 #endif
                         break;
                     }
@@ -141,10 +141,10 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                     if (y->num == 0) {
                         cval_delete(x);
                         cval_delete(y);
-#if SYSTEM_LANG==0
-                        x = cval_error("Divishion by zero");
+#if SYSTEM_LANG == 0
+                        x = cval_fault("Divishion by zero");
 #else
-                        x = cval_error("Division by zero");
+                        x = cval_fault("Division by zero");
 #endif
                         break;
                     }
@@ -155,10 +155,10 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
             if (strcmp(op, "mod") == 0) {
                 cval_delete(x);
                 cval_delete(y);
-#if SYSTEM_LANG==0
-                x = cval_error("mod not shupported on floatsh!");
+#if SYSTEM_LANG == 0
+                x = cval_fault("mod not shupported on floatsh!");
 #else
-                x = cval_error("mod not supported on floats!");
+                x = cval_fault("mod not supported on floats!");
 #endif
                 break;
             }
@@ -166,10 +166,10 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
             if (strcmp(op, "pow") == 0) {
                 cval_delete(x);
                 cval_delete(y);
-#if SYSTEM_LANG==0
-                x = cval_error("pow not shupported on floatsh!");
+#if SYSTEM_LANG == 0
+                x = cval_fault("pow not shupported on floatsh!");
 #else
-                x = cval_error("pow not supported on floats!");
+                x = cval_fault("pow not supported on floats!");
 #endif
                 break;
             }
@@ -205,10 +205,10 @@ cval *builtin_op(cenv *e, cval *a, char *op) {
                 if (y->num == 0) {
                     cval_delete(x);
                     cval_delete(y);
-#if SYSTEM_LANG==0
-                    x = cval_error("Divishion by zero");
+#if SYSTEM_LANG == 0
+                    x = cval_fault("Divishion by zero");
 #else
-                    x = cval_error("Division by zero");
+                    x = cval_fault("Division by zero");
 #endif
                     break;
                 }
@@ -256,7 +256,7 @@ cval *builtin_head(cenv *e, cval *a) {
     }
 
     if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
-#if SYSTEM_LANG==0
+#if SYSTEM_LANG == 0
         CASSERT(a, a->cell[0]->count != 0, "Function 'head' pashed empty list!");
 #else
         CASSERT(a, a->cell[0]->count != 0, "Function 'head' passed empty list!");
@@ -272,22 +272,24 @@ cval *builtin_head(cenv *e, cval *a) {
     }
 
     cval_delete(a);
-#if SYSTEM_LANG==0
-    return cval_error("Function 'head' pashed unshupported type!");
+#if SYSTEM_LANG == 0
+    return cval_fault("Function 'head' pashed unshupported type!");
 #else
-    return cval_error("Function 'head' passed unsupported type!");
+    return cval_fault("Function 'head' passed unsupported type!");
 #endif
 
 }
 
 cval *set_trace_data(cenv *e, trace *t) {
-    hash_table_set(e ->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
+    hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
 
     if (t->current->position > 2) {
-    hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__")); }
+        hash_table_set(e->ht, "__PREV_PREV_EXPRESSION__", hash_table_get(e->ht, "__PREV_EXPRESSION__"));
+    }
 
     if (t->current->position > 1) {
-        hash_table_set(e->ht, "__PREV_EXPRESSION__", t->current->prev->data); }
+        hash_table_set(e->ht, "__PREV_EXPRESSION__", t->current->prev->data);
+    }
 
     hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
@@ -303,15 +305,15 @@ cval *builtin_tail(cenv *e, cval *a) {
             str++;
             return (cval_string(str));
         }
-#if SYSTEM_LANG==0
-        return (cval_error("Function 'tail' pashed empty shtring!"));
+#if SYSTEM_LANG == 0
+        return (cval_fault("Function 'tail' pashed empty shtring!"));
 #else
-        return (cval_error("Function 'tail' passed empty string!"));
+        return (cval_fault("Function 'tail' passed empty string!"));
 #endif
     }
 
     if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
-#if SYSTEM_LANG==0
+#if SYSTEM_LANG == 0
         CASSERT(a, a->cell[0]->count != 0, "Function 'tail' pashed empty list!");
 #else
         CASSERT(a, a->cell[0]->count != 0, "Function 'tail' passed empty list!");
@@ -336,17 +338,17 @@ cval *builtin_tail(cenv *e, cval *a) {
         cval_delete(a);
 
         if (init_digits == 1) {
-#if SYSTEM_LANG==0
-            return cval_error("Function 'tail' pashed shingle digit number!");
+#if SYSTEM_LANG == 0
+            return cval_fault("Function 'tail' pashed shingle digit number!");
 #else
-            return cval_error("Function 'tail' passed single digit number!");
+            return cval_fault("Function 'tail' passed single digit number!");
 #endif
         }
 
         factor = get_factor(init_digits);
 
         if (factor == -1) {
-            return cval_error("Unable to get factor for number!");
+            return cval_fault("Unable to get factor for number!");
         }
 
         while (count_digits(number) == init_digits) {
@@ -360,10 +362,10 @@ cval *builtin_tail(cenv *e, cval *a) {
     }
 
     cval_delete(a);
-#if SYSTEM_LANG==0
-    return cval_error("Function 'head' pashed unshupported type!");
+#if SYSTEM_LANG == 0
+    return cval_fault("Function 'head' pashed unshupported type!");
 #else
-    return cval_error("Function 'head' passed unsupported type!");
+    return cval_fault("Function 'head' passed unsupported type!");
 #endif
 }
 
@@ -501,7 +503,7 @@ int cval_equal(cval *x, cval *y) {
         case CVAL_NUMBER:
             return (x->num == y->num);
 
-        case CVAL_ERROR:
+        case CVAL_FAULT:
         case CVAL_SYMBOL:
             return (strcmp(x->err, y->err) == 0);
 
@@ -594,11 +596,11 @@ cval *builtin_while(cenv *e, cval *a) {
     a->cell[0]->type = CVAL_S_EXPRESSION;
     a->cell[1]->type = CVAL_S_EXPRESSION;
 
-    cval* condition_org = cval_pop(a, 0);
-    cval* loop_org = cval_pop(a, 0);
+    cval *condition_org = cval_pop(a, 0);
+    cval *loop_org = cval_pop(a, 0);
 
-    cval* condition = cval_copy(condition_org);
-    cval* loop = cval_copy(loop_org);
+    cval *condition = cval_copy(condition_org);
+    cval *loop = cval_copy(loop_org);
 
     if (cval_evaluate(e, condition)->boolean) {
         bool condition_status = true;
@@ -623,38 +625,32 @@ cval *builtin_while(cenv *e, cval *a) {
     return x;
 }
 
-cval *builtin_return(cenv *e, cval *a) {
-    CASSERT_NUM("while", a, 1)
-    CASSERT_TYPE("while", a, 0, CVAL_Q_EXPRESSION)
+cval *builtin_for(cenv *e, cval *a) {
+    CASSERT_NUM("for", a, 2)
+    CASSERT_TYPE("for", a, 0, CVAL_NUMBER)
+    CASSERT_TYPE("for", a, 1, CVAL_Q_EXPRESSION)
 
     cval *x;
-    a->cell[0]->type = CVAL_S_EXPRESSION;
+    int y = 1;
+    a->cell[1]->type = CVAL_S_EXPRESSION;
 
-    cval* condition_org = cval_pop(a, 0);
-    cval* loop_org = cval_pop(a, 0);
+    cval *loops = cval_pop(a, 0);
+    cval *loop_org = cval_pop(a, 0);
 
-    cval* condition = cval_copy(condition_org);
-    cval* loop = cval_copy(loop_org);
+    int q = loops->num;
 
-    if (cval_evaluate(e, condition)->boolean) {
-        bool condition_status = true;
-        while (condition_status) {
+    cval *loop = cval_copy(loop_org);
+
+    while (y <= q) {
             x = cval_evaluate(e, loop);
+    y += 1;
+    if (y <= q) {
+        cval_delete(x);
+        loop = cval_copy(loop_org);
 
-            condition = cval_copy(condition_org);
-            condition_status = cval_evaluate(e, condition)->boolean;
-
-            if (condition_status) {
-                cval_delete(x);
-                loop = cval_copy(loop_org);
-            }
-        }
-    } else {
-        return cval_s_expression();
-    }
+    }}
 
     cval_delete(loop_org);
-    cval_delete(condition_org);
     cval_delete(a);
     return x;
 }
@@ -693,7 +689,7 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
-    trace* t = start_trace(a->cell[0]->str);
+    trace *t = start_trace(a->cell[0]->str);
 
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
@@ -708,7 +704,7 @@ cval *builtin_load(cenv *e, cval *a) {
 
             cval *x = cval_evaluate(e, expression);
 
-            if (x->type == CVAL_ERROR) {
+            if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }
 
@@ -719,19 +715,26 @@ cval *builtin_load(cenv *e, cval *a) {
         cval_delete(expr);
         cval_delete(a);
 
-        return cval_s_expression();
+        if (hash_table_get(e->ht, "__RETURN_SET__") != NULL &&
+            hash_table_get(e->ht, "__RETURN_SET__")->boolean) {
+            hash_table_entry_delete(e->ht, "__RETURN_SET__");
+            return hash_table_get(e->ht, "__RETURN_VAL__");
+        } else {
+            return cval_s_expression();
+        }
+
     } else {
         char *err_msg = mpc_err_string(r.error);
         mpc_err_delete(r.error);
 
-        cval *err = cval_error("Could not load library '%s'", err_msg);
+        cval *err = cval_fault("Could not load library '%s'", err_msg);
         free(err_msg);
         cval_delete(a);
         return err;
     }
 }
 
-cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
+cval *builtin_traced_load(cenv *e, cval *a, trace *t) {
     CASSERT_NUM("traced_load", a, 1)
     CASSERT_TYPE("traced_load", a, 0, CVAL_STRING)
 
@@ -747,7 +750,7 @@ cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
 
             cval *x = cval_evaluate(e, expression);
 
-            if (x->type == CVAL_ERROR) {
+            if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }
 
@@ -757,18 +760,19 @@ cval *builtin_traced_load(cenv *e, cval *a,trace* t ) {
         cval_delete(expr);
         cval_delete(a);
 
+
         return cval_s_expression();
+
+
     } else {
         char *err_msg = mpc_err_string(r.error);
         mpc_err_delete(r.error);
 
-        cval *err = cval_error("Could not load library '%s'", err_msg);
+        cval *err = cval_fault("Could not load library '%s'", err_msg);
         free(err_msg);
         cval_delete(a);
         return err;
     }
-
-
 }
 
 cval *builtin_print(cenv *e, cval *a) {
@@ -783,11 +787,11 @@ cval *builtin_print(cenv *e, cval *a) {
     return cval_s_expression();
 }
 
-cval *builtin_panic(cenv *e, cval *a) {
+cval *builtin_fault(cenv *e, cval *a) {
     CASSERT_NUM("fault", a, 1);
     CASSERT_TYPE("fault", a, 0, CVAL_STRING);
 
-    cval *err = cval_error(a->cell[0]->str);
+    cval *err = cval_fault(a->cell[0]->str);
 
     cval_delete(a);
     return err;
@@ -823,7 +827,7 @@ cval *builtin_file(cenv *e, cval *a) {
             return cval_string(buffer);
         } else {
             cval_delete(a);
-            return cval_error("File not found!");
+            return cval_fault("File not found!");
         }
     }
 
@@ -842,7 +846,7 @@ cval *builtin_file(cenv *e, cval *a) {
             }
         }
         cval_delete(a);
-        return cval_error("unable to write to file!");
+        return cval_fault("unable to write to file!");
     }
 
     if (strstr(operation, "APPEND")) {
@@ -860,7 +864,7 @@ cval *builtin_file(cenv *e, cval *a) {
             }
         }
         cval_delete(a);
-        return cval_error("unable to write to file!");
+        return cval_fault("unable to write to file!");
     }
 }
 
@@ -886,10 +890,10 @@ cval *builtin_length(cenv *e, cval *a) {
     }
 
     cval_delete(a);
-#if SYSTEM_LANG==0
-    return cval_error("Function 'length' pashed unshupported type!");
+#if SYSTEM_LANG == 0
+    return cval_fault("Function 'length' pashed unshupported type!");
 #else
-    return cval_error("Function 'length' passed unsupported type!");
+    return cval_fault("Function 'length' passed unsupported type!");
 #endif
 
 }
@@ -921,7 +925,7 @@ cval *builtin_type(cenv *e, cval *a) {
             return cval_number(6);
 
         default:
-            return cval_error("Type not defined!");
+            return cval_fault("Type not defined!");
     }
 }
 
@@ -990,10 +994,10 @@ cval *builtin_http(cenv *e, cval *a) {
             cval_add(response_list, cval_string(strstr(s.body, "\r\n\r\n") + 4));
         } else {
             cval_delete(response_list);
-#if SYSTEM_LANG==0
-            response_list = cval_error("unable to accesh url!");
+#if SYSTEM_LANG == 0
+            response_list = cval_fault("unable to accesh url!");
 #else
-            response_list = cval_error("unable to access url!");
+            response_list = cval_fault("unable to access url!");
 #endif
         }
         free(s.body);
@@ -1010,9 +1014,9 @@ cval *builtin_input(cenv *e, cval *a) {
 
 cval *builtin_convert_string(cenv *e, cval *a) {
     if (a->cell[0]->type == CVAL_NUMBER) {
-        int length = snprintf( NULL, 0, "%ld", a->cell[0]->num );
-        char* str = malloc( length + 1 );
-        snprintf( str, length + 1, "%ld", a->cell[0]->num );
+        int length = snprintf(NULL, 0, "%ld", a->cell[0]->num);
+        char *str = malloc(length + 1);
+        snprintf(str, length + 1, "%ld", a->cell[0]->num);
 
         return cval_string(str);
     }
@@ -1033,7 +1037,7 @@ cval *builtin_sys(cenv *e, cval *a) {
         return cval_number(CONNERY_VER_INT);
     }
 
-    if (strcmp(cmd, "PRINT_ENV") == 0) {;
+    if (strcmp(cmd, "PRINT_ENV") == 0) { ;
         return cval_number(hash_table_print(e->ht));
     }
 
@@ -1049,7 +1053,7 @@ cval *builtin_sys(cenv *e, cval *a) {
         return cval_number(SYSTEM_LANG);
     }
 
-    return cval_error("invalid input to stats");
+    return cval_fault("invalid input to stats");
 }
 
 void cenv_add_string_functions(cenv *e) {
@@ -1101,13 +1105,14 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_string_functions(e);
 
     cenv_add_builtin(e, "while", builtin_while);
+    cenv_add_builtin(e, "for", builtin_for);
 
-    cenv_add_builtin(e, "__FAULT__", builtin_panic);
+    cenv_add_builtin(e, "__FAULT__", builtin_fault);
 }
 
 void load_standard_lib(cenv *e) {
     cval *stdLib = cval_add(cval_s_expression(), cval_string("stdlib/main.connery"));
-    if (stdLib->type == CVAL_ERROR) {
+    if (stdLib->type == CVAL_FAULT) {
         cval_print_line(stdLib);
     }
     builtin_load(e, stdLib);
@@ -1151,18 +1156,18 @@ int main(int argc, char **argv) {
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
-#if SYSTEM_LANG==1
+#if SYSTEM_LANG == 1
     puts("_____________ English Mode _____________");
 #endif
 
     puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
 
-    hash_table_set(e ->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
+    hash_table_set(e->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
 
     if (argc == 1) {
-        hash_table_set(e ->ht, "__SOURCE__", cval_string("INTERACTIVE"));
-        trace* trace = start_trace("interactive");
+        hash_table_set(e->ht, "__SOURCE__", cval_string("INTERACTIVE"));
+        trace *trace = start_trace("interactive");
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
@@ -1173,7 +1178,10 @@ int main(int argc, char **argv) {
             mpc_result_t result;
             if (mpc_parse("<stdin>", input, Connery, &result)) {
                 cval *output = cval_evaluate(e, cval_read(result.output));
+
                 cval_print_line(output);
+
+
                 cval_delete(output);
 
                 mpc_ast_delete(result.output);
@@ -1186,14 +1194,15 @@ int main(int argc, char **argv) {
     }
 
     if (argc >= 2) {
-        hash_table_set(e ->ht, "__SOURCE__", cval_string("FILE"));
-        trace* trace = start_trace("FILE");
+        hash_table_set(e->ht, "__SOURCE__", cval_string("FILE"));
+        trace *trace = start_trace("FILE");
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
-            hash_table_set(e ->ht, "__SOURCE_FILE__", cval_string(argv[i]));
+            hash_table_set(e->ht, "__SOURCE_FILE__", cval_string(argv[i]));
             cval *x = builtin_traced_load(e, args, trace);
 
-            if (x->type == CVAL_ERROR) {
+
+            if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }
             cval_delete(x);
