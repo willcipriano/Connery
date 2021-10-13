@@ -557,6 +557,10 @@ cval* cval_read(mpc_ast_t* t) {
     if (strstr(t->tag, "string")) {
         return cval_read_string(t);
     }
+    if (strstr(t->tag, "dictionary")) {
+        return cval_string("test");
+    }
+
 
     for (int i = 0; i < t->children_num; i++) {
         if (strcmp(t->children[i]->contents, "(") == 0){

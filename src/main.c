@@ -46,6 +46,7 @@ mpc_parser_t *Number;
 mpc_parser_t *Float;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
+mpc_parser_t *DictionaryPair;
 mpc_parser_t *Dictionary;
 mpc_parser_t *Comment;
 mpc_parser_t *Sexpr;
@@ -1144,6 +1145,7 @@ int main(int argc, char **argv) {
     Expr = mpc_new("expr");
     Comment = mpc_new("comment");
     String = mpc_new("string");
+    DictionaryPair = mpc_new("dictionary_pair");
     Dictionary = mpc_new("dictionary");
     Connery = mpc_new("connery");
 
@@ -1155,15 +1157,17 @@ int main(int argc, char **argv) {
                             |'+' | '-' | '*' | '/' ;                  \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
+                dictionary_pair : /[a-zA-Z0-9]*/ '&' <expr> /[,]?/    \
+                                | /[a-zA-Z0-9]*/ / & / <expr> /[,]?/ ; \
+                dictionary : '#' <dictionary_pair>* '#' ;        \
                 string    : /\"(\\\\.|[^\"])*\"/;                     \
                 comment : /;[^\\r\\n]*/  ;                            \
-                dictionary:   '<' <string> ':' <expr> '>' ;          \
                 expr      : <float>  | <number> | <symbol>            \
                           | <comment> | <sexpr> | <qexpr> | <string>  \
                           | <dictionary>  ;                           \
                 connery   : /^/ <expr>* /$/ ;                         \
             ",
-              Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
+              Float, Number, Symbol, Sexpr, Qexpr, DictionaryPair, Dictionary, Expr, String, Comment, Connery);
 
     cenv *e = cenv_new();
 
