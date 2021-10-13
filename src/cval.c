@@ -1,6 +1,7 @@
 #include "cval.h"
 #include "util.h"
 #include "trace.h"
+#include "hashtable.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -8,6 +9,7 @@
 #include <stdbool.h>
 
 #define ENV_HASH_TABLE_SIZE 10000
+#define DICTIONARY_HASH_TABLE_SIZE 1000
 #define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
@@ -43,6 +45,7 @@ char* ctype_name(int t) {
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
         case CVAL_BOOLEAN: return "Boolean";
+        case CVAL_DICTIONARY: return "Dictionary";
         default: return "Unknown Type";
     }
 }
@@ -121,6 +124,15 @@ cval* cval_q_expression(void) {
     return value;
 }
 
+cval* cval_dictionary(void) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_DICTIONARY;
+    value->count = 0;
+    value->ht = hash_table_create(DICTIONARY_HASH_TABLE_SIZE);
+    value->cell = NULL;
+    return value;
+}
+
 
 
 cenv* cenv_new(void) {
@@ -170,6 +182,10 @@ void cval_delete(cval* value) {
 
         case CVAL_STRING:
             free(value->str);
+            break;
+
+        case CVAL_DICTIONARY:
+            hash_table_destroy(value->ht);
             break;
 
     }
@@ -260,6 +276,10 @@ cval* cval_copy(cval* v) {
 
         case CVAL_BOOLEAN:
             x->boolean = v->boolean;
+            break;
+
+        case CVAL_DICTIONARY:
+            v->ht = hash_table_copy(x->ht);
             break;
     }
 
@@ -661,6 +681,9 @@ bool cval_print(cval* value) {
         case CVAL_STRING:
             cval_print_str(value);
             break;
+
+        case CVAL_DICTIONARY:
+            hash_table_print(value->ht);
     }
 
     return true;

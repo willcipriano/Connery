@@ -16,6 +16,3 @@
 (def {connery_version} (connery_version_num CONNERY_VERSION_INT))
 (def {CONNERY_SYSTEM_LANG_INT} (sys "SYSTEM_LANGUAGE_INT"))
 (def {connery_system_lang} (system_lang_version_num CONNERY_SYSTEM_LANG_INT))
-
-
-

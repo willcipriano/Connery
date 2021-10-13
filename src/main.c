@@ -6,13 +6,21 @@
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
-#include "trace.h"
+
 #include "strings.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.2"
 #define CONNERY_VER_INT 2
 #define LOG_LEVEL 4
+#define TRACE_ENABLED 1
+
+#if TRACE_ENABLED == 1
+#include "trace.h"
+#else
+typedef struct trace {} trace;
+#endif
+
 
 #ifdef _WIN32
 #include <string.h>
@@ -38,6 +46,7 @@ mpc_parser_t *Number;
 mpc_parser_t *Float;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
+mpc_parser_t *Dictionary;
 mpc_parser_t *Comment;
 mpc_parser_t *Sexpr;
 mpc_parser_t *Qexpr;
@@ -280,6 +289,7 @@ cval *builtin_head(cenv *e, cval *a) {
 
 }
 
+#if TRACE_ENABLED == 1
 cval *set_trace_data(cenv *e, trace *t) {
     hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
 
@@ -293,6 +303,7 @@ cval *set_trace_data(cenv *e, trace *t) {
 
     hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
+#endif
 
 cval *builtin_tail(cenv *e, cval *a) {
     CASSERT_NUM("tail", a, 1)
@@ -689,7 +700,9 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
+#if TRACE_ENABLED == 1
     trace *t = start_trace(a->cell[0]->str);
+#endif
 
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
@@ -699,8 +712,10 @@ cval *builtin_load(cenv *e, cval *a) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
+#if TRACE_ENABLED == 1
             record_trace(t, expression);
             set_trace_data(e, t);
+#endif
 
             cval *x = cval_evaluate(e, expression);
 
@@ -745,8 +760,10 @@ cval *builtin_traced_load(cenv *e, cval *a, trace *t) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
+#if TRACE_ENABLED == 1
             record_trace(t, expression);
             set_trace_data(e, t);
+#endif
 
             cval *x = cval_evaluate(e, expression);
 
@@ -1127,10 +1144,11 @@ int main(int argc, char **argv) {
     Expr = mpc_new("expr");
     Comment = mpc_new("comment");
     String = mpc_new("string");
+    Dictionary = mpc_new("dictionary");
     Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-              "                                                 \
+              "                                               \
                 float     : /-?[0-9]*\\.[0-9]+/ ;                     \
                 number    : /-?[0-9]+/ ;                              \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
@@ -1139,8 +1157,10 @@ int main(int argc, char **argv) {
                 qexpr     : '{' <expr>* '}' ;                         \
                 string    : /\"(\\\\.|[^\"])*\"/;                     \
                 comment : /;[^\\r\\n]*/  ;                            \
-                expr      : <float>  | <number> | <symbol>             \
-                          | <comment> | <sexpr> | <qexpr> | <string> ;\
+                dictionary:   '<' <string> ':' <expr> '>' ;          \
+                expr      : <float>  | <number> | <symbol>            \
+                          | <comment> | <sexpr> | <qexpr> | <string>  \
+                          | <dictionary>  ;                           \
                 connery   : /^/ <expr>* /$/ ;                         \
             ",
               Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
@@ -1159,7 +1179,6 @@ int main(int argc, char **argv) {
 #if SYSTEM_LANG == 1
     puts("_____________ English Mode _____________");
 #endif
-
     puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
 
@@ -1167,21 +1186,22 @@ int main(int argc, char **argv) {
 
     if (argc == 1) {
         hash_table_set(e->ht, "__SOURCE__", cval_string("INTERACTIVE"));
+#if TRACE_ENABLED == 1
         trace *trace = start_trace("interactive");
+#endif
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
 
+#if TRACE_ENABLED == 1
             record_trace(trace, cval_string(input));
             set_trace_data(e, trace);
-
+#endif
             mpc_result_t result;
             if (mpc_parse("<stdin>", input, Connery, &result)) {
                 cval *output = cval_evaluate(e, cval_read(result.output));
 
                 cval_print_line(output);
-
-
                 cval_delete(output);
 
                 mpc_ast_delete(result.output);
@@ -1195,13 +1215,17 @@ int main(int argc, char **argv) {
 
     if (argc >= 2) {
         hash_table_set(e->ht, "__SOURCE__", cval_string("FILE"));
+#if TRACE_ENABLED == 1
         trace *trace = start_trace("FILE");
+#endif
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
             hash_table_set(e->ht, "__SOURCE_FILE__", cval_string(argv[i]));
+#if TRACE_ENABLED == 1
             cval *x = builtin_traced_load(e, args, trace);
-
-
+#else
+            cval *x = builtin_load(e, args);
+#endif
             if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }

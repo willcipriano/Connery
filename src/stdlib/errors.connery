@@ -34,8 +34,6 @@
              }{}) }
     {})
 
-    (return (def {__last_fault__} (__FAULT__ msg)))
-
     (if (== critical 1) {(log_fatal "critical error") (sys "HARD_EXIT")} {})
 })
 
