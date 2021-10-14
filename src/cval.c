@@ -247,6 +247,7 @@ cval* cval_copy(cval* v) {
 
         case CVAL_FLOAT:
             x->fnum = v->fnum;
+            break;
 
         case CVAL_FAULT:
             x->err = malloc(strlen(v->err) + 1);
