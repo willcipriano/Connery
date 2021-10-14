@@ -9,7 +9,6 @@
 #include <stdbool.h>
 
 #define ENV_HASH_TABLE_SIZE 10000
-#define DICTIONARY_HASH_TABLE_SIZE 1000
 #define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
@@ -124,11 +123,11 @@ cval* cval_q_expression(void) {
     return value;
 }
 
-cval* cval_dictionary(void) {
+cval* cval_dictionary(hash_table* ht) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_DICTIONARY;
     value->count = 0;
-    value->ht = hash_table_create(DICTIONARY_HASH_TABLE_SIZE);
+    value->ht = ht;
     value->cell = NULL;
     return value;
 }
@@ -490,12 +489,6 @@ cval *cval_read_boolean(mpc_ast_t *t) {
     return cval_boolean(false);
 }
 
-cval *cval_read_dictionary(mpc_ast_t *t) {
-//    t->children[1]->children[0]->contents
-//    t->children[1]->children[1]->contents
-    return cval_string(t->children[2]->children[2]->contents);
-}
-
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -529,6 +522,19 @@ cval *cval_read_symbol(char *symbol) {
     } else {
         return cval_symbol(symbol);
     }
+}
+
+cval *cval_read_dictionary(mpc_ast_t *t) {
+    int items = t->children_num - 2;
+    int iter = 1;
+
+    hash_table* ht = hash_table_create(items * 10);
+    while (iter <= items) {
+        hash_table_set(ht, t->children[iter]->children[0]->contents, cval_read(t->children[iter]->children[2]));
+        iter += 1;
+    }
+
+    return cval_dictionary(ht);
 }
 
 cval* cval_read(mpc_ast_t* t) {
