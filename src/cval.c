@@ -420,7 +420,6 @@ cval* cval_evaluate(cenv* env, cval* value) {
 
     if (value->type == CVAL_S_EXPRESSION) {
         return cval_evaluate_s_expression(env, value);
-
     }
     return value;
 }
@@ -491,6 +490,12 @@ cval *cval_read_boolean(mpc_ast_t *t) {
     return cval_boolean(false);
 }
 
+cval *cval_read_dictionary(mpc_ast_t *t) {
+//    t->children[1]->children[0]->contents
+//    t->children[1]->children[1]->contents
+    return cval_string(t->children[2]->children[2]->contents);
+}
+
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
@@ -558,7 +563,7 @@ cval* cval_read(mpc_ast_t* t) {
         return cval_read_string(t);
     }
     if (strstr(t->tag, "dictionary")) {
-        return cval_string("test");
+        return cval_read_dictionary(t);
     }
 
 
