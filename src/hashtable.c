@@ -159,18 +159,21 @@ void hash_table_destroy(hash_table *target_hash_table) {
 hash_table *hash_table_copy(hash_table *target_hash_table) {
     hash_table *new_hash_table = hash_table_create(target_hash_table->table_size);
 
-    for (long i = 0; i < target_hash_table->table_size; i++) {
-        new_hash_table->entries[i] = target_hash_table->entries[i];
+    if (target_hash_table->items == 0) {
+        return new_hash_table;
     }
 
-    new_hash_table->items = target_hash_table->items;
+    for (long i = 0; i < target_hash_table->table_size; i++) {
+        if (target_hash_table->entries[i] != NULL) {
+            hash_table_set(new_hash_table, target_hash_table->entries[i]->key, target_hash_table->entries[i]->value);
+        };
+    }
 
     return new_hash_table;
 }
 
 int hash_table_print(hash_table *target_hash_table) {
     int first_row = 1;
-    int count = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
 
@@ -228,7 +231,7 @@ int hash_table_print(hash_table *target_hash_table) {
 
     }
 
-    printf("\ntotal items: ");
+    printf("\ntotal items: %li/%li", target_hash_table->items, target_hash_table->table_size);
     return target_hash_table -> items;
 
 }

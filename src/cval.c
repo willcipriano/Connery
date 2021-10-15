@@ -279,7 +279,7 @@ cval* cval_copy(cval* v) {
             break;
 
         case CVAL_DICTIONARY:
-            v->ht = hash_table_copy(x->ht);
+            x->ht = hash_table_copy(v->ht);
             break;
     }
 

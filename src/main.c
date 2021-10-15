@@ -947,6 +947,15 @@ cval *builtin_type(cenv *e, cval *a) {
     }
 }
 
+cval *builtin_stow(cenv *e, cval *a) {
+    CASSERT_TYPE("stow", a, 0, CVAL_DICTIONARY);
+    CASSERT_TYPE("stow", a, 1, CVAL_STRING);
+    CASSERT_NUM("stow", a, 3);
+
+    hash_table_set(a->cell[0]->ht, a->cell[1]->str, a->cell[2]);
+    return a->cell[0];
+}
+
 cval *builtin_http(cenv *e, cval *a) {
     CASSERT_TYPE("http", a, 0, CVAL_STRING);
     CASSERT_TYPE("http", a, 1, CVAL_STRING);
@@ -1084,6 +1093,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
     cenv_add_builtin(e, "=", builtin_put);
+    cenv_add_builtin(e, "stow", builtin_stow);
 
     cenv_add_builtin(e, "list", builtin_list);
     cenv_add_builtin(e, "head", builtin_head);
