@@ -53,19 +53,6 @@ char *multi_tok(char *input, multi_tok_t *string, char *delimiter) {
 
 multi_tok_t multiTok_init() { return NULL; }
 
-char *concatenateThree(const char *a, const char *b, const char *c) {
-    size_t alen = strlen(a);
-    size_t blen = strlen(b);
-    size_t clen = strlen(c);
-    char *res = malloc(alen + blen + clen + 1);
-    if (res) {
-        memcpy(res, a, alen);
-        memcpy(res + alen, b, blen);
-        memcpy(res + alen + blen, c, clen + 1);
-    }
-    return res;
-}
-
 long long_power(long x,long exponent)
 {
     int i;

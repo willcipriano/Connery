@@ -1,6 +1,7 @@
 #include "cval.h"
 #include "util.h"
 #include "trace.h"
+#include "hashtable.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -43,6 +44,7 @@ char* ctype_name(int t) {
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
         case CVAL_BOOLEAN: return "Boolean";
+        case CVAL_DICTIONARY: return "Dictionary";
         default: return "Unknown Type";
     }
 }
@@ -121,6 +123,15 @@ cval* cval_q_expression(void) {
     return value;
 }
 
+cval* cval_dictionary(hash_table* ht) {
+    cval* value = malloc(sizeof(cval));
+    value->type = CVAL_DICTIONARY;
+    value->count = 0;
+    value->ht = ht;
+    value->cell = NULL;
+    return value;
+}
+
 
 
 cenv* cenv_new(void) {
@@ -170,6 +181,10 @@ void cval_delete(cval* value) {
 
         case CVAL_STRING:
             free(value->str);
+            break;
+
+        case CVAL_DICTIONARY:
+            hash_table_destroy(value->ht);
             break;
 
     }
@@ -232,6 +247,7 @@ cval* cval_copy(cval* v) {
 
         case CVAL_FLOAT:
             x->fnum = v->fnum;
+            break;
 
         case CVAL_FAULT:
             x->err = malloc(strlen(v->err) + 1);
@@ -260,6 +276,10 @@ cval* cval_copy(cval* v) {
 
         case CVAL_BOOLEAN:
             x->boolean = v->boolean;
+            break;
+
+        case CVAL_DICTIONARY:
+            x->ht = hash_table_copy(v->ht);
             break;
     }
 
@@ -400,7 +420,6 @@ cval* cval_evaluate(cenv* env, cval* value) {
 
     if (value->type == CVAL_S_EXPRESSION) {
         return cval_evaluate_s_expression(env, value);
-
     }
     return value;
 }
@@ -506,6 +525,19 @@ cval *cval_read_symbol(char *symbol) {
     }
 }
 
+cval *cval_read_dictionary(mpc_ast_t *t) {
+    int items = t->children_num - 2;
+    int iter = 1;
+
+    hash_table* ht = hash_table_create(items * 10);
+    while (iter <= items) {
+        hash_table_set(ht, t->children[iter]->children[0]->contents, cval_read(t->children[iter]->children[2]));
+        iter += 1;
+    }
+
+    return cval_dictionary(ht);
+}
+
 cval* cval_read(mpc_ast_t* t) {
 
     if (strstr(t->tag, "boolean")) {
@@ -537,6 +569,10 @@ cval* cval_read(mpc_ast_t* t) {
     if (strstr(t->tag, "string")) {
         return cval_read_string(t);
     }
+    if (strstr(t->tag, "dictionary")) {
+        return cval_read_dictionary(t);
+    }
+
 
     for (int i = 0; i < t->children_num; i++) {
         if (strcmp(t->children[i]->contents, "(") == 0){
@@ -661,6 +697,9 @@ bool cval_print(cval* value) {
         case CVAL_STRING:
             cval_print_str(value);
             break;
+
+        case CVAL_DICTIONARY:
+            hash_table_print(value->ht);
     }
 
     return true;

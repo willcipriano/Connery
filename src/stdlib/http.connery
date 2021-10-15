@@ -1,6 +1,6 @@
-(def {GET} "GET")
-(def {POST} "POST")
-(def {DOWN} "DOWN")
+(def {__HTTP_GET__} "GET")
+(def {__HTTP_POST__} "POST")
+(def {__HTTP_DOWN__} "DOWN")
 
 (fun {http_status_code_text response} {
     case
@@ -22,13 +22,13 @@
 })
 
 (fun {http_get url} {
-    http GET url None
+    http __HTTP_GET__ url None
 })
 
 (fun {http_post url post_body} {
-    http POST url None post_body
+    http __HTTP_POST__ url None post_body
 })
 
 (fun {http_download url location} {
-    http DOWN url None location
+    http __HTTP_DOWN__ url None location
 })
