@@ -950,10 +950,30 @@ cval *builtin_type(cenv *e, cval *a) {
 cval *builtin_stow(cenv *e, cval *a) {
     CASSERT_TYPE("stow", a, 0, CVAL_DICTIONARY);
     CASSERT_TYPE("stow", a, 1, CVAL_STRING);
-    CASSERT_NUM("stow", a, 3);
+
+    if (a->count < 3) {
+        return cval_fault("stow requiresh at leasht three argumentsh, lad."
+                          "The dictionary, the key (ash a shtring of courshe) and the value to be shet.");
+    }
 
     hash_table_set(a->cell[0]->ht, a->cell[1]->str, a->cell[2]);
+
+    if (a->count >= 5) {
+        int pos = 0;
+        while (a->count > (pos + 3)) {
+            hash_table_set(a->cell[0]->ht, a->cell[pos + 3]->str, a->cell[pos + 4]);
+            pos += 2;
+        }
+    }
     return a->cell[0];
+}
+
+cval *builtin_grab(cenv *e, cval *a) {
+    CASSERT_TYPE("stow", a, 0, CVAL_DICTIONARY);
+    CASSERT_TYPE("stow", a, 1, CVAL_STRING);
+    CASSERT_NUM("stow", a, 2);
+
+    return hash_table_get(a->cell[0]->ht, a->cell[1]->str);
 }
 
 cval *builtin_http(cenv *e, cval *a) {
@@ -1093,7 +1113,9 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
     cenv_add_builtin(e, "def", builtin_def);
     cenv_add_builtin(e, "=", builtin_put);
+
     cenv_add_builtin(e, "stow", builtin_stow);
+    cenv_add_builtin(e, "grab", builtin_grab);
 
     cenv_add_builtin(e, "list", builtin_list);
     cenv_add_builtin(e, "head", builtin_head);
