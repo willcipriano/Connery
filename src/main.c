@@ -16,7 +16,9 @@
 #define TRACE_ENABLED 1
 
 #if TRACE_ENABLED == 1
+
 #include "trace.h"
+
 #else
 typedef struct trace {} trace;
 #endif
@@ -291,6 +293,7 @@ cval *builtin_head(cenv *e, cval *a) {
 }
 
 #if TRACE_ENABLED == 1
+
 cval *set_trace_data(cenv *e, trace *t) {
     hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
 
@@ -304,6 +307,7 @@ cval *set_trace_data(cenv *e, trace *t) {
 
     hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
+
 #endif
 
 cval *builtin_tail(cenv *e, cval *a) {
@@ -654,13 +658,14 @@ cval *builtin_for(cenv *e, cval *a) {
     cval *loop = cval_copy(loop_org);
 
     while (y <= q) {
-            x = cval_evaluate(e, loop);
-    y += 1;
-    if (y <= q) {
-        cval_delete(x);
-        loop = cval_copy(loop_org);
+        x = cval_evaluate(e, loop);
+        y += 1;
+        if (y <= q) {
+            cval_delete(x);
+            loop = cval_copy(loop_org);
 
-    }}
+        }
+    }
 
     cval_delete(loop_org);
     cval_delete(a);
@@ -948,25 +953,40 @@ cval *builtin_type(cenv *e, cval *a) {
 }
 
 cval *builtin_stow(cenv *e, cval *a) {
-    CASSERT_TYPE("stow", a, 0, CVAL_DICTIONARY);
     CASSERT_TYPE("stow", a, 1, CVAL_STRING);
 
     if (a->count < 3) {
-        return cval_fault("stow requiresh at leasht three argumentsh."
+        return cval_fault("Stow requiresh at leasht three argumentsh."
                           "The dictionary, the key (ash a shtring of courshe) and the value to be shet.");
     }
 
-    hash_table_set(a->cell[0]->ht, a->cell[1]->str, a->cell[2]);
+    hash_table* ht = NULL;
+
+    if (a->cell[0]->type == CVAL_DICTIONARY) {
+        ht = a->cell[0]->ht;
+    } else {
+        if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+            if (a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
+                 ht = a->cell[0]->cell[0]->ht;
+            }
+        }
+    }
+
+    if (ht == NULL) {
+        return cval_fault("Stow requiresh a dictionary, shtring for the key, and a value for the value.");
+    }
+
+    hash_table_set(ht, a->cell[1]->str, a->cell[2]);
 
     if (a->count >= 5) {
         int pos = 0;
         while (a->count > (pos + 3)) {
 
             if ((a->count - pos + 3) % 2 == 0) {
-            hash_table_set(a->cell[0]->ht, a->cell[pos + 3]->str, a->cell[pos + 4]);
-            pos += 2;}
-            else {
-                return cval_fault("shtow requiresh a even number of argumentsh, lad.");
+                hash_table_set(ht, a->cell[pos + 3]->str, a->cell[pos + 4]);
+                pos += 2;
+            } else {
+                return cval_fault("Stow requiresh a even number of argumentsh, lad.");
             }
         }
     }
@@ -974,35 +994,48 @@ cval *builtin_stow(cenv *e, cval *a) {
 }
 
 cval *builtin_grab(cenv *e, cval *a) {
-    CASSERT_TYPE("grab", a, 0, CVAL_DICTIONARY)
 
-    if (a->count == 2) {
-        CASSERT_TYPE("grab", a, 1, CVAL_STRING)
-        cval* result = cval_copy(hash_table_get(a->cell[0]->ht, a->cell[1]->str));
-        cval_delete(a);
-        return result;
+    hash_table* ht = NULL;
+
+    if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+        if (a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
+            ht = a->cell[0]->cell[0]->ht;
+        }
+    } else {
+        if (a->cell[0]->type == CVAL_DICTIONARY) {
+            ht = a->cell[0]->ht;
+        }
+    }
+
+    if (ht == NULL) {
+        return cval_fault("Grab requiresh at leasht two argumentsh, the dictionary to fetch from, and the key to fetch.");
     }
 
     int idx = 1;
-    cval *list = cval_q_expression();
+    cval *list = cval_q_expression();;
     while (idx < a->count) {
         if (a->cell[idx]->type == CVAL_STRING) {
-            cval *item = hash_table_get(a->cell[0]->ht, a->cell[idx]->str);
 
-            if (item == NULL) {
-                cval_add(list, cval_null());
-            } else {
-                cval_add(list, cval_copy(item));
-            }
-            idx += 1;
+        cval *item = NULL;
+
+        item = hash_table_get(ht, a->cell[idx]->str);
+
+        if (item == NULL) {
+            cval_add(list, cval_null());
         } else {
-            cval_delete(list);
-            cval_delete(a);
-            return cval_fault("I can only grab itemsh via namesh defined in shtringsh, lad. Try again.");
+            cval_add(list, cval_copy(item));
         }
+        idx += 1;
+    } else {
+        cval_delete(list);
+        cval_delete(a);
+        return cval_fault("I can only grab itemsh via namesh defined in shtringsh, lad. Try again.");
     }
-    cval_delete(a);
-    return list;
+}
+
+cval_delete(a);
+return
+list;
 }
 
 cval *builtin_http(cenv *e, cval *a) {
@@ -1218,9 +1251,8 @@ int main(int argc, char **argv) {
                             |'+' | '-' | '*' | '/' ;                  \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
-                dictionary_pair : /[a-zA-Z0-9]*/ '&' <expr> /[,]?/    \
-                                | /[a-zA-Z0-9]*/ / & / <expr> /[,]?/ ; \
-                dictionary : '#' <dictionary_pair>* '#' ;        \
+                dictionary_pair : <string> '&' <expr> /[,]?/ ;        \
+                dictionary : '#' <dictionary_pair>* '#' ;             \
                 string    : /\"(\\\\.|[^\"])*\"/;                     \
                 comment : /;[^\\r\\n]*/  ;                            \
                 expr      : <float>  | <number> | <symbol>            \

@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define ENV_HASH_TABLE_SIZE 10000
+#define ENV_HASH_TABLE_SIZE 1000
+#define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 100
 #define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
@@ -248,6 +249,11 @@ cenv* cenv_copy(cenv* e) {
 }
 
 cval* cval_copy(cval* v) {
+
+    if (v == NULL || v->type == CVAL_NULL) {
+        return cval_null();
+    }
+
     cval* x = malloc(sizeof(cval));
     x->type = v->type;
 
@@ -303,10 +309,6 @@ cval* cval_copy(cval* v) {
 
         case CVAL_DICTIONARY:
             x->ht = hash_table_copy(v->ht);
-            break;
-
-        case CVAL_NULL:
-            x = v;
             break;
     }
 
@@ -556,9 +558,15 @@ cval *cval_read_dictionary(mpc_ast_t *t) {
     int items = t->children_num - 2;
     int iter = 1;
 
-    hash_table* ht = hash_table_create(items * 10);
+    hash_table* ht = hash_table_create(items + DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM);
+
     while (iter <= items) {
-        hash_table_set(ht, t->children[iter]->children[0]->contents, cval_read(t->children[iter]->children[2]));
+        t->children[iter]->children[0]->contents[strlen(t->children[iter]->children[0]->contents)-1] = '\0';
+        char* unescaped = malloc(strlen(t->children[iter]->children[0]->contents+1)+1);
+        strcpy(unescaped, t->children[iter]->children[0]->contents+1);
+        unescaped = mpcf_unescape(unescaped);
+        hash_table_set(ht, unescaped, cval_read(t->children[iter]->children[2]));
+        free(unescaped);
         iter += 1;
     }
 

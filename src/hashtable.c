@@ -61,7 +61,8 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
 }
 
 cval *hash_table_get(hash_table *target_hash_table, const char *key) {
-    if (target_hash_table->items == 0) {
+
+    if (target_hash_table == NULL) {
         return NULL;
     }
 
@@ -164,7 +165,7 @@ hash_table *hash_table_copy(hash_table *target_hash_table) {
     }
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
-        if (target_hash_table->entries[i] != NULL) {
+        if (target_hash_table->entries[i] != NULL && target_hash_table->entries[i]->key != NULL && target_hash_table->entries[i]->value != NULL) {
             hash_table_set(new_hash_table, target_hash_table->entries[i]->key, target_hash_table->entries[i]->value);
         };
     }
