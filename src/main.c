@@ -987,14 +987,20 @@ cval *builtin_grab(cenv *e, cval *a) {
     cval *list = cval_q_expression();
     while (idx < a->count) {
         if (a->cell[idx]->type == CVAL_STRING) {
-            cval_add(list, cval_copy(hash_table_get(a->cell[0]->ht, a->cell[idx]->str)));
+            cval *item = hash_table_get(a->cell[0]->ht, a->cell[idx]->str);
+
+            if (item == NULL) {
+                cval_add(list, cval_null());
+            } else {
+                cval_add(list, cval_copy(item));
+            }
             idx += 1;
         } else {
-            free(list);
+            cval_delete(list);
+            cval_delete(a);
             return cval_fault("I can only grab itemsh via namesh defined in shtringsh, lad. Try again.");
         }
     }
-
     cval_delete(a);
     return list;
 }

@@ -164,8 +164,8 @@ void cenv_delete(cenv* e) {
 }
 
 void cval_delete(cval* value) {
+    bool immortal = false;
     switch(value->type) {
-
         case CVAL_NUMBER:
             break;
 
@@ -205,10 +205,13 @@ void cval_delete(cval* value) {
             break;
 
         case CVAL_NULL:
+            immortal = true;
             break;
 
     }
-    free(value);
+
+    if (!immortal) {
+    free(value); }
 }
 
 cval* cval_take(cval* value, int i) {
