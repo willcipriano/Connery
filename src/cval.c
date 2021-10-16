@@ -33,6 +33,8 @@ cval* cval_pop(cval* value, int i);
 cval* cval_evaluate(cenv* env,cval* value);
 cval* cval_take(cval* value, int i);
 
+cval* NULL_CVAL_CONSTANT = NULL;
+
 char* ctype_name(int t) {
     switch(t) {
         case CVAL_FUNCTION: return "Function";
@@ -45,6 +47,7 @@ char* ctype_name(int t) {
         case CVAL_FLOAT: return "Float";
         case CVAL_BOOLEAN: return "Boolean";
         case CVAL_DICTIONARY: return "Dictionary";
+        case CVAL_NULL: return "Null";
         default: return "Unknown Type";
     }
 }
@@ -132,6 +135,20 @@ cval* cval_dictionary(hash_table* ht) {
     return value;
 }
 
+cval* cval_null() {
+    if (NULL_CVAL_CONSTANT == NULL) {
+        cval *value = malloc(sizeof(cval));
+        value->type = CVAL_NULL;
+        value->count = -1;
+        value->str = "NULL";
+        value->num = 0;
+        value->fnum = 0.0;
+        value->cell = NULL;
+        value->boolean = false;
+        NULL_CVAL_CONSTANT = value;
+    }
+    return NULL_CVAL_CONSTANT;
+}
 
 
 cenv* cenv_new(void) {
@@ -185,6 +202,9 @@ void cval_delete(cval* value) {
 
         case CVAL_DICTIONARY:
             hash_table_destroy(value->ht);
+            break;
+
+        case CVAL_NULL:
             break;
 
     }
@@ -280,6 +300,10 @@ cval* cval_copy(cval* v) {
 
         case CVAL_DICTIONARY:
             x->ht = hash_table_copy(v->ht);
+            break;
+
+        case CVAL_NULL:
+            x = v;
             break;
     }
 
@@ -700,6 +724,11 @@ bool cval_print(cval* value) {
 
         case CVAL_DICTIONARY:
             hash_table_print(value->ht);
+            break;
+
+        case CVAL_NULL:
+            printf("NULL");
+            break;
     }
 
     return true;

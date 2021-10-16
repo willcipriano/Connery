@@ -974,11 +974,29 @@ cval *builtin_stow(cenv *e, cval *a) {
 }
 
 cval *builtin_grab(cenv *e, cval *a) {
-    CASSERT_TYPE("grab", a, 0, CVAL_DICTIONARY);
-    CASSERT_TYPE("grab", a, 1, CVAL_STRING);
-    CASSERT_NUM("grab", a, 2);
+    CASSERT_TYPE("grab", a, 0, CVAL_DICTIONARY)
 
-    return hash_table_get(a->cell[0]->ht, a->cell[1]->str);
+    if (a->count == 2) {
+        CASSERT_TYPE("grab", a, 1, CVAL_STRING)
+        cval* result = cval_copy(hash_table_get(a->cell[0]->ht, a->cell[1]->str));
+        cval_delete(a);
+        return result;
+    }
+
+    int idx = 1;
+    cval *list = cval_q_expression();
+    while (idx < a->count) {
+        if (a->cell[idx]->type == CVAL_STRING) {
+            cval_add(list, cval_copy(hash_table_get(a->cell[0]->ht, a->cell[idx]->str)));
+            idx += 1;
+        } else {
+            free(list);
+            return cval_fault("I can only grab itemsh via namesh defined in shtringsh, lad. Try again.");
+        }
+    }
+
+    cval_delete(a);
+    return list;
 }
 
 cval *builtin_http(cenv *e, cval *a) {
@@ -1208,12 +1226,13 @@ int main(int argc, char **argv) {
 
     cenv *e = cenv_new();
 
+    hash_table_set(e->ht, "NULL", cval_null());
     cenv_add_builtins(e);
     load_standard_lib(e);
 
     puts("   ______                                 \n"
          "  / ____/___  ____  ____  ___  _______  __\n"
-         " / /   / __ \\/ __ \\/ __ \\/ _ \\/ ___/ / / /\n"
+         " / /   / __ \\/ __ \\/ __ \\/ _ \\=/ ___/ / / /\n"
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
@@ -1224,6 +1243,7 @@ int main(int argc, char **argv) {
     puts("           ConneryLang.org             \n");
 
     hash_table_set(e->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
+
 
     if (argc == 1) {
         hash_table_set(e->ht, "__SOURCE__", cval_string("INTERACTIVE"));
