@@ -13,7 +13,7 @@
 #define CONNERY_VERSION "0.0.2"
 #define CONNERY_VER_INT 2
 #define LOG_LEVEL 4
-#define TRACE_ENABLED 1
+#define TRACE_ENABLED 0
 
 #if TRACE_ENABLED == 1
 
@@ -1122,14 +1122,13 @@ cval *builtin_input(cenv *e, cval *a) {
 }
 
 cval *builtin_convert_string(cenv *e, cval *a) {
-    if (a->cell[0]->type == CVAL_NUMBER) {
-        int length = snprintf(NULL, 0, "%ld", a->cell[0]->num);
-        char *str = malloc(length + 1);
-        snprintf(str, length + 1, "%ld", a->cell[0]->num);
+    cval* new;
 
-        return cval_string(str);
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        new = cval_string(int_to_string(a->cell[0]->num));
     }
 
+    return new;
 }
 
 cval *builtin_sys(cenv *e, cval *a) {

@@ -60,6 +60,7 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
     target_hash_table->items += 1;
 }
 
+
 cval *hash_table_get(hash_table *target_hash_table, const char *key) {
 
     if (target_hash_table == NULL) {
@@ -157,20 +158,40 @@ void hash_table_destroy(hash_table *target_hash_table) {
     free(target_hash_table);
 }
 
-hash_table *hash_table_copy(hash_table *target_hash_table) {
-    hash_table *new_hash_table = hash_table_create(target_hash_table->table_size);
+
+hash_table *hash_table_copy_and_resize(hash_table *target_hash_table, int newSize) {
+
+    hash_table *new_hash_table = NULL;
+
+    if (newSize == 0) {
+    new_hash_table = hash_table_create(target_hash_table->table_size); }
+    else {
+        new_hash_table = hash_table_create(newSize);
+    }
+
 
     if (target_hash_table->items == 0) {
         return new_hash_table;
     }
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
-        if (target_hash_table->entries[i] != NULL && target_hash_table->entries[i]->key != NULL && target_hash_table->entries[i]->value != NULL) {
+        if (target_hash_table->entries[i] != NULL) {
             hash_table_set(new_hash_table, target_hash_table->entries[i]->key, target_hash_table->entries[i]->value);
-        };
+
+            hash_table_entry* prev = target_hash_table->entries[i]->next;
+
+            while (prev != NULL) {
+                hash_table_set(new_hash_table, prev->key, prev->value);
+                prev = prev->next;
+            }
+        }
     }
 
     return new_hash_table;
+}
+
+hash_table *hash_table_copy(hash_table *target_hash_table) {
+    return hash_table_copy_and_resize(target_hash_table, 0);
 }
 
 int hash_table_print(hash_table *target_hash_table) {

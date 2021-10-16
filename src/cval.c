@@ -130,7 +130,7 @@ cval* cval_q_expression(void) {
 cval* cval_dictionary(hash_table* ht) {
     cval* value = malloc(sizeof(cval));
     value->type = CVAL_DICTIONARY;
-    value->count = 0;
+    value->count = ht->items;
     value->ht = ht;
     value->cell = NULL;
     return value;
