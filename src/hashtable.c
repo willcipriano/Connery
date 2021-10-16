@@ -4,6 +4,10 @@
 #include "hashtable.h"
 
 
+#define HASH_TABLE_RESIZE_DEPTH 2
+#define HASH_TABLE_RESIZE_BONUS 1000
+
+
 unsigned int hash(const char *key, const long table_size) {
     unsigned long int value = 0;
     unsigned int key_len = strlen(key);
@@ -21,6 +25,7 @@ hash_table_entry *hash_table_pair(const char *key, cval *value) {
     hash_table_entry *entry = malloc(sizeof(hash_table_entry) * 1);
 
     entry->key = malloc(strlen(key) + 1);
+
     strcpy(entry->key, key);
 
     entry->value = malloc(sizeof(cval));
@@ -42,6 +47,7 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
     }
 
     hash_table_entry *prev;
+    int depth = 1;
 
     while (entry != NULL) {
 
@@ -54,10 +60,22 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
 
         prev = entry;
         entry = prev->next;
+        depth += 1;
     }
 
     prev->next = hash_table_pair(key, value);
     target_hash_table->items += 1;
+
+    if (depth > HASH_TABLE_RESIZE_DEPTH) {
+        hash_table *ht;
+        ht = hash_table_copy_and_resize(target_hash_table, target_hash_table->table_size + HASH_TABLE_RESIZE_BONUS);
+        target_hash_table->entries = ht->entries;
+        target_hash_table->table_size = ht->table_size;
+        target_hash_table->items = ht->items;
+
+        ht->entries = NULL;
+        hash_table_destroy(ht);
+    }
 }
 
 
@@ -149,6 +167,11 @@ void hash_table_entry_delete(hash_table *target_hash_table, const char *key) {
 
 void hash_table_destroy(hash_table *target_hash_table) {
 
+    if (target_hash_table->entries == NULL) {
+        free(target_hash_table);
+        return;
+    }
+
     for (long i = 0; i < target_hash_table->table_size; i++) {
         if (target_hash_table->entries[i] != NULL) {
             hash_table_entry_delete(target_hash_table, target_hash_table->entries[i]->key);
@@ -159,7 +182,7 @@ void hash_table_destroy(hash_table *target_hash_table) {
 }
 
 
-hash_table *hash_table_copy_and_resize(hash_table *target_hash_table, int newSize) {
+hash_table *hash_table_copy_and_resize(hash_table *target_hash_table, long newSize) {
 
     hash_table *new_hash_table = NULL;
 
