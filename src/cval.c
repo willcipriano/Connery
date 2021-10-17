@@ -544,14 +544,7 @@ cval* cval_read_string(mpc_ast_t* t) {
 }
 
 cval *cval_read_symbol(char *symbol) {
-
-    if (strcmp(symbol, "True") == 0) {
-        return cval_boolean(true);
-    } else if (strcmp(symbol, "False") == 0) {
-        return cval_boolean(false);
-    } else {
         return cval_symbol(symbol);
-    }
 }
 
 cval *cval_read_dictionary(mpc_ast_t *t) {

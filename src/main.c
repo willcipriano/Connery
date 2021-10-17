@@ -1264,6 +1264,8 @@ int main(int argc, char **argv) {
     cenv *e = cenv_new();
 
     hash_table_set(e->ht, "NULL", cval_null());
+    hash_table_set(e->ht, "True", cval_boolean(true));
+    hash_table_set(e->ht, "False", cval_boolean(false));
     cenv_add_builtins(e);
     load_standard_lib(e);
 
