@@ -4,8 +4,9 @@
 #include "hashtable.h"
 
 
-#define HASH_TABLE_RESIZE_DEPTH 2
-#define HASH_TABLE_RESIZE_BONUS 1000
+#define HASH_TABLE_RESIZE_DEPTH 3
+#define HASH_TABLE_RESIZE_MULTIPLIER 2
+#define HASH_TABLE_RESIZE_BONUS 100
 
 
 unsigned int hash(const char *key, const long table_size) {
@@ -66,9 +67,9 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
     prev->next = hash_table_pair(key, value);
     target_hash_table->items += 1;
 
-    if (depth > HASH_TABLE_RESIZE_DEPTH) {
+    if (depth >= HASH_TABLE_RESIZE_DEPTH) {
         hash_table *ht;
-        ht = hash_table_copy_and_resize(target_hash_table, target_hash_table->table_size + HASH_TABLE_RESIZE_BONUS);
+        ht = hash_table_copy_and_resize(target_hash_table, (target_hash_table->table_size * HASH_TABLE_RESIZE_MULTIPLIER) + HASH_TABLE_RESIZE_BONUS);
         target_hash_table->entries = ht->entries;
         target_hash_table->table_size = ht->table_size;
         target_hash_table->items = ht->items;

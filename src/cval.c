@@ -9,7 +9,7 @@
 #include <stdbool.h>
 
 #define ENV_HASH_TABLE_SIZE 1000
-#define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 100
+#define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
 #define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
@@ -37,6 +37,7 @@ cval* cval_take(cval* value, int i);
 cval* NULL_CVAL_CONSTANT = NULL;
 cval* TRUE_CVAL_CONSTANT = NULL;
 cval* FALSE_CVAL_CONSTANT = NULL;
+bool IMMORTALS_CREATED = false;
 
 char* ctype_name(int t) {
     switch(t) {
@@ -62,32 +63,50 @@ cval* cval_function(cbuiltin func) {
     return v;
 }
 
+void create_immortals() {
+    if (!IMMORTALS_CREATED) {
+    cval *nullConst = malloc(sizeof(cval));
+    nullConst->type = CVAL_NULL;
+    nullConst->count = -1;
+    nullConst->str = "NULL";
+    nullConst->num = 0;
+    nullConst->fnum = 0.0;
+    nullConst->cell = NULL;
+    nullConst->boolean = false;
+    NULL_CVAL_CONSTANT = nullConst;
+
+    cval *trueConst = malloc(sizeof(cval));
+    trueConst->type = CVAL_BOOLEAN;
+    trueConst->num = 1;
+    trueConst->fnum = 1;
+    trueConst->boolean = true;
+    trueConst->count = 0;
+    trueConst->cell = NULL;
+    TRUE_CVAL_CONSTANT = trueConst;
+
+    cval *falseConst = malloc(sizeof(cval));
+    falseConst->type = CVAL_BOOLEAN;
+    falseConst->num = -1;
+    falseConst->fnum = -1.0;
+    falseConst->boolean = false;
+    falseConst->count = 0;
+    falseConst->cell = NULL;
+    FALSE_CVAL_CONSTANT = falseConst;}
+
+    IMMORTALS_CREATED = true;
+}
+
 cval *cval_boolean(bool b) {
-    if (b) {
-        if (TRUE_CVAL_CONSTANT == NULL) {
-            cval *value = malloc(sizeof(cval));
-            value->type = CVAL_BOOLEAN;
-            value->num = 1;
-            value->fnum = 1;
-            value->boolean = true;
-            value->count = 0;
-            value->cell = NULL;
-            TRUE_CVAL_CONSTANT = value;
-        }
-        return TRUE_CVAL_CONSTANT;
-    } else {
-        if (FALSE_CVAL_CONSTANT == NULL) {
-            cval *value = malloc(sizeof(cval));
-            value->type = CVAL_BOOLEAN;
-            value->num = -1;
-            value->fnum = -1;
-            value->boolean = false;
-            value->count = 0;
-            value->cell = NULL;
-            FALSE_CVAL_CONSTANT = value;
-        }
-        return FALSE_CVAL_CONSTANT;
+    if (!IMMORTALS_CREATED) {
+        create_immortals();
     }
+
+    if (b) {
+        return TRUE_CVAL_CONSTANT;
+    }
+
+    return FALSE_CVAL_CONSTANT;
+
 }
 
 cval* cval_number(long x) {
@@ -158,20 +177,12 @@ cval* cval_dictionary(hash_table* ht) {
 }
 
 cval* cval_null() {
-    if (NULL_CVAL_CONSTANT == NULL) {
-        cval *value = malloc(sizeof(cval));
-        value->type = CVAL_NULL;
-        value->count = -1;
-        value->str = "NULL";
-        value->num = 0;
-        value->fnum = 0.0;
-        value->cell = NULL;
-        value->boolean = false;
-        NULL_CVAL_CONSTANT = value;
+    if (!IMMORTALS_CREATED) {
+        create_immortals();
     }
+
     return NULL_CVAL_CONSTANT;
 }
-
 
 cenv* cenv_new(void) {
     cenv* e = malloc(sizeof(cenv));
@@ -226,10 +237,8 @@ void cval_delete(cval* value) {
             hash_table_destroy(value->ht);
             break;
 
-        case CVAL_NULL:
-            immortal = true;
-            break;
 
+        case CVAL_NULL:
         case CVAL_BOOLEAN:
             immortal = true;
             break;
@@ -766,4 +775,5 @@ void cval_print_line(cval* value) {
     if (cval_print(value)) {
     putchar('\n'); }
 }
+
 
