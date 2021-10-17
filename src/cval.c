@@ -35,6 +35,8 @@ cval* cval_evaluate(cenv* env,cval* value);
 cval* cval_take(cval* value, int i);
 
 cval* NULL_CVAL_CONSTANT = NULL;
+cval* TRUE_CVAL_CONSTANT = NULL;
+cval* FALSE_CVAL_CONSTANT = NULL;
 
 char* ctype_name(int t) {
     switch(t) {
@@ -61,12 +63,31 @@ cval* cval_function(cbuiltin func) {
 }
 
 cval *cval_boolean(bool b) {
-    cval *value = malloc(sizeof(cval));
-    value->type = CVAL_BOOLEAN;
-    value->boolean = b;
-    value->count = 0;
-    value->cell = NULL;
-    return value;
+    if (b) {
+        if (TRUE_CVAL_CONSTANT == NULL) {
+            cval *value = malloc(sizeof(cval));
+            value->type = CVAL_BOOLEAN;
+            value->num = 1;
+            value->fnum = 1;
+            value->boolean = true;
+            value->count = 0;
+            value->cell = NULL;
+            TRUE_CVAL_CONSTANT = value;
+        }
+        return TRUE_CVAL_CONSTANT;
+    } else {
+        if (FALSE_CVAL_CONSTANT == NULL) {
+            cval *value = malloc(sizeof(cval));
+            value->type = CVAL_BOOLEAN;
+            value->num = -1;
+            value->fnum = -1;
+            value->boolean = false;
+            value->count = 0;
+            value->cell = NULL;
+            FALSE_CVAL_CONSTANT = value;
+        }
+        return FALSE_CVAL_CONSTANT;
+    }
 }
 
 cval* cval_number(long x) {
@@ -206,6 +227,10 @@ void cval_delete(cval* value) {
             break;
 
         case CVAL_NULL:
+            immortal = true;
+            break;
+
+        case CVAL_BOOLEAN:
             immortal = true;
             break;
 
