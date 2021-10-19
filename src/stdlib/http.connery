@@ -2,7 +2,7 @@
 (def {__HTTP_POST__} "POST")
 (def {__HTTP_DOWN__} "DOWN")
 
-(def {__http_status_codes__} {
+(def {__http_status_codes__}
     #
     "100"&"Continue",
     "101"&"Switching Protocols",
@@ -100,7 +100,7 @@
     "561"&"Unauthorized",
     "598"&"Network read timeout error"
     #
-})
+)
 
 (fun {http_status_code_text response} {
     grab __http_status_codes__ (convert_string response)

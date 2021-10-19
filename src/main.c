@@ -946,10 +946,6 @@ cval *builtin_type(cenv *e, cval *a) {
             break;
 
         case CVAL_Q_EXPRESSION:
-            if (a->cell[0]->cell[0] != NULL && a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
-                    returnVal = cval_number(8);
-                    break;
-            }
             returnVal = cval_number(3);
             break;
 
