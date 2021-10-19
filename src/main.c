@@ -973,7 +973,6 @@ cval *builtin_type(cenv *e, cval *a) {
             returnVal = cval_number(9);
             break;
 
-
         default:
             returnVal = cval_fault("Type not defined!");
     }

@@ -13,7 +13,7 @@ typedef cval *(*cbuiltin)(cenv *, cval *);
 enum {
     CVAL_NUMBER, CVAL_FAULT, CVAL_SYMBOL, CVAL_FUNCTION,
     CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT,
-    CVAL_BOOLEAN, CVAL_DICTIONARY, CVAL_NULL
+    CVAL_BOOLEAN, CVAL_DICTIONARY, CVAL_NULL, CVAL_UNALLOCATED, CVAL_DELETED
 };
 
 struct cval {
@@ -33,6 +33,7 @@ struct cval {
     cval *body;
 
     int count;
+    int objId;
     cval **cell;
 };
 
