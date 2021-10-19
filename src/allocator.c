@@ -1,10 +1,10 @@
 #include "allocator.h"
 #include "cval.h"
 
-#define PREALLOCATE_SLOTS 255
-#define PREALLOCATE_ROWS 4
-#define ROWS_MAX 32767
-#define MAX_OBJECT_ID 8355585
+#define PREALLOCATE_SLOTS 4096
+#define PREALLOCATE_ROWS 16
+#define ROWS_MAX 4194304
+#define MAX_OBJECT_ID 17179869184
 #define PRE_CACHE_SIZE 16
 
 typedef struct cval_allocation_array {
@@ -22,7 +22,7 @@ typedef struct cval_allocation_index {
 
 cval_allocation_index *INDEX = NULL;
 int CUR_OBJ_ID = 0;
-int CUR_PRE_CACHE_POS = NULL;
+int CUR_PRE_CACHE_POS = 0;
 bool INIT_COMPLETE = false;
 
 cval *OUT_OF_MEMORY_FAULT = NULL;
@@ -62,6 +62,7 @@ cval_allocation_array *preallocateArray(int slots) {
 cval_allocation_index *preallocateIndex(int rows, int slots) {
     cval_allocation_index *index = malloc(sizeof(cval_allocation_index));
     index->cur = 0;
+    index->size = rows;
     index->rows = malloc(sizeof(cval_allocation_array*) * ROWS_MAX);
 
     if (OUT_OF_MEMORY_FAULT == NULL) {
@@ -82,7 +83,7 @@ cval_allocation_index *preallocateIndex(int rows, int slots) {
     return index;
 }
 
-cval **allocateMany(int total) {
+cval **internalCacheFetch(int total) {
 
     cval **array = malloc(sizeof(cval *) * total);
 
@@ -113,8 +114,7 @@ cval **allocateMany(int total) {
 void allocator_setup() {
     if (!INIT_COMPLETE) {
     INDEX = preallocateIndex(PREALLOCATE_ROWS, PREALLOCATE_SLOTS);
-    preCache = allocateMany(PRE_CACHE_SIZE);
-    CUR_PRE_CACHE_POS = 0;
+    preCache = internalCacheFetch(PRE_CACHE_SIZE);
     INIT_COMPLETE = true;
     }
 }
@@ -122,13 +122,25 @@ void allocator_setup() {
 cval *allocate() {
     cval* val = NULL;
     if (CUR_PRE_CACHE_POS > PRE_CACHE_SIZE - 1) {
-        preCache = allocateMany(PRE_CACHE_SIZE);
+        preCache = internalCacheFetch(PRE_CACHE_SIZE);
         CUR_PRE_CACHE_POS = 0;
     }
 
     val = preCache[CUR_PRE_CACHE_POS];
     CUR_PRE_CACHE_POS += 1;
     return val;
+}
+
+cval **allocateMany(int total) {
+    cval** result = malloc(sizeof(cval*) * total);
+    int cur = 1;
+
+    while (cur <= total) {
+        result[cur] = allocate();
+        cur += 1;
+    }
+
+    return result;
 }
 
 void deallocate(cval* cval) {
@@ -143,4 +155,21 @@ void deallocate(cval* cval) {
     }
 
     cval->type = CVAL_DELETED;
+}
+
+cval *allocator_status() {
+    if (INIT_COMPLETE) {
+    hash_table* ht = hash_table_create(100);
+    hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
+    hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
+    hash_table_set(ht, "ROWS_MAX", cval_number(ROWS_MAX));
+    hash_table_set(ht, "MAX_OBJECT_ID", cval_number(MAX_OBJECT_ID));
+    hash_table_set(ht, "PRE_CACHE_SIZE", cval_number(PRE_CACHE_SIZE));
+    hash_table_set(ht, "CURRENT_ROW_ALLOCATED", cval_number(INDEX->rows[INDEX->cur]->allocated));
+    hash_table_set(ht, "CURRNET_ROWS_SIZE", cval_number(INDEX->rows[INDEX->cur]->size));
+    hash_table_set(ht, "INDEX_CURSOR", cval_number(INDEX->cur));
+    hash_table_set(ht, "INDEX_SIZE", cval_number(INDEX->size));
+    hash_table_set(ht, "NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
+    return cval_dictionary(ht); }
+    return OUT_OF_MEMORY_FAULT;
 }

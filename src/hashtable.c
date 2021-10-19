@@ -277,7 +277,4 @@ int hash_table_print(hash_table *target_hash_table) {
 
     }
 
-    printf("\ntotal items: %li/%li", target_hash_table->items, target_hash_table->table_size);
-    return target_hash_table -> items;
-
 }

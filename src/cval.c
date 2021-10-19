@@ -56,7 +56,7 @@ char* ctype_name(int t) {
 }
 
 cval* cval_function(cbuiltin func) {
-    cval* v = malloc(sizeof(cval));
+    cval* v = allocate();
     v->type = CVAL_FUNCTION;
     v->builtin = func;
     return v;
@@ -64,7 +64,7 @@ cval* cval_function(cbuiltin func) {
 
 void create_immortals() {
     if (!IMMORTALS_CREATED) {
-    cval *nullConst = malloc(sizeof(cval));
+    cval *nullConst = allocate();
     nullConst->type = CVAL_NULL;
     nullConst->count = -1;
     nullConst->str = "NULL";
@@ -74,7 +74,7 @@ void create_immortals() {
     nullConst->boolean = false;
     NULL_CVAL_CONSTANT = nullConst;
 
-    cval *trueConst = malloc(sizeof(cval));
+    cval *trueConst = allocate();
     trueConst->type = CVAL_BOOLEAN;
     trueConst->num = 1;
     trueConst->fnum = 1;
@@ -83,7 +83,7 @@ void create_immortals() {
     trueConst->cell = NULL;
     TRUE_CVAL_CONSTANT = trueConst;
 
-    cval *falseConst = malloc(sizeof(cval));
+    cval *falseConst = allocate();
     falseConst->type = CVAL_BOOLEAN;
     falseConst->num = -1;
     falseConst->fnum = -1.0;
@@ -122,7 +122,7 @@ cval* cval_float(long double x) {
 }
 
 cval* cval_string (char* s) {
-    cval* v = malloc(sizeof(cval));
+    cval* v = allocate();
     v->type = CVAL_STRING;
     v->str = malloc(strlen(s) + 1);
     strcpy(v->str, s);
@@ -144,7 +144,7 @@ cval* cval_fault(char* fmt, ...) {
 }
 
 cval* cval_symbol(char* s) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_SYMBOL;
     value->sym = malloc(strlen(s) + 1);
     strcpy(value->sym, s);
@@ -152,7 +152,7 @@ cval* cval_symbol(char* s) {
 }
 
 cval* cval_s_expression(void) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_S_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
@@ -160,7 +160,7 @@ cval* cval_s_expression(void) {
 }
 
 cval* cval_q_expression(void) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_Q_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
@@ -168,7 +168,7 @@ cval* cval_q_expression(void) {
 }
 
 cval* cval_dictionary(hash_table* ht) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_DICTIONARY;
     value->count = ht->items;
     value->ht = ht;
@@ -231,7 +231,9 @@ void cval_delete(cval* value) {
             break;
 
         case CVAL_STRING:
+            immortal = true;
             free(value->str);
+            deallocate(value);
             break;
 
         case CVAL_NULL:
@@ -242,7 +244,7 @@ void cval_delete(cval* value) {
     }
 
     if (!immortal) {
-        free(value); }
+        deallocate(value); }
 }
 
 cval* cval_take(cval* value, int i) {
@@ -284,7 +286,7 @@ cval* cval_copy(cval* v) {
         return cval_null();
     }
 
-    cval* x = malloc(sizeof(cval));
+    cval* x = allocate();
     x->type = v->type;
 
     switch (v->type) {

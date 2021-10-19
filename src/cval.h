@@ -64,6 +64,8 @@ cval *cval_q_expression(void);
 
 cval *cval_null(void);
 
+cval* cval_dictionary(hash_table* ht);
+
 void cval_delete(cval *value);
 
 cval *cval_take(cval *value, int i);
