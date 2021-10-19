@@ -14,6 +14,7 @@
 #define CONNERY_VER_INT 2
 #define LOG_LEVEL 4
 #define TRACE_ENABLED 0
+#define STD_LIB_LOCATION "stdlib/main.connery"
 
 #if TRACE_ENABLED == 1
 
@@ -912,6 +913,12 @@ cval *builtin_length(cenv *e, cval *a) {
         return cval_number(length);
     }
 
+    if (a->cell[0]->type == CVAL_DICTIONARY) {
+        long length = a->cell[0]->ht->items;
+        cval_delete(a);
+        return cval_number(length);
+    }
+
     cval_delete(a);
 #if SYSTEM_LANG == 0
     return cval_fault("Function 'length' pashed unshupported type!");
@@ -923,33 +930,58 @@ cval *builtin_length(cenv *e, cval *a) {
 
 cval *builtin_type(cenv *e, cval *a) {
     int type = a->cell[0]->type;
-    cval_delete(a);
+    cval* returnVal = NULL;
 
     switch (type) {
         case CVAL_NUMBER:
-            return cval_number(0);
+            returnVal = cval_number(0);
+            break;
 
         case CVAL_STRING:
-            return cval_number(1);
+            returnVal = cval_number(1);
+            break;
 
         case CVAL_S_EXPRESSION:
-            return cval_number(2);
+            returnVal = cval_number(2);
+            break;
 
         case CVAL_Q_EXPRESSION:
-            return cval_number(3);
+            if (a->cell[0]->cell[0] != NULL && a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
+                    returnVal = cval_number(8);
+                    break;
+            }
+            returnVal = cval_number(3);
+            break;
 
         case CVAL_FUNCTION:
-            return cval_number(4);
+            returnVal = cval_number(4);
+            break;
 
         case CVAL_SYMBOL:
-            return cval_number(5);
+            returnVal = cval_number(5);
+            break;
 
         case CVAL_BOOLEAN:
-            return cval_number(6);
+            returnVal = cval_number(6);
+            break;
+
+        case CVAL_FLOAT:
+            returnVal = cval_number(7);
+            break;
+
+        case CVAL_DICTIONARY:
+            returnVal = cval_number(8);
+            break;
+
+        case CVAL_NULL:
+            returnVal = cval_number(9);
+            break;
+
 
         default:
-            return cval_fault("Type not defined!");
+            returnVal = cval_fault("Type not defined!");
     }
+    return returnVal;
 }
 
 cval *builtin_stow(cenv *e, cval *a) {
@@ -959,18 +991,19 @@ cval *builtin_stow(cenv *e, cval *a) {
         return cval_fault("Stow requiresh at leasht three argumentsh."
                           "The dictionary, the key (ash a shtring of courshe) and the value to be shet.");
     }
-
-    hash_table* ht = NULL;
+    cval* activeCval = NULL;
 
     if (a->cell[0]->type == CVAL_DICTIONARY) {
-        ht = a->cell[0]->ht;
+        activeCval = a->cell[0];
     } else {
         if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
             if (a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
-                 ht = a->cell[0]->cell[0]->ht;
+                 activeCval = a->cell[0]->cell[0];
             }
         }
     }
+
+    hash_table* ht = activeCval->ht;
 
     if (ht == NULL) {
         return cval_fault("Stow requiresh a dictionary, shtring for the key, and a value for the value.");
@@ -990,7 +1023,7 @@ cval *builtin_stow(cenv *e, cval *a) {
             }
         }
     }
-    return a->cell[0];
+    return activeCval;
 }
 
 cval *builtin_grab(cenv *e, cval *a) {
@@ -1263,9 +1296,15 @@ int main(int argc, char **argv) {
 
     cenv *e = cenv_new();
 
-    hash_table_set(e->ht, "NULL", cval_null());
+    hash_table_set(e->ht, "Null", cval_null());
     hash_table_set(e->ht, "True", cval_boolean(true));
     hash_table_set(e->ht, "False", cval_boolean(false));
+    hash_table_set(e->ht, "Empty", cval_string(""));
+    hash_table_set(e->ht, "None", cval_s_expression());
+    hash_table_set(e->ht, "Otherwise", cval_boolean(true));
+    hash_table_set(e->ht, "__std_lib_main_location__", cval_string(STD_LIB_LOCATION));
+    hash_table_set(e->ht, "__BK_13__", cval_string("Nyvpr Vzbtra Pvcevnab"));
+
     cenv_add_builtins(e);
     load_standard_lib(e);
 

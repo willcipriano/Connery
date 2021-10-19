@@ -3,7 +3,6 @@
 #include "cval.h"
 #include "hashtable.h"
 
-
 #define HASH_TABLE_RESIZE_DEPTH 3
 #define HASH_TABLE_RESIZE_MULTIPLIER 2
 #define HASH_TABLE_RESIZE_BONUS 100
@@ -43,6 +42,7 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
 
     if (entry == NULL) {
         target_hash_table->entries[slot] = hash_table_pair(key, value);
+
         target_hash_table->items += 1;
         return;
     }

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// todo: add garbage collector for dictionaries
+
 #define ENV_HASH_TABLE_SIZE 1000
 #define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
 #define SYSTEM_LANG 1
@@ -29,10 +31,6 @@ if (!(cond)) {\
     "function '%s' pashed incorrect number of argumentsh. got %i, expected %i.", \
     func, args->count, num)
 
-
-cval* cval_pop(cval* value, int i);
-cval* cval_evaluate(cenv* env,cval* value);
-cval* cval_take(cval* value, int i);
 
 cval* NULL_CVAL_CONSTANT = NULL;
 cval* TRUE_CVAL_CONSTANT = NULL;
@@ -106,7 +104,6 @@ cval *cval_boolean(bool b) {
     }
 
     return FALSE_CVAL_CONSTANT;
-
 }
 
 cval* cval_number(long x) {
@@ -233,11 +230,6 @@ void cval_delete(cval* value) {
             free(value->str);
             break;
 
-        case CVAL_DICTIONARY:
-            hash_table_destroy(value->ht);
-            break;
-
-
         case CVAL_NULL:
         case CVAL_BOOLEAN:
             immortal = true;
@@ -342,7 +334,7 @@ cval* cval_copy(cval* v) {
             break;
 
         case CVAL_DICTIONARY:
-            x->ht = hash_table_copy(v->ht);
+            x->ht = v->ht;
             break;
     }
 
