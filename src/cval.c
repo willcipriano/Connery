@@ -115,7 +115,7 @@ cval* cval_number(long x) {
 }
 
 cval* cval_float(long double x) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_FLOAT;
     value->fnum = x;
     return value;
@@ -130,7 +130,9 @@ cval* cval_string (char* s) {
 }
 
 cval* cval_fault(char* fmt, ...) {
-    cval* value = malloc(sizeof(cval));
+    // allows faults to be thrown during
+    // allocator problems
+    cval* value = malloc(sizeof(cenv));
     value->type = CVAL_FAULT;
     va_list va;
     va_start(va, fmt);
@@ -183,7 +185,7 @@ cval* cval_null() {
 }
 
 cenv* cenv_new(void) {
-    cenv* e = malloc(sizeof(cenv));
+    cenv* e = malloc(sizeof(cenv*));
     e->par = NULL;
     e->ht = hash_table_create(ENV_HASH_TABLE_SIZE);
     return e;
@@ -197,10 +199,11 @@ void cenv_delete(cenv* e) {
 void cval_delete(cval* value) {
     bool immortal = false;
     switch(value->type) {
-        case CVAL_NUMBER:
-            break;
 
+        case CVAL_NUMBER:
         case CVAL_FLOAT:
+            immortal = true;
+            deallocate(value);
             break;
 
         case CVAL_FUNCTION:
@@ -239,7 +242,7 @@ void cval_delete(cval* value) {
     }
 
     if (!immortal) {
-    free(value); }
+        free(value); }
 }
 
 cval* cval_take(cval* value, int i) {

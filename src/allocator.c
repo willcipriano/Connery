@@ -82,8 +82,6 @@ cval_allocation_index *preallocateIndex(int rows, int slots) {
     return index;
 }
 
-void setup();
-
 cval **allocateMany(int total) {
 
     cval **array = malloc(sizeof(cval *) * total);
@@ -106,16 +104,19 @@ cval **allocateMany(int total) {
             }
         }
         array[i] = INDEX->rows[INDEX->cur]->array[INDEX->rows[INDEX->cur]->allocated];
+        INDEX->rows[INDEX->cur]->allocated += 1;
     }
 
     return array;
 }
 
 void allocator_setup() {
+    if (!INIT_COMPLETE) {
     INDEX = preallocateIndex(PREALLOCATE_ROWS, PREALLOCATE_SLOTS);
     preCache = allocateMany(PRE_CACHE_SIZE);
     CUR_PRE_CACHE_POS = 0;
     INIT_COMPLETE = true;
+    }
 }
 
 cval *allocate() {
@@ -130,3 +131,16 @@ cval *allocate() {
     return val;
 }
 
+void deallocate(cval* cval) {
+    switch (cval->type) {
+        case CVAL_NUMBER:
+            cval->num = 0;
+            break;
+
+        case CVAL_FLOAT:
+            cval->fnum = 0;
+            break;
+    }
+
+    cval->type = CVAL_DELETED;
+}

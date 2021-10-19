@@ -3,5 +3,6 @@
 #include "cval.h"
 
 cval *allocate();
+void deallocate(cval* cval);
 void allocator_setup();
 #endif //CONNERY_ALLOCATOR_H
