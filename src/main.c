@@ -6,6 +6,7 @@
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
+#include "allocator.h"
 
 #include "strings.h"
 
@@ -1159,6 +1160,12 @@ cval *builtin_convert_string(cenv *e, cval *a) {
     return new;
 }
 
+cval *builtin_object_id(cenv *e, cval *a) {
+    CASSERT_NUM("object_id", a, 1);
+
+    return cval_number(a->cell[0]->objId);
+}
+
 cval *builtin_sys(cenv *e, cval *a) {
     CASSERT_TYPE("stats", a, 0, CVAL_STRING);
     CASSERT_NUM("stats", a, 1);
@@ -1189,6 +1196,10 @@ cval *builtin_sys(cenv *e, cval *a) {
         return cval_number(SYSTEM_LANG);
     }
 
+    if (strcmp(cmd, "ALLOCATOR_STATUS") == 0) {
+        return allocator_status();
+    }
+
     return cval_fault("invalid input to stats");
 }
 
@@ -1216,6 +1227,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
+    cenv_add_builtin(e, "objId", builtin_object_id);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
@@ -1258,6 +1270,8 @@ void load_standard_lib(cenv *e) {
 }
 
 int main(int argc, char **argv) {
+    allocator_setup();
+
     Number = mpc_new("number");
     Float = mpc_new("float");
     Symbol = mpc_new("symbol");
