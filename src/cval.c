@@ -2,6 +2,7 @@
 #include "util.h"
 #include "trace.h"
 #include "hashtable.h"
+#include "allocator.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -107,7 +108,7 @@ cval *cval_boolean(bool b) {
 }
 
 cval* cval_number(long x) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_NUMBER;
     value->num = x;
     return value;

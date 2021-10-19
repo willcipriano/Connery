@@ -6,6 +6,7 @@
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
+#include "allocator.h"
 
 #include "strings.h"
 
@@ -1258,6 +1259,8 @@ void load_standard_lib(cenv *e) {
 }
 
 int main(int argc, char **argv) {
+    allocator_setup();
+
     Number = mpc_new("number");
     Float = mpc_new("float");
     Symbol = mpc_new("symbol");
