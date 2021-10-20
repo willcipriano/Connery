@@ -88,13 +88,13 @@ cval *fetchSmode() {
             while (cur <= PREALLOCATE_SLOTS) {
                 cval* target = INDEX->rows[INDEX->scur]->array[cur];
                 if (target->type == CVAL_UNALLOCATED) {
+                    target->type = CVAL_REALLOCATED;
                     return target;
                 }
                 cur += 1;
             }
-
-        }
             INDEX->scur += 1;
+        }
     }
     return NULL;
 }
@@ -107,13 +107,11 @@ cval **internalCacheFetch(int total) {
     for (int i = 0; i < total; ++i) {
 
         cval* sModeResult = fetchSmode();
-
         if (sModeResult != NULL) {
             array[i] = sModeResult;
             continue;
         }
 
-        if (sModeResult == NULL) {
         if (INDEX->rows[INDEX->cur]->allocated == INDEX->rows[INDEX->cur]->size) {
             if (INDEX->cur == INDEX->size) {
                 if (INDEX->cur < ROWS_MAX) {
@@ -129,8 +127,8 @@ cval **internalCacheFetch(int total) {
             }
         }
         array[i] = INDEX->rows[INDEX->cur]->array[INDEX->rows[INDEX->cur]->allocated];
-        INDEX->rows[INDEX->cur]->allocated += 1;
-    }
+            array[i]->type = CVAL_REALLOCATED;
+            INDEX->rows[INDEX->cur]->allocated += 1;
     }
 
     return array;
