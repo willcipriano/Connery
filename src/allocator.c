@@ -159,6 +159,52 @@ void deallocate(cval* cval) {
     cval->type = CVAL_DELETED;
 }
 
+int markValue(cval* val) {
+    if (val != NULL) {
+    val->mark = true;
+    }
+}
+
+int markDictionary(cval* dictionary) {
+    cval** dictContent = hash_table_dump_values(dictionary->ht);
+    int items = dictionary->ht->items;
+    int totalMarked = items;
+    int cur = 0;
+
+    while (items <= cur + 1) {
+        cval* curValue = dictContent[cur];
+        curValue->mark = true;
+
+        if (curValue->type == CVAL_DICTIONARY) {
+            totalMarked += markDictionary(curValue);
+        }
+
+        cur += 1;
+    }
+
+    return totalMarked;
+}
+
+int mark(cenv* env) {
+    cval** envContents = hash_table_dump_values(env->ht);
+    int size = env->ht->items;
+    int totalMarked = size;
+    int cur = 0;
+
+    while (cur < size - 1) {
+        cval* curValue = envContents[cur];
+        markValue(curValue);
+
+            if (curValue->type == CVAL_DICTIONARY) {
+                totalMarked += markDictionary(curValue);
+            }
+
+        cur += 1;
+    }
+    return totalMarked;
+}
+
+
 int sweep() {
     int curRow = 1;
     int sweptObj = 0;
@@ -194,7 +240,7 @@ int sweep() {
     return sweptObj;
 }
 
-cval *allocatorStatus(int sweptObj){
+cval *allocatorStatus(int sweptObj, int markedObj){
     hash_table* ht = hash_table_create(100);
     hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
     hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
@@ -207,8 +253,11 @@ cval *allocatorStatus(int sweptObj){
     hash_table_set(ht, "INDEX_SIZE", cval_number(INDEX->size));
     hash_table_set(ht, "INDEX_NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
 
-    if (sweptObj != 0) {
+    if (sweptObj != -1) {
     hash_table_set(ht, "SWEPT_OBJECTS", cval_number(sweptObj)); }
+
+    if (markedObj != -1) {
+        hash_table_set(ht, "MARKED_OBJECTS", cval_number(markedObj)); }
 
     hash_table_set(ht, "S_MODE", cval_boolean(INDEX->smode));
     hash_table_set(ht, "S_MODE_CURSOR", cval_number(INDEX->scur));
@@ -216,21 +265,23 @@ cval *allocatorStatus(int sweptObj){
 }
 
 
-cval* mark_and_sweep() {
+cval* mark_and_sweep(cenv* env) {
     int sweptObj = 0;
+    int markedObj = 0;
 
     if (INIT_COMPLETE) {
         sweptObj = sweep();
+        markedObj = mark(env);
     }
 
-    return allocatorStatus(sweptObj);
+    return allocatorStatus(sweptObj, markedObj);
 }
 
 
 
 cval *allocator_status() {
     if (INIT_COMPLETE) {
-        return allocatorStatus(0);
+        return allocatorStatus(-1, -1);
      }
     return cval_fault("The allocator takesh a wee bit of time to warm up laddy.");
 }

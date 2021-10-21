@@ -35,6 +35,8 @@ hash_table_entry *hash_table_pair(const char *key, cval *value) {
     return entry;
 }
 
+
+
 void hash_table_set(hash_table *target_hash_table, const char *key, cval *value) {
     unsigned int slot = hash(key, target_hash_table->table_size);
 
@@ -114,7 +116,7 @@ hash_table *hash_table_create(const long table_size) {
     ht->items = 0;
 
     for (int i = 0; i < table_size; ++i) {
-        ht->entries[i] = NULL;
+            ht->entries[i] = NULL;
     }
 
     return ht;
@@ -216,6 +218,43 @@ hash_table *hash_table_copy_and_resize(hash_table *target_hash_table, long newSi
 
 hash_table *hash_table_copy(hash_table *target_hash_table) {
     return hash_table_copy_and_resize(target_hash_table, 0);
+}
+
+cval **hash_table_dump_values(hash_table *target_hash_table) {
+    cval** array = malloc(sizeof(cval*) * target_hash_table->items);
+    int itemsFound = 0;
+
+    for (long i = 0; i < target_hash_table->table_size; i++) {
+
+        if (target_hash_table->entries[i] != NULL) {
+            itemsFound += 1;
+            array[itemsFound - 1] = target_hash_table->entries[i]->value;
+
+            if (target_hash_table->entries[i]->next != NULL) {
+                hash_table_entry *entry = target_hash_table->entries[i]->next;
+                while (entry != NULL) {
+                    itemsFound += 1;
+                    array[itemsFound - 1] = entry->value;
+                    entry = entry->next;
+                }
+            }
+        }
+    }
+
+    return array;
+}
+
+cval **hash_table_dump_keys(hash_table *target_hash_table) {
+    cval** array = malloc(sizeof(cval*) * target_hash_table->items);
+    int itemsFound = 0;
+
+    for (long i = 0; i < target_hash_table->table_size; i++) {
+
+        while (target_hash_table->entries[i] != NULL) {
+            itemsFound += 1;
+            array[itemsFound - 1] = cval_string(target_hash_table->entries[i]->key);
+        }
+    }
 }
 
 int hash_table_print(hash_table *target_hash_table) {
