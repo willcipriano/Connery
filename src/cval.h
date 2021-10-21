@@ -35,6 +35,7 @@ struct cval {
     int count;
     int objId;
     cval **cell;
+    bool mark;
 };
 
 struct cenv {

@@ -87,8 +87,8 @@ cval *fetchSmode() {
         while (INDEX->scur < INDEX->cur) {
             while (cur <= PREALLOCATE_SLOTS) {
                 cval* target = INDEX->rows[INDEX->scur]->array[cur];
-                if (target->type == CVAL_UNALLOCATED) {
-                    target->type = CVAL_REALLOCATED;
+                if (target->type == CVAL_REALLOCATED) {
+                    target->type = CVAL_UNALLOCATED;
                     return target;
                 }
                 cur += 1;
@@ -127,7 +127,7 @@ cval **internalCacheFetch(int total) {
             }
         }
         array[i] = INDEX->rows[INDEX->cur]->array[INDEX->rows[INDEX->cur]->allocated];
-            array[i]->type = CVAL_REALLOCATED;
+            array[i]->type = CVAL_UNALLOCATED;
             INDEX->rows[INDEX->cur]->allocated += 1;
     }
 
@@ -155,18 +155,6 @@ cval *allocate() {
     return val;
 }
 
-cval **allocateMany(int total) {
-    cval** result = malloc(sizeof(cval*) * total);
-    int cur = 1;
-
-    while (cur <= total) {
-        result[cur] = allocate();
-        cur += 1;
-    }
-
-    return result;
-}
-
 void deallocate(cval* cval) {
     cval->type = CVAL_DELETED;
 }
@@ -187,7 +175,7 @@ int sweep() {
                 object->num = 0;
                 object->fnum = 0;
                 object->boolean = false;
-                object->type = CVAL_UNALLOCATED;
+                object->type = CVAL_REALLOCATED;
                 row->allocated -= 1;
                 sweptObj += 1;
 
@@ -206,44 +194,44 @@ int sweep() {
     return sweptObj;
 }
 
-cval* mark_and_sweep() {
-    int sweptObj = sweep();
-
+cval *allocatorStatus(int sweptObj){
     hash_table* ht = hash_table_create(100);
     hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
     hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
-    hash_table_set(ht, "ROWS_MAX", cval_number(ROWS_MAX));
-    hash_table_set(ht, "MAX_OBJECT_ID", cval_number(MAX_OBJECT_ID));
-    hash_table_set(ht, "PRE_CACHE_SIZE", cval_number(PRE_CACHE_SIZE));
-    hash_table_set(ht, "CURRENT_ROW_ALLOCATED", cval_number(INDEX->rows[INDEX->cur]->allocated));
-    hash_table_set(ht, "CURRNET_ROWS_SIZE", cval_number(INDEX->rows[INDEX->cur]->size));
+    hash_table_set(ht, "INDEX_ROWS_MAX", cval_number(ROWS_MAX));
+    hash_table_set(ht, "INDEX_MAX_OBJECT_ID", cval_number(MAX_OBJECT_ID));
+    hash_table_set(ht, "INDEX_PRE_CACHE_SIZE", cval_number(PRE_CACHE_SIZE));
+    hash_table_set(ht, "ROW_ALLOCATED", cval_number(INDEX->rows[INDEX->cur]->allocated));
+    hash_table_set(ht, "ROW_SIZE", cval_number(INDEX->rows[INDEX->cur]->size));
     hash_table_set(ht, "INDEX_CURSOR", cval_number(INDEX->cur));
     hash_table_set(ht, "INDEX_SIZE", cval_number(INDEX->size));
-    hash_table_set(ht, "NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
-    hash_table_set(ht, "SWEPT_OBJECTS", cval_number(sweptObj));
+    hash_table_set(ht, "INDEX_NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
+
+    if (sweptObj != 0) {
+    hash_table_set(ht, "SWEPT_OBJECTS", cval_number(sweptObj)); }
+
     hash_table_set(ht, "S_MODE", cval_boolean(INDEX->smode));
     hash_table_set(ht, "S_MODE_CURSOR", cval_number(INDEX->scur));
-
     return cval_dictionary(ht);
+}
+
+
+cval* mark_and_sweep() {
+    int sweptObj = 0;
+
+    if (INIT_COMPLETE) {
+        sweptObj = sweep();
+    }
+
+    return allocatorStatus(sweptObj);
 }
 
 
 
 cval *allocator_status() {
     if (INIT_COMPLETE) {
-    hash_table* ht = hash_table_create(100);
-    hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
-    hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
-    hash_table_set(ht, "ROWS_MAX", cval_number(ROWS_MAX));
-    hash_table_set(ht, "MAX_OBJECT_ID", cval_number(MAX_OBJECT_ID));
-    hash_table_set(ht, "PRE_CACHE_SIZE", cval_number(PRE_CACHE_SIZE));
-    hash_table_set(ht, "CURRENT_ROW_ALLOCATED", cval_number(INDEX->rows[INDEX->cur]->allocated));
-    hash_table_set(ht, "CURRNET_ROWS_SIZE", cval_number(INDEX->rows[INDEX->cur]->size));
-    hash_table_set(ht, "INDEX_CURSOR", cval_number(INDEX->cur));
-    hash_table_set(ht, "INDEX_SIZE", cval_number(INDEX->size));
-    hash_table_set(ht, "NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
-    hash_table_set(ht, "S_MODE", cval_boolean(INDEX->smode));
-    hash_table_set(ht, "S_MODE_CURSOR", cval_number(INDEX->scur));
-    return cval_dictionary(ht); }
+        return allocatorStatus(0);
+     }
     return cval_fault("The allocator takesh a wee bit of time to warm up laddy.");
 }
+
