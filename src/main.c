@@ -1200,6 +1200,10 @@ cval *builtin_sys(cenv *e, cval *a) {
         return allocator_status();
     }
 
+    if (strcmp(cmd, "TAKE_OUT_THE_TRASH") == 0) {
+        return mark_and_sweep();
+    }
+
     return cval_fault("invalid input to stats");
 }
 
