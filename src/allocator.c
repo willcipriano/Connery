@@ -51,6 +51,7 @@ cval_allocation_array *preallocateArray(int slots) {
             cval *nullConst = malloc(sizeof(cval));
             nullConst->type = CVAL_UNALLOCATED;
             nullConst->objId = objId;
+            nullConst->cell = NULL;
             array[i] = nullConst;
         } else {
             return NULL;
@@ -101,7 +102,6 @@ cval *fetchSmode() {
 
 
 cval **internalCacheFetch(int total) {
-
     cval **array = malloc(sizeof(cval *) * total);
 
     for (int i = 0; i < total; ++i) {
@@ -159,11 +159,7 @@ void deallocate(cval* cval) {
     cval->type = CVAL_DELETED;
 }
 
-int markValue(cval* val) {
-    if (val != NULL) {
-    val->mark = true;
-    }
-}
+long markValue(cval* val);
 
 int markDictionary(cval* dictionary) {
     cval** dictContent = hash_table_dump_values(dictionary->ht);
@@ -171,9 +167,9 @@ int markDictionary(cval* dictionary) {
     int totalMarked = items;
     int cur = 0;
 
-    while (items <= cur + 1) {
+    while (cur + 1 <= items) {
         cval* curValue = dictContent[cur];
-        curValue->mark = true;
+        markValue(curValue);
 
         if (curValue->type == CVAL_DICTIONARY) {
             totalMarked += markDictionary(curValue);
@@ -184,21 +180,33 @@ int markDictionary(cval* dictionary) {
 
     return totalMarked;
 }
+long markValue(cval* val) {
+    long marked = 0;
+    if (val != NULL) {
+        for (int i = 0; i < val->count; i++) {
+            marked = markValue(val->cell[i]);
+        }
 
-int mark(cenv* env) {
+        if (val->type == CVAL_DICTIONARY) {
+            marked = markDictionary(val);
+        }
+
+        marked += 1;
+        val->mark = true;
+    }
+
+    return marked;
+}
+
+long mark(cenv* env) {
     cval** envContents = hash_table_dump_values(env->ht);
-    int size = env->ht->items;
-    int totalMarked = size;
+    long size = env->ht->items;
+    long totalMarked = 0;
     int cur = 0;
 
     while (cur < size - 1) {
         cval* curValue = envContents[cur];
-        markValue(curValue);
-
-            if (curValue->type == CVAL_DICTIONARY) {
-                totalMarked += markDictionary(curValue);
-            }
-
+        totalMarked += markValue(curValue);
         cur += 1;
     }
     return totalMarked;
@@ -217,11 +225,13 @@ int sweep() {
         while (curObject <= row->size) {
             cval* object = row->array[curObject - 1];
 
-            if (object->type == CVAL_DELETED) {
+            if (object->type == CVAL_DELETED || !object->mark) {
                 object->num = 0;
                 object->fnum = 0;
                 object->boolean = false;
                 object->type = CVAL_REALLOCATED;
+                object->cell = NULL;
+                object->count = 0;
                 row->allocated -= 1;
                 sweptObj += 1;
 
@@ -230,7 +240,7 @@ int sweep() {
                     rowSet = true;
                 }
             }
-
+            object->mark = false;
             curObject += 1;
         }
         curRow += 1;
@@ -270,8 +280,8 @@ cval* mark_and_sweep(cenv* env) {
     int markedObj = 0;
 
     if (INIT_COMPLETE) {
-        sweptObj = sweep();
         markedObj = mark(env);
+        sweptObj = sweep();
     }
 
     return allocatorStatus(sweptObj, markedObj);
