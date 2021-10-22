@@ -187,6 +187,14 @@ long markValue(cval* val) {
             marked = markValue(val->cell[i]);
         }
 
+        if (val->formals != NULL) {
+            markValue(val->formals);
+        }
+
+        if (val->body != NULL) {
+            markValue(val->body);
+        }
+
         if (val->type == CVAL_DICTIONARY) {
             marked = markDictionary(val);
         }
@@ -212,7 +220,6 @@ long mark(cenv* env) {
     return totalMarked;
 }
 
-
 int sweep() {
     int curRow = 1;
     int sweptObj = 0;
@@ -232,6 +239,8 @@ int sweep() {
                 object->type = CVAL_REALLOCATED;
                 object->cell = NULL;
                 object->count = 0;
+                object->formals = NULL;
+                object->body = NULL;
                 row->allocated -= 1;
                 sweptObj += 1;
 
