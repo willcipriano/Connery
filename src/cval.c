@@ -11,7 +11,7 @@
 
 // todo: add garbage collector for dictionaries
 
-#define ENV_HASH_TABLE_SIZE 1000
+#define ENV_HASH_TABLE_SIZE 100
 #define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
 #define SYSTEM_LANG 1
 

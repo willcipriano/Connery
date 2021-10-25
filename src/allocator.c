@@ -52,6 +52,8 @@ cval_allocation_array *preallocateArray(int slots) {
             nullConst->type = CVAL_UNALLOCATED;
             nullConst->objId = objId;
             nullConst->cell = NULL;
+            nullConst->formals = NULL;
+            nullConst->body = NULL;
             array[i] = nullConst;
         } else {
             return NULL;
@@ -170,53 +172,52 @@ int markDictionary(cval* dictionary) {
     while (cur + 1 <= items) {
         cval* curValue = dictContent[cur];
         markValue(curValue);
-
-        if (curValue->type == CVAL_DICTIONARY) {
-            totalMarked += markDictionary(curValue);
-        }
-
         cur += 1;
     }
 
     return totalMarked;
 }
+
+long markEnv(cenv* env);
+
 long markValue(cval* val) {
     long marked = 0;
     if (val != NULL) {
+        val->mark = true;
+        marked += 1;
+
         for (int i = 0; i < val->count; i++) {
-            marked = markValue(val->cell[i]);
+            marked += markValue(val->cell[i]);
         }
 
-        if (val->formals != NULL) {
-            markValue(val->formals);
-        }
-
-        if (val->body != NULL) {
-            markValue(val->body);
-        }
+        marked += markValue(val->formals);
+        marked += markValue(val->body);
 
         if (val->type == CVAL_DICTIONARY) {
-            marked = markDictionary(val);
+            marked += markDictionary(val);
         }
-
-        marked += 1;
-        val->mark = true;
     }
 
     return marked;
 }
 
-long mark(cenv* env) {
-    cval** envContents = hash_table_dump_values(env->ht);
-    long size = env->ht->items;
+long markEnv(cenv* env) {
+    cenv* curEnv = env;
     long totalMarked = 0;
-    int cur = 0;
+
+    while (curEnv != NULL) {
+     cval** envContents = hash_table_dump_values(curEnv->ht);
+     long size = curEnv->ht->items;
+     int cur = 0;
 
     while (cur < size - 1) {
-        cval* curValue = envContents[cur];
-        totalMarked += markValue(curValue);
+        totalMarked += markValue(envContents[cur]);
         cur += 1;
     }
+
+    curEnv = curEnv->par;
+    }
+
     return totalMarked;
 }
 
@@ -232,7 +233,7 @@ int sweep() {
         while (curObject <= row->size) {
             cval* object = row->array[curObject - 1];
 
-            if (object->type == CVAL_DELETED || !object->mark) {
+            if (object->type == CVAL_DELETED || (!object->mark && object->type != CVAL_UNALLOCATED && object->type != CVAL_REALLOCATED)) {
                 object->num = 0;
                 object->fnum = 0;
                 object->boolean = false;
@@ -241,6 +242,7 @@ int sweep() {
                 object->count = 0;
                 object->formals = NULL;
                 object->body = NULL;
+                object->sym = NULL;
                 row->allocated -= 1;
                 sweptObj += 1;
 
@@ -259,7 +261,7 @@ int sweep() {
     return sweptObj;
 }
 
-cval *allocatorStatus(int sweptObj, int markedObj){
+cval *allocatorStatus(long sweptObj, long markedObj){
     hash_table* ht = hash_table_create(100);
     hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
     hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
@@ -285,14 +287,15 @@ cval *allocatorStatus(int sweptObj, int markedObj){
 
 
 cval* mark_and_sweep(cenv* env) {
-    int sweptObj = 0;
-    int markedObj = 0;
+    long sweptObj = 0;
+    long markedObj = 0;
 
     if (INIT_COMPLETE) {
-        markedObj = mark(env);
+        markedObj = markEnv(env);
         sweptObj = sweep();
     }
 
+    preCache = internalCacheFetch(PRE_CACHE_SIZE);
     return allocatorStatus(sweptObj, markedObj);
 }
 
