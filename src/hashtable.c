@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "cval.h"
 #include "hashtable.h"
+#include "allocator.h"
 
 #define HASH_TABLE_RESIZE_DEPTH 3
 #define HASH_TABLE_RESIZE_MULTIPLIER 2
@@ -28,7 +29,7 @@ hash_table_entry *hash_table_pair(const char *key, cval *value) {
 
     strcpy(entry->key, key);
 
-    entry->value = malloc(sizeof(cval));
+    entry->value = allocate();
     entry->value = cval_copy(value);
 
     entry->next = NULL;
@@ -55,8 +56,8 @@ void hash_table_set(hash_table *target_hash_table, const char *key, cval *value)
     while (entry != NULL) {
 
         if (strcmp(entry->key, key) == 0) {
-            free(entry->value);
-            entry->value = malloc(sizeof(cval));
+            (entry->value);
+            entry->value = allocate();
             entry->value = cval_copy(value);
             return;
         }
@@ -155,7 +156,6 @@ void hash_table_entry_delete(hash_table *target_hash_table, const char *key) {
 
             free(entry->key);
             cval_delete(entry->value);
-            free(entry);
             target_hash_table->items -= 1;
 
             return;

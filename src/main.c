@@ -675,7 +675,7 @@ cval *builtin_for(cenv *e, cval *a) {
 }
 
 cval *cval_lambda(cval *formals, cval *body) {
-    cval *v = malloc(sizeof(cval));
+    cval *v = allocate();
     v->type = CVAL_FUNCTION;
 
     v->builtin = NULL;
@@ -1363,6 +1363,11 @@ int main(int argc, char **argv) {
                 mpc_err_delete(result.error);
             }
             free(input);
+
+            if (ALLOCATOR_MEMORY_PRESSURE) {
+                mark_and_sweep(e);
+                ALLOCATOR_MEMORY_PRESSURE = false;
+            }
         }
     }
 

@@ -25,6 +25,7 @@ cval_allocation_index *INDEX = NULL;
 int CUR_OBJ_ID = 0;
 int CUR_PRE_CACHE_POS = 0;
 bool INIT_COMPLETE = false;
+bool ALLOCATOR_MEMORY_PRESSURE = false;
 
 cval *OUT_OF_MEMORY_FAULT = NULL;
 cval **preCache = NULL;
@@ -121,6 +122,7 @@ cval **internalCacheFetch(int total) {
                     INDEX->cur += 1;
                     INDEX->size += 1;
                     INDEX->rows[INDEX->cur] = preallocateArray(PREALLOCATE_SLOTS);
+                    ALLOCATOR_MEMORY_PRESSURE = true;
                 } else {
                     array[i] = OUT_OF_MEMORY_FAULT;
                     return array;

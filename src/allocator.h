@@ -8,4 +8,5 @@ void deallocate(cval* cval);
 void allocator_setup();
 cval *allocator_status();
 cval* mark_and_sweep(cenv* env);
+bool ALLOCATOR_MEMORY_PRESSURE;
 #endif //CONNERY_ALLOCATOR_H
