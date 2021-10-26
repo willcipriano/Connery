@@ -51,6 +51,9 @@ cval_allocation_array *preallocateArray(int slots) {
             cval *nullConst = malloc(sizeof(cval));
             nullConst->type = CVAL_UNALLOCATED;
             nullConst->objId = objId;
+            nullConst->cell = NULL;
+            nullConst->formals = NULL;
+            nullConst->body = NULL;
             array[i] = nullConst;
         } else {
             return NULL;
@@ -87,10 +90,11 @@ cval *fetchSmode() {
         while (INDEX->scur < INDEX->cur) {
             while (cur <= PREALLOCATE_SLOTS) {
                 cval* target = INDEX->rows[INDEX->scur]->array[cur];
+                if (target != NULL) {
                 if (target->type == CVAL_REALLOCATED) {
                     target->type = CVAL_UNALLOCATED;
                     return target;
-                }
+                }}
                 cur += 1;
             }
             INDEX->scur += 1;
@@ -101,7 +105,6 @@ cval *fetchSmode() {
 
 
 cval **internalCacheFetch(int total) {
-
     cval **array = malloc(sizeof(cval *) * total);
 
     for (int i = 0; i < total; ++i) {
@@ -159,6 +162,66 @@ void deallocate(cval* cval) {
     cval->type = CVAL_DELETED;
 }
 
+long markValue(cval* val);
+
+int markDictionary(cval* dictionary) {
+    cval** dictContent = hash_table_dump_values(dictionary->ht);
+    int items = dictionary->ht->items;
+    int totalMarked = items;
+    int cur = 0;
+
+    while (cur + 1 <= items) {
+        cval* curValue = dictContent[cur];
+        markValue(curValue);
+        cur += 1;
+    }
+
+    return totalMarked;
+}
+
+long markEnv(cenv* env);
+
+long markValue(cval* val) {
+    long marked = 0;
+    if (val != NULL) {
+        val->mark = true;
+        marked += 1;
+
+        for (int i = 0; i < val->count; i++) {
+            marked += markValue(val->cell[i]);
+        }
+
+        marked += markValue(val->formals);
+        marked += markValue(val->body);
+
+        if (val->type == CVAL_DICTIONARY) {
+            marked += markDictionary(val);
+        }
+    }
+
+    return marked;
+}
+
+long markEnv(cenv* env) {
+    cenv* curEnv = env;
+    long totalMarked = 0;
+
+    while (curEnv != NULL) {
+     cval** envContents = hash_table_dump_values(curEnv->ht);
+     long size = curEnv->ht->items;
+     int cur = 0;
+
+    while (cur < size - 1) {
+        totalMarked += markValue(envContents[cur]);
+        cur += 1;
+    }
+
+    curEnv = curEnv->par;
+    }
+
+    return totalMarked;
+}
+
 int sweep() {
     int curRow = 1;
     int sweptObj = 0;
@@ -171,11 +234,16 @@ int sweep() {
         while (curObject <= row->size) {
             cval* object = row->array[curObject - 1];
 
-            if (object->type == CVAL_DELETED) {
+            if (object->type == CVAL_DELETED || (!object->mark && object->type != CVAL_UNALLOCATED && object->type != CVAL_REALLOCATED)) {
                 object->num = 0;
                 object->fnum = 0;
                 object->boolean = false;
                 object->type = CVAL_REALLOCATED;
+                object->cell = NULL;
+                object->count = 0;
+                object->formals = NULL;
+                object->body = NULL;
+                object->sym = NULL;
                 row->allocated -= 1;
                 sweptObj += 1;
 
@@ -184,7 +252,7 @@ int sweep() {
                     rowSet = true;
                 }
             }
-
+            object->mark = false;
             curObject += 1;
         }
         curRow += 1;
@@ -194,7 +262,7 @@ int sweep() {
     return sweptObj;
 }
 
-cval *allocatorStatus(int sweptObj){
+cval *allocatorStatus(long sweptObj, long markedObj){
     hash_table* ht = hash_table_create(100);
     hash_table_set(ht, "PREALLOCATE_SLOTS", cval_number(PREALLOCATE_SLOTS));
     hash_table_set(ht, "PREALLOCATE_ROWS", cval_number(PREALLOCATE_ROWS));
@@ -207,8 +275,11 @@ cval *allocatorStatus(int sweptObj){
     hash_table_set(ht, "INDEX_SIZE", cval_number(INDEX->size));
     hash_table_set(ht, "INDEX_NEXT_OBJECT_ID", cval_number(CUR_OBJ_ID));
 
-    if (sweptObj != 0) {
+    if (sweptObj != -1) {
     hash_table_set(ht, "SWEPT_OBJECTS", cval_number(sweptObj)); }
+
+    if (markedObj != -1) {
+        hash_table_set(ht, "MARKED_OBJECTS", cval_number(markedObj)); }
 
     hash_table_set(ht, "S_MODE", cval_boolean(INDEX->smode));
     hash_table_set(ht, "S_MODE_CURSOR", cval_number(INDEX->scur));
@@ -216,21 +287,29 @@ cval *allocatorStatus(int sweptObj){
 }
 
 
-cval* mark_and_sweep() {
-    int sweptObj = 0;
+cval* mark_and_sweep(cenv* env) {
+    long sweptObj = 0;
+    long markedObj = 0;
 
     if (INIT_COMPLETE) {
+        markedObj = markEnv(env);
+
+        NULL_CVAL_CONSTANT->mark = true;
+        TRUE_CVAL_CONSTANT->mark = true;
+        FALSE_CVAL_CONSTANT->mark = true;
+
         sweptObj = sweep();
     }
 
-    return allocatorStatus(sweptObj);
+    preCache = internalCacheFetch(PRE_CACHE_SIZE);
+    return allocatorStatus(sweptObj, markedObj);
 }
 
 
 
 cval *allocator_status() {
     if (INIT_COMPLETE) {
-        return allocatorStatus(0);
+        return allocatorStatus(-1, -1);
      }
     return cval_fault("The allocator takesh a wee bit of time to warm up laddy.");
 }

@@ -1201,7 +1201,7 @@ cval *builtin_sys(cenv *e, cval *a) {
     }
 
     if (strcmp(cmd, "TAKE_OUT_THE_TRASH") == 0) {
-        return mark_and_sweep();
+        return mark_and_sweep(e);
     }
 
     return cval_fault("invalid input to stats");

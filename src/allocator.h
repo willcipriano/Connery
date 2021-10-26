@@ -7,5 +7,5 @@ cval **allocateMany(int total);
 void deallocate(cval* cval);
 void allocator_setup();
 cval *allocator_status();
-cval *mark_and_sweep();
+cval* mark_and_sweep(cenv* env);
 #endif //CONNERY_ALLOCATOR_H
