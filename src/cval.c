@@ -51,7 +51,6 @@ char* ctype_name(int t) {
         case CVAL_NULL: return "Null";
         case CVAL_UNALLOCATED: return "UNALLOCATED";
         case CVAL_REALLOCATED: return "REALLOCATED";
-        case CVAL_DELETED: return "DELETED";
         default: return "Unknown Type";
     }
 }

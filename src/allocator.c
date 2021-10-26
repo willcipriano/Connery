@@ -159,7 +159,7 @@ cval *allocate() {
 }
 
 void deallocate(cval* cval) {
-    cval->type = CVAL_DELETED;
+    cval->deleted = true;
 }
 
 long markValue(cval* val);
@@ -234,7 +234,7 @@ int sweep() {
         while (curObject <= row->size) {
             cval* object = row->array[curObject - 1];
 
-            if (object->type == CVAL_DELETED || (!object->mark && object->type != CVAL_UNALLOCATED && object->type != CVAL_REALLOCATED)) {
+            if (object->deleted || (!object->mark && object->type != CVAL_UNALLOCATED && object->type != CVAL_REALLOCATED)) {
                 object->num = 0;
                 object->fnum = 0;
                 object->boolean = false;
@@ -244,6 +244,7 @@ int sweep() {
                 object->formals = NULL;
                 object->body = NULL;
                 object->sym = NULL;
+                object->deleted = false;
                 row->allocated -= 1;
                 sweptObj += 1;
 
