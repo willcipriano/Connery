@@ -130,9 +130,7 @@ cval* cval_string (char* s) {
 }
 
 cval* cval_fault(char* fmt, ...) {
-    // allows faults to be thrown during
-    // allocator problems
-    cval* value = malloc(sizeof(cval*));
+    cval* value = allocate();
     value->type = CVAL_FAULT;
     va_list va;
     va_start(va, fmt);
@@ -200,10 +198,9 @@ void cval_delete(cval* value) {
     bool immortal = false;
     switch(value->type) {
 
-        case CVAL_NUMBER:
-        case CVAL_FLOAT:
+        case CVAL_NULL:
+        case CVAL_BOOLEAN:
             immortal = true;
-            deallocate(value);
             break;
 
         case CVAL_FUNCTION:
@@ -214,14 +211,6 @@ void cval_delete(cval* value) {
             }
             break;
 
-        case CVAL_FAULT:
-            free(value->err);
-            break;
-
-        case CVAL_SYMBOL:
-            free(value->sym);
-            break;
-
         case CVAL_Q_EXPRESSION:
         case CVAL_S_EXPRESSION:
             for (int i = 0; i < value->count; i++) {
@@ -229,18 +218,6 @@ void cval_delete(cval* value) {
             }
             free(value->cell);
             break;
-
-        case CVAL_STRING:
-            immortal = true;
-            free(value->str);
-            deallocate(value);
-            break;
-
-        case CVAL_NULL:
-        case CVAL_BOOLEAN:
-            immortal = true;
-            break;
-
     }
 
     if (!immortal) {
@@ -373,7 +350,7 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
         if(f->formals->count == 0) {
             cval_delete(a);
-            return cval_fault("Function pashed too many argumentsh. Got %i, Expected %s", given, total);
+            return cval_fault("Function pashed too many argumentsh. Got %i, Expected %i", given, total);
         }
 
         cval* sym = cval_pop(f->formals, 0);

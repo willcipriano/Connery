@@ -139,7 +139,9 @@ cval **internalCacheFetch(int total) {
 
 void allocator_setup() {
     if (!INIT_COMPLETE) {
-        OUT_OF_MEMORY_FAULT = cval_fault("You've run out of memory, and thush out of time my young friend.");
+        OUT_OF_MEMORY_FAULT = malloc(sizeof(cval));
+        OUT_OF_MEMORY_FAULT->type = CVAL_FAULT;
+        OUT_OF_MEMORY_FAULT->err = "You've run out of memory, and thush out of time my young friend.";
         INDEX = preallocateIndex(PREALLOCATE_ROWS, PREALLOCATE_SLOTS);
         preCache = internalCacheFetch(PRE_CACHE_SIZE);
         INIT_COMPLETE = true;
@@ -235,15 +237,33 @@ int sweep() {
             cval* object = row->array[curObject - 1];
 
             if (object->deleted || (!object->mark && object->type != CVAL_UNALLOCATED && object->type != CVAL_REALLOCATED)) {
-                object->num = 0;
-                object->fnum = 0;
-                object->boolean = false;
+
+                switch (object->type) {
+                    case CVAL_NUMBER:
+                        object->num = 0;
+                        break;
+
+                    case CVAL_BOOLEAN:
+                        object->boolean = false;
+                        break;
+
+                    case CVAL_FLOAT:
+                        object->fnum = 0.0;
+                        break;
+
+                    case CVAL_SYMBOL:
+                        free(object->sym);
+                        break;
+
+                    case CVAL_FAULT:
+                        free(object->err);
+                        break;
+
+                    case CVAL_STRING:
+                        free(object->str);
+                        break;
+                }
                 object->type = CVAL_REALLOCATED;
-                object->cell = NULL;
-                object->count = 0;
-                object->formals = NULL;
-                object->body = NULL;
-                object->sym = NULL;
                 object->deleted = false;
                 row->allocated -= 1;
                 sweptObj += 1;
