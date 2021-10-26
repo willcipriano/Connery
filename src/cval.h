@@ -125,5 +125,9 @@ cval *builtin_eval(cenv *e, cval *a);
 
 cval *builtin_list(cenv *e, cval *a);
 
+cval* NULL_CVAL_CONSTANT;
+cval* TRUE_CVAL_CONSTANT;
+cval* FALSE_CVAL_CONSTANT;
+
 
 #endif //CONNERY_CVAL_H

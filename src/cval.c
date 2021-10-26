@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// todo: add garbage collector for dictionaries
-
 #define ENV_HASH_TABLE_SIZE 100
 #define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
 #define SYSTEM_LANG 1
@@ -135,7 +133,7 @@ cval* cval_string (char* s) {
 cval* cval_fault(char* fmt, ...) {
     // allows faults to be thrown during
     // allocator problems
-    cval* value = malloc(sizeof(cenv));
+    cval* value = malloc(sizeof(cval*));
     value->type = CVAL_FAULT;
     va_list va;
     va_start(va, fmt);

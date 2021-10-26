@@ -1,2 +1,0 @@
-Connery to replicate garbage collector fault:
-if (== 1 (type "test")) {True} {False}

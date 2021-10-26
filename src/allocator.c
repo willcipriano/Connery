@@ -90,10 +90,11 @@ cval *fetchSmode() {
         while (INDEX->scur < INDEX->cur) {
             while (cur <= PREALLOCATE_SLOTS) {
                 cval* target = INDEX->rows[INDEX->scur]->array[cur];
+                if (target != NULL) {
                 if (target->type == CVAL_REALLOCATED) {
                     target->type = CVAL_UNALLOCATED;
                     return target;
-                }
+                }}
                 cur += 1;
             }
             INDEX->scur += 1;
@@ -292,6 +293,11 @@ cval* mark_and_sweep(cenv* env) {
 
     if (INIT_COMPLETE) {
         markedObj = markEnv(env);
+
+        NULL_CVAL_CONSTANT->mark = true;
+        TRUE_CVAL_CONSTANT->mark = true;
+        FALSE_CVAL_CONSTANT->mark = true;
+
         sweptObj = sweep();
     }
 

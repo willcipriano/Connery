@@ -202,12 +202,12 @@ hash_table *hash_table_copy_and_resize(hash_table *target_hash_table, long newSi
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
         if (target_hash_table->entries[i] != NULL) {
-            hash_table_set(new_hash_table, target_hash_table->entries[i]->key, target_hash_table->entries[i]->value);
+            hash_table_set(new_hash_table, target_hash_table->entries[i]->key, cval_copy(target_hash_table->entries[i]->value));
 
             hash_table_entry* prev = target_hash_table->entries[i]->next;
 
             while (prev != NULL) {
-                hash_table_set(new_hash_table, prev->key, prev->value);
+                hash_table_set(new_hash_table, prev->key, cval_copy(prev->value));
                 prev = prev->next;
             }
         }
