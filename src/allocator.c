@@ -289,7 +289,7 @@ cval *allocatorStatus(long sweptObj, long markedObj){
 
 cval* mark_and_sweep(cenv* env) {
     long sweptObj = 0;
-    long markedObj = 0;
+    long markedObj = 3;
 
     if (INIT_COMPLETE) {
         markedObj = markEnv(env);

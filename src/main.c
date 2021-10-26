@@ -11,8 +11,8 @@
 #include "strings.h"
 
 #define SYSTEM_LANG 0
-#define CONNERY_VERSION "0.0.2"
-#define CONNERY_VER_INT 2
+#define CONNERY_VERSION "0.0.3"
+#define CONNERY_VER_INT 3
 #define LOG_LEVEL 4
 #define TRACE_ENABLED 0
 #define STD_LIB_LOCATION "stdlib/main.connery"
@@ -1320,6 +1320,7 @@ int main(int argc, char **argv) {
 
     cenv_add_builtins(e);
     load_standard_lib(e);
+    mark_and_sweep(e);
 
     puts("   ______                                 \n"
          "  / ____/___  ____  ____  ___  _______  __\n"
