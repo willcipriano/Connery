@@ -33,7 +33,7 @@ struct cval {
     cval *body;
 
     int count;
-    int objId;
+    long objId;
     cval **cell;
     bool mark;
     bool deleted;

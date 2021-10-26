@@ -1363,11 +1363,6 @@ int main(int argc, char **argv) {
                 mpc_err_delete(result.error);
             }
             free(input);
-
-            if (ALLOCATOR_MEMORY_PRESSURE) {
-                mark_and_sweep(e);
-                ALLOCATOR_MEMORY_PRESSURE = false;
-            }
         }
     }
 

@@ -29,7 +29,6 @@ hash_table_entry *hash_table_pair(const char *key, cval *value) {
 
     strcpy(entry->key, key);
 
-    entry->value = allocate();
     entry->value = cval_copy(value);
 
     entry->next = NULL;

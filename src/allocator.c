@@ -42,7 +42,7 @@ int createObjectId() {
 
 cval_allocation_array *preallocateArray(int slots) {
     cval_allocation_array *array_struct = malloc(sizeof(cval_allocation_array));
-    cval **array = malloc(sizeof(cval *) * slots);
+    cval **array = malloc(sizeof(cval*) * slots);
     array_struct->size = slots;
     array_struct->allocated = 0;
 
@@ -106,7 +106,7 @@ cval *fetchSmode() {
 
 
 cval **internalCacheFetch(int total) {
-    cval **array = malloc(sizeof(cval *) * total);
+    cval **array = malloc(sizeof(cval) * total);
 
     for (int i = 0; i < total; ++i) {
 

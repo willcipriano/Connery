@@ -183,7 +183,7 @@ cval* cval_null() {
 }
 
 cenv* cenv_new(void) {
-    cenv* e = malloc(sizeof(cenv*));
+    cenv* e = malloc(sizeof(cenv));
     e->par = NULL;
     e->ht = hash_table_create(ENV_HASH_TABLE_SIZE);
     return e;
@@ -516,8 +516,11 @@ cval* cval_join(cval* x, cval* y) {
         x = cval_add(x, y->cell[i]);
     }
 
-    free(y->cell);
-    free(y);
+    for (int i = 0; i < y->count; i++) {
+        deallocate(y->cell[i]);
+    }
+
+    deallocate(y);
     return x;
 }
 
