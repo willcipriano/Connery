@@ -1,7 +1,0 @@
-language: c
-
-services:
-  - docker
-
-script:
-  - docker build --tag connerylang .
