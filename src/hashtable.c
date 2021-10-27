@@ -8,7 +8,6 @@
 #define HASH_TABLE_RESIZE_MULTIPLIER 2
 #define HASH_TABLE_RESIZE_BONUS 100
 
-
 unsigned int hash(const char *key, const long table_size) {
     unsigned long int value = 0;
     unsigned int key_len = strlen(key);
@@ -112,7 +111,7 @@ hash_table *hash_table_create(const long table_size) {
 
     hash_table *ht = malloc(sizeof(hash_table) * 1);
     ht->table_size = table_size;
-    ht->entries = malloc(sizeof(hash_table_entry *) * table_size);
+    ht->entries = calloc(sizeof(hash_table_entry *), table_size);
     ht->items = 0;
 
     for (int i = 0; i < table_size; ++i) {
@@ -220,7 +219,7 @@ hash_table *hash_table_copy(hash_table *target_hash_table) {
 }
 
 cval **hash_table_dump_values(hash_table *target_hash_table) {
-    cval** array = malloc(sizeof(cval*) * target_hash_table->items);
+    cval** array = calloc(sizeof(cval*),target_hash_table->items);
     int itemsFound = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {

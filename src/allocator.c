@@ -21,6 +21,20 @@ typedef struct cval_allocation_index {
     bool smode;
 } cval_allocation_index;
 
+long get_row_by_id(long id) {
+    long row = 1;
+
+    while ((row * PREALLOCATE_SLOTS) < id) {
+        row += 1;
+    }
+
+    return row;
+}
+
+long get_index_by_row_and_id(long id, long row) {
+    return (id - ((row - 1) * PREALLOCATE_SLOTS));
+}
+
 cval_allocation_index *INDEX = NULL;
 int CUR_OBJ_ID = 0;
 int CUR_PRE_CACHE_POS = 0;
@@ -42,7 +56,7 @@ int createObjectId() {
 
 cval_allocation_array *preallocateArray(int slots) {
     cval_allocation_array *array_struct = malloc(sizeof(cval_allocation_array));
-    cval **array = malloc(sizeof(cval*) * slots);
+    cval **array = calloc(sizeof(cval*), slots);
     array_struct->size = slots;
     array_struct->allocated = 0;
 
@@ -65,10 +79,10 @@ cval_allocation_array *preallocateArray(int slots) {
 }
 
 cval_allocation_index *preallocateIndex(int rows, int slots) {
-    cval_allocation_index *index = malloc(sizeof(cval_allocation_index));
+    cval_allocation_index *index = malloc(sizeof(cval_allocation_index*));
     index->cur = 0;
     index->size = rows;
-    index->rows = malloc(sizeof(cval_allocation_array*) * ROWS_MAX);
+    index->rows = calloc(sizeof(cval_allocation_array*), ROWS_MAX);
 
     for (int i = 0; i < rows; ++i) {
         cval_allocation_array *array = preallocateArray(slots);
@@ -106,7 +120,7 @@ cval *fetchSmode() {
 
 
 cval **internalCacheFetch(int total) {
-    cval **array = malloc(sizeof(cval) * total);
+    cval **array = calloc(sizeof(cval*), total);
 
     for (int i = 0; i < total; ++i) {
 
@@ -195,8 +209,10 @@ long markValue(cval* val) {
             marked += markValue(val->cell[i]);
         }
 
-        marked += markValue(val->formals);
-        marked += markValue(val->body);
+        if (val->type == CVAL_S_EXPRESSION || val->type == CVAL_Q_EXPRESSION) {
+            marked += markValue(val->formals);
+            marked += markValue(val->body);
+        }
 
         if (val->type == CVAL_DICTIONARY) {
             marked += markDictionary(val);
@@ -335,5 +351,10 @@ cval *allocator_status() {
         return allocatorStatus(-1, -1);
      }
     return cval_fault("The allocator takesh a wee bit of time to warm up laddy.");
+}
+
+cval *object_by_id(long id) {
+    long row = get_row_by_id(id);
+    return INDEX->rows[row]->array[get_index_by_row_and_id(id, row)];
 }
 

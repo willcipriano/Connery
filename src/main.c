@@ -1160,10 +1160,68 @@ cval *builtin_convert_string(cenv *e, cval *a) {
     return new;
 }
 
-cval *builtin_object_id(cenv *e, cval *a) {
-    CASSERT_NUM("object_id", a, 1);
+cval *builtin_inspect(cenv *e, cval *a) {
+    CASSERT_NUM("inspect", a, 1);
+    cval * value = a;
+    cval* container_data = NULL;
+    cval* env_data = NULL;
+    cval* allocator_data = NULL;
+    hash_table* ht = hash_table_create(15);
+    hash_table* env_ht = hash_table_create(10);
+    hash_table* allocator_ht = hash_table_create(2);
 
-    return cval_number(a->cell[0]->objId);
+    if (a->type == CVAL_S_EXPRESSION) {
+        if (a->count > 0) {
+            hash_table* c_ht = hash_table_create(2);
+            hash_table_set(c_ht, "container_id", cval_number(value->objId));
+            hash_table_set(c_ht, "container_pointer", cval_number((long) value));
+            container_data = cval_dictionary(c_ht);
+            value = a->cell[0];
+        }
+    }
+
+    if (container_data != NULL) {
+        hash_table_set(ht, "container", container_data);
+    }
+
+    hash_table_set(ht, "id", cval_number(value->objId));
+    hash_table_set(ht, "type", cval_string(ctype_name(value->type)));
+    hash_table_set(ht, "count", cval_number(value->count));
+    hash_table_set(ht, "is_deleted", cval_boolean(value->deleted));
+    hash_table_set(ht, "is_marked", cval_boolean(value->mark));
+    hash_table_set(ht, "has_children", cval_boolean(value->count > 0));
+    hash_table_set(ht, "pointer", cval_number((long) value));
+
+
+
+    hash_table_set(env_ht, "env_pointer", cval_number((long) e));
+    hash_table_set(env_ht, "env_size", cval_number((long) e->ht->table_size));
+    hash_table_set(env_ht, "env_items", cval_number((long) e->ht->items));
+    if (e->par != NULL) {
+        hash_table_set(env_ht, "env_parent_pointer", cval_number((long) e->par));
+    }
+
+    env_data = cval_dictionary(env_ht);
+    hash_table_set(ht, "env", env_data);
+
+    long row = get_row_by_id(a->objId);
+    hash_table_set(allocator_ht, "row", cval_number(row));
+    hash_table_set(allocator_ht, "index", cval_number(get_index_by_row_and_id(a->objId, row)));
+    allocator_data = cval_dictionary(ht);
+
+    hash_table_set(ht, "allocator", allocator_data);
+
+    if (value->type == CVAL_DICTIONARY) {
+        hash_table_set(ht, "size", cval_number(value->ht->table_size));
+        hash_table_set(ht, "items", cval_number(value->ht->items));
+        hash_table_set(ht, "ht_pointer", cval_number((long) value->ht));
+    }
+
+    if (value->type == CVAL_STRING) {
+        hash_table_set(ht, "string_pointer", cval_number((long) value->str));
+    }
+
+    return cval_dictionary(ht);
 }
 
 cval *builtin_sys(cenv *e, cval *a) {
@@ -1231,7 +1289,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
-    cenv_add_builtin(e, "objId", builtin_object_id);
+    cenv_add_builtin(e, "inspect", builtin_inspect);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
