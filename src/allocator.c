@@ -84,7 +84,7 @@ cval_allocation_index *preallocateIndex(int rows, int slots) {
     index->size = rows;
     index->rows = calloc(sizeof(cval_allocation_array*), ROWS_MAX);
 
-    for (int i = 0; i < rows; ++i) {
+    for (int i = 0; i <= rows; ++i) {
         cval_allocation_array *array = preallocateArray(slots);
         if (array != NULL) {
             index->rows[i] = array;
@@ -131,12 +131,11 @@ cval **internalCacheFetch(int total) {
         }
 
         if (INDEX->rows[INDEX->cur]->allocated == INDEX->rows[INDEX->cur]->size) {
-            if (INDEX->cur == INDEX->size) {
+            if (INDEX->cur == INDEX->size - 1) {
                 if (INDEX->cur < ROWS_MAX) {
                     INDEX->cur += 1;
                     INDEX->size += 1;
                     INDEX->rows[INDEX->cur] = preallocateArray(PREALLOCATE_SLOTS);
-                    ALLOCATOR_MEMORY_PRESSURE = true;
                 } else {
                     array[i] = OUT_OF_MEMORY_FAULT;
                     return array;
@@ -146,8 +145,8 @@ cval **internalCacheFetch(int total) {
             }
         }
         array[i] = INDEX->rows[INDEX->cur]->array[INDEX->rows[INDEX->cur]->allocated];
-            array[i]->type = CVAL_UNALLOCATED;
-            INDEX->rows[INDEX->cur]->allocated += 1;
+        array[i]->type = CVAL_UNALLOCATED;
+        INDEX->rows[INDEX->cur]->allocated += 1;
     }
 
     return array;
@@ -209,10 +208,8 @@ long markValue(cval* val) {
             marked += markValue(val->cell[i]);
         }
 
-        if (val->type == CVAL_S_EXPRESSION || val->type == CVAL_Q_EXPRESSION) {
-            marked += markValue(val->formals);
-            marked += markValue(val->body);
-        }
+        marked += markValue(val->formals);
+        marked += markValue(val->body);
 
         if (val->type == CVAL_DICTIONARY) {
             marked += markDictionary(val);
@@ -287,7 +284,7 @@ int sweep() {
                 sweptObj += 1;
 
                 if (!rowSet) {
-                    INDEX->scur = curRow;
+                    INDEX->scur = curRow - 1;
                     rowSet = true;
                 }
             }
