@@ -300,7 +300,7 @@ cval* cval_copy(cval* v) {
         case CVAL_S_EXPRESSION:
         case CVAL_Q_EXPRESSION:
             x->count = v->count;
-            x->cell = malloc(sizeof(cval*) * x->count);
+            x->cell = calloc(sizeof(cval*), x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = cval_copy(v->cell[i]);
             }
@@ -310,7 +310,6 @@ cval* cval_copy(cval* v) {
             x->str = malloc(strlen(v->str) + 1);
             strcpy(x->str, v->str);
             break;
-
 
         case CVAL_BOOLEAN:
             x->boolean = v->boolean;

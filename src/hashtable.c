@@ -22,7 +22,7 @@ unsigned int hash(const char *key, const long table_size) {
 }
 
 hash_table_entry *hash_table_pair(const char *key, cval *value) {
-    hash_table_entry *entry = malloc(sizeof(hash_table_entry) * 1);
+    hash_table_entry *entry = malloc(sizeof(hash_table_entry));
 
     entry->key = malloc(strlen(key) + 1);
 
@@ -109,9 +109,9 @@ cval *hash_table_get(hash_table *target_hash_table, const char *key) {
 
 hash_table *hash_table_create(const long table_size) {
 
-    hash_table *ht = malloc(sizeof(hash_table) * 1);
+    hash_table *ht = malloc(sizeof(hash_table));
     ht->table_size = table_size;
-    ht->entries = calloc(sizeof(hash_table_entry *), table_size);
+    ht->entries = calloc(sizeof(hash_table_entry*), table_size);
     ht->items = 0;
 
     for (int i = 0; i < table_size; ++i) {
@@ -169,6 +169,7 @@ void hash_table_entry_delete(hash_table *target_hash_table, const char *key) {
 void hash_table_destroy(hash_table *target_hash_table) {
 
     if (target_hash_table->entries == NULL) {
+        free(target_hash_table->entries);
         free(target_hash_table);
         return;
     }
@@ -179,6 +180,7 @@ void hash_table_destroy(hash_table *target_hash_table) {
         }
     }
 
+    free(target_hash_table->entries);
     free(target_hash_table);
 }
 
@@ -243,7 +245,7 @@ cval **hash_table_dump_values(hash_table *target_hash_table) {
 }
 
 cval **hash_table_dump_keys(hash_table *target_hash_table) {
-    cval** array = malloc(sizeof(cval*) * target_hash_table->items);
+    cval** array = calloc(sizeof(cval*), target_hash_table->items);
     int itemsFound = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {

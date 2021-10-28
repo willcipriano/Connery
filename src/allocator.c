@@ -79,10 +79,11 @@ cval_allocation_array *preallocateArray(int slots) {
 }
 
 cval_allocation_index *preallocateIndex(int rows, int slots) {
-    cval_allocation_index *index = malloc(sizeof(cval_allocation_index*));
+    cval_allocation_index *index = malloc(sizeof(cval_allocation_index));
     index->cur = 0;
     index->size = rows;
     index->rows = calloc(sizeof(cval_allocation_array*), ROWS_MAX);
+    index->smode = false;
 
     for (int i = 0; i <= rows; ++i) {
         cval_allocation_array *array = preallocateArray(slots);
@@ -358,5 +359,20 @@ cval *allocator_status() {
 cval *object_by_id(long id) {
     long row = get_row_by_id(id);
     return INDEX->rows[row]->array[get_index_by_row_and_id(id, row)];
+}
+
+void index_shutdown() {
+    int curRow = 1;
+
+    while (curRow <= INDEX->size) {
+        cval_allocation_array *row = INDEX->rows[curRow - 1];
+
+        int curObject = 1;
+        while (curObject <= row->size) {
+            free(row->array[curObject - 1]);
+            curObject += 1;
+        }
+        curRow += 1;
+    }
 }
 

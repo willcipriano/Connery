@@ -1247,6 +1247,9 @@ cval *builtin_sys(cenv *e, cval *a) {
     }
 
     if (strcmp(cmd, "SOFT_EXIT") == 0) {
+        mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
+        index_shutdown();
+        cenv_delete(e);
         exit(0);
     }
 
@@ -1444,7 +1447,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    mpc_cleanup(8, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
+    index_shutdown();
     cenv_delete(e);
-    return 0;
+    exit(0);
 }
