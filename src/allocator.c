@@ -165,7 +165,11 @@ void allocator_setup() {
 
 cval *allocate() {
     cval* val = NULL;
+
     if (CUR_PRE_CACHE_POS > PRE_CACHE_SIZE - 1) {
+        if (preCache != NULL) {
+            free(preCache);
+        }
         preCache = internalCacheFetch(PRE_CACHE_SIZE);
         CUR_PRE_CACHE_POS = 0;
     }
@@ -188,11 +192,11 @@ int markDictionary(cval* dictionary) {
     int cur = 0;
 
     while (cur + 1 <= items) {
-        cval* curValue = dictContent[cur];
-        markValue(curValue);
+        markValue(dictContent[cur]);
         cur += 1;
     }
 
+    free(dictContent);
     return totalMarked;
 }
 
@@ -234,6 +238,7 @@ long markEnv(cenv* env) {
     }
 
     curEnv = curEnv->par;
+    free(envContents);
     }
 
     return totalMarked;
