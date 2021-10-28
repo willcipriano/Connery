@@ -374,5 +374,8 @@ void index_shutdown() {
         }
         curRow += 1;
     }
+
+    free(INDEX->rows);
+    free(INDEX);
 }
 
