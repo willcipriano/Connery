@@ -13,7 +13,7 @@ typedef cval *(*cbuiltin)(cenv *, cval *);
 enum {
     CVAL_NUMBER, CVAL_FAULT, CVAL_SYMBOL, CVAL_FUNCTION,
     CVAL_S_EXPRESSION, CVAL_Q_EXPRESSION, CVAL_STRING, CVAL_FLOAT,
-    CVAL_BOOLEAN
+    CVAL_BOOLEAN, CVAL_DICTIONARY, CVAL_NULL, CVAL_UNALLOCATED, CVAL_REALLOCATED
 };
 
 struct cval {
@@ -33,7 +33,10 @@ struct cval {
     cval *body;
 
     int count;
+    long objId;
     cval **cell;
+    bool mark;
+    bool deleted;
 };
 
 struct cenv {
@@ -60,6 +63,10 @@ cval *cval_boolean(bool b);
 cval *cval_s_expression(void);
 
 cval *cval_q_expression(void);
+
+cval *cval_null(void);
+
+cval* cval_dictionary(hash_table* ht);
 
 void cval_delete(cval *value);
 
@@ -118,5 +125,10 @@ cval *builtin_def(cenv *e, cval *a);
 cval *builtin_eval(cenv *e, cval *a);
 
 cval *builtin_list(cenv *e, cval *a);
+
+cval* NULL_CVAL_CONSTANT;
+cval* TRUE_CVAL_CONSTANT;
+cval* FALSE_CVAL_CONSTANT;
+
 
 #endif //CONNERY_CVAL_H

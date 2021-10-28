@@ -1,13 +1,16 @@
 #include "cval.h"
 #include "util.h"
 #include "trace.h"
+#include "hashtable.h"
+#include "allocator.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
 
-#define ENV_HASH_TABLE_SIZE 10000
+#define ENV_HASH_TABLE_SIZE 100
+#define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
 #define SYSTEM_LANG 1
 
 #define CASSERT(args, cond, fmt, ...) \
@@ -28,9 +31,10 @@ if (!(cond)) {\
     func, args->count, num)
 
 
-cval* cval_pop(cval* value, int i);
-cval* cval_evaluate(cenv* env,cval* value);
-cval* cval_take(cval* value, int i);
+cval* NULL_CVAL_CONSTANT = NULL;
+cval* TRUE_CVAL_CONSTANT = NULL;
+cval* FALSE_CVAL_CONSTANT = NULL;
+bool IMMORTALS_CREATED = false;
 
 char* ctype_name(int t) {
     switch(t) {
@@ -43,42 +47,82 @@ char* ctype_name(int t) {
         case CVAL_STRING: return "String";
         case CVAL_FLOAT: return "Float";
         case CVAL_BOOLEAN: return "Boolean";
+        case CVAL_DICTIONARY: return "Dictionary";
+        case CVAL_NULL: return "Null";
+        case CVAL_UNALLOCATED: return "UNALLOCATED";
+        case CVAL_REALLOCATED: return "REALLOCATED";
         default: return "Unknown Type";
     }
 }
 
 cval* cval_function(cbuiltin func) {
-    cval* v = malloc(sizeof(cval));
+    cval* v = allocate();
     v->type = CVAL_FUNCTION;
     v->builtin = func;
     return v;
 }
 
+void create_immortals() {
+    if (!IMMORTALS_CREATED) {
+    cval *nullConst = allocate();
+    nullConst->type = CVAL_NULL;
+    nullConst->count = -1;
+    nullConst->str = "NULL";
+    nullConst->num = 0;
+    nullConst->fnum = 0.0;
+    nullConst->cell = NULL;
+    nullConst->boolean = false;
+    NULL_CVAL_CONSTANT = nullConst;
+
+    cval *trueConst = allocate();
+    trueConst->type = CVAL_BOOLEAN;
+    trueConst->num = 1;
+    trueConst->fnum = 1;
+    trueConst->boolean = true;
+    trueConst->count = 0;
+    trueConst->cell = NULL;
+    TRUE_CVAL_CONSTANT = trueConst;
+
+    cval *falseConst = allocate();
+    falseConst->type = CVAL_BOOLEAN;
+    falseConst->num = -1;
+    falseConst->fnum = -1.0;
+    falseConst->boolean = false;
+    falseConst->count = 0;
+    falseConst->cell = NULL;
+    FALSE_CVAL_CONSTANT = falseConst;}
+
+    IMMORTALS_CREATED = true;
+}
+
 cval *cval_boolean(bool b) {
-    cval *value = malloc(sizeof(cval));
-    value->type = CVAL_BOOLEAN;
-    value->boolean = b;
-    value->count = 0;
-    value->cell = NULL;
-    return value;
+    if (!IMMORTALS_CREATED) {
+        create_immortals();
+    }
+
+    if (b) {
+        return TRUE_CVAL_CONSTANT;
+    }
+
+    return FALSE_CVAL_CONSTANT;
 }
 
 cval* cval_number(long x) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_NUMBER;
     value->num = x;
     return value;
 }
 
 cval* cval_float(long double x) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_FLOAT;
     value->fnum = x;
     return value;
 }
 
 cval* cval_string (char* s) {
-    cval* v = malloc(sizeof(cval));
+    cval* v = allocate();
     v->type = CVAL_STRING;
     v->str = malloc(strlen(s) + 1);
     strcpy(v->str, s);
@@ -86,7 +130,7 @@ cval* cval_string (char* s) {
 }
 
 cval* cval_fault(char* fmt, ...) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_FAULT;
     va_list va;
     va_start(va, fmt);
@@ -98,7 +142,7 @@ cval* cval_fault(char* fmt, ...) {
 }
 
 cval* cval_symbol(char* s) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_SYMBOL;
     value->sym = malloc(strlen(s) + 1);
     strcpy(value->sym, s);
@@ -106,7 +150,7 @@ cval* cval_symbol(char* s) {
 }
 
 cval* cval_s_expression(void) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_S_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
@@ -114,14 +158,29 @@ cval* cval_s_expression(void) {
 }
 
 cval* cval_q_expression(void) {
-    cval* value = malloc(sizeof(cval));
+    cval* value = allocate();
     value->type = CVAL_Q_EXPRESSION;
     value->count = 0;
     value->cell = NULL;
     return value;
 }
 
+cval* cval_dictionary(hash_table* ht) {
+    cval* value = allocate();
+    value->type = CVAL_DICTIONARY;
+    value->count = ht->items;
+    value->ht = ht;
+    value->cell = NULL;
+    return value;
+}
 
+cval* cval_null() {
+    if (!IMMORTALS_CREATED) {
+        create_immortals();
+    }
+
+    return NULL_CVAL_CONSTANT;
+}
 
 cenv* cenv_new(void) {
     cenv* e = malloc(sizeof(cenv));
@@ -136,12 +195,12 @@ void cenv_delete(cenv* e) {
 }
 
 void cval_delete(cval* value) {
+    bool immortal = false;
     switch(value->type) {
 
-        case CVAL_NUMBER:
-            break;
-
-        case CVAL_FLOAT:
+        case CVAL_NULL:
+        case CVAL_BOOLEAN:
+            immortal = true;
             break;
 
         case CVAL_FUNCTION:
@@ -152,14 +211,6 @@ void cval_delete(cval* value) {
             }
             break;
 
-        case CVAL_FAULT:
-            free(value->err);
-            break;
-
-        case CVAL_SYMBOL:
-            free(value->sym);
-            break;
-
         case CVAL_Q_EXPRESSION:
         case CVAL_S_EXPRESSION:
             for (int i = 0; i < value->count; i++) {
@@ -167,13 +218,10 @@ void cval_delete(cval* value) {
             }
             free(value->cell);
             break;
-
-        case CVAL_STRING:
-            free(value->str);
-            break;
-
     }
-    free(value);
+
+    if (!immortal) {
+        deallocate(value); }
 }
 
 cval* cval_take(cval* value, int i) {
@@ -210,7 +258,12 @@ cenv* cenv_copy(cenv* e) {
 }
 
 cval* cval_copy(cval* v) {
-    cval* x = malloc(sizeof(cval));
+
+    if (v == NULL || v->type == CVAL_NULL) {
+        return cval_null();
+    }
+
+    cval* x = allocate();
     x->type = v->type;
 
     switch (v->type) {
@@ -232,6 +285,7 @@ cval* cval_copy(cval* v) {
 
         case CVAL_FLOAT:
             x->fnum = v->fnum;
+            break;
 
         case CVAL_FAULT:
             x->err = malloc(strlen(v->err) + 1);
@@ -246,7 +300,7 @@ cval* cval_copy(cval* v) {
         case CVAL_S_EXPRESSION:
         case CVAL_Q_EXPRESSION:
             x->count = v->count;
-            x->cell = malloc(sizeof(cval*) * x->count);
+            x->cell = calloc(sizeof(cval*), x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = cval_copy(v->cell[i]);
             }
@@ -257,9 +311,12 @@ cval* cval_copy(cval* v) {
             strcpy(x->str, v->str);
             break;
 
-
         case CVAL_BOOLEAN:
             x->boolean = v->boolean;
+            break;
+
+        case CVAL_DICTIONARY:
+            x->ht = v->ht;
             break;
     }
 
@@ -292,7 +349,7 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
         if(f->formals->count == 0) {
             cval_delete(a);
-            return cval_fault("Function pashed too many argumentsh. Got %i, Expected %s", given, total);
+            return cval_fault("Function pashed too many argumentsh. Got %i, Expected %i", given, total);
         }
 
         cval* sym = cval_pop(f->formals, 0);
@@ -400,7 +457,6 @@ cval* cval_evaluate(cenv* env, cval* value) {
 
     if (value->type == CVAL_S_EXPRESSION) {
         return cval_evaluate_s_expression(env, value);
-
     }
     return value;
 }
@@ -459,8 +515,11 @@ cval* cval_join(cval* x, cval* y) {
         x = cval_add(x, y->cell[i]);
     }
 
-    free(y->cell);
-    free(y);
+    for (int i = 0; i < y->count; i++) {
+        deallocate(y->cell[i]);
+    }
+
+    deallocate(y);
     return x;
 }
 
@@ -496,14 +555,26 @@ cval* cval_read_string(mpc_ast_t* t) {
 }
 
 cval *cval_read_symbol(char *symbol) {
-
-    if (strcmp(symbol, "True") == 0) {
-        return cval_boolean(true);
-    } else if (strcmp(symbol, "False") == 0) {
-        return cval_boolean(false);
-    } else {
         return cval_symbol(symbol);
+}
+
+cval *cval_read_dictionary(mpc_ast_t *t) {
+    int items = t->children_num - 2;
+    int iter = 1;
+
+    hash_table* ht = hash_table_create(items + DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM);
+
+    while (iter <= items) {
+        t->children[iter]->children[0]->contents[strlen(t->children[iter]->children[0]->contents)-1] = '\0';
+        char* unescaped = malloc(strlen(t->children[iter]->children[0]->contents+1)+1);
+        strcpy(unescaped, t->children[iter]->children[0]->contents+1);
+        unescaped = mpcf_unescape(unescaped);
+        hash_table_set(ht, unescaped, cval_read(t->children[iter]->children[2]));
+        free(unescaped);
+        iter += 1;
     }
+
+    return cval_dictionary(ht);
 }
 
 cval* cval_read(mpc_ast_t* t) {
@@ -537,6 +608,10 @@ cval* cval_read(mpc_ast_t* t) {
     if (strstr(t->tag, "string")) {
         return cval_read_string(t);
     }
+    if (strstr(t->tag, "dictionary")) {
+        return cval_read_dictionary(t);
+    }
+
 
     for (int i = 0; i < t->children_num; i++) {
         if (strcmp(t->children[i]->contents, "(") == 0){
@@ -661,6 +736,14 @@ bool cval_print(cval* value) {
         case CVAL_STRING:
             cval_print_str(value);
             break;
+
+        case CVAL_DICTIONARY:
+            hash_table_print(value->ht);
+            break;
+
+        case CVAL_NULL:
+            printf("NULL");
+            break;
     }
 
     return true;
@@ -669,4 +752,5 @@ void cval_print_line(cval* value) {
     if (cval_print(value)) {
     putchar('\n'); }
 }
+
 

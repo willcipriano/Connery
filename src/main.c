@@ -6,13 +6,25 @@
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
-#include "trace.h"
+#include "allocator.h"
+
 #include "strings.h"
 
 #define SYSTEM_LANG 0
-#define CONNERY_VERSION "0.0.2"
-#define CONNERY_VER_INT 2
+#define CONNERY_VERSION "0.0.3"
+#define CONNERY_VER_INT 3
 #define LOG_LEVEL 4
+#define TRACE_ENABLED 0
+#define STD_LIB_LOCATION "stdlib/main.connery"
+
+#if TRACE_ENABLED == 1
+
+#include "trace.h"
+
+#else
+typedef struct trace {} trace;
+#endif
+
 
 #ifdef _WIN32
 #include <string.h>
@@ -38,6 +50,8 @@ mpc_parser_t *Number;
 mpc_parser_t *Float;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
+mpc_parser_t *DictionaryPair;
+mpc_parser_t *Dictionary;
 mpc_parser_t *Comment;
 mpc_parser_t *Sexpr;
 mpc_parser_t *Qexpr;
@@ -280,6 +294,8 @@ cval *builtin_head(cenv *e, cval *a) {
 
 }
 
+#if TRACE_ENABLED == 1
+
 cval *set_trace_data(cenv *e, trace *t) {
     hash_table_set(e->ht, "__STATEMENT_NUMBER__", cval_number(t->current->position));
 
@@ -293,6 +309,8 @@ cval *set_trace_data(cenv *e, trace *t) {
 
     hash_table_set(e->ht, "__EXPRESSION__", t->current->data);
 }
+
+#endif
 
 cval *builtin_tail(cenv *e, cval *a) {
     CASSERT_NUM("tail", a, 1)
@@ -642,13 +660,14 @@ cval *builtin_for(cenv *e, cval *a) {
     cval *loop = cval_copy(loop_org);
 
     while (y <= q) {
-            x = cval_evaluate(e, loop);
-    y += 1;
-    if (y <= q) {
-        cval_delete(x);
-        loop = cval_copy(loop_org);
+        x = cval_evaluate(e, loop);
+        y += 1;
+        if (y <= q) {
+            cval_delete(x);
+            loop = cval_copy(loop_org);
 
-    }}
+        }
+    }
 
     cval_delete(loop_org);
     cval_delete(a);
@@ -656,7 +675,7 @@ cval *builtin_for(cenv *e, cval *a) {
 }
 
 cval *cval_lambda(cval *formals, cval *body) {
-    cval *v = malloc(sizeof(cval));
+    cval *v = allocate();
     v->type = CVAL_FUNCTION;
 
     v->builtin = NULL;
@@ -689,7 +708,9 @@ cval *builtin_load(cenv *e, cval *a) {
     CASSERT_NUM("load", a, 1)
     CASSERT_TYPE("load", a, 0, CVAL_STRING)
 
+#if TRACE_ENABLED == 1
     trace *t = start_trace(a->cell[0]->str);
+#endif
 
     mpc_result_t r;
     if (mpc_parse_contents(a->cell[0]->str, Connery, &r)) {
@@ -699,8 +720,10 @@ cval *builtin_load(cenv *e, cval *a) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
+#if TRACE_ENABLED == 1
             record_trace(t, expression);
             set_trace_data(e, t);
+#endif
 
             cval *x = cval_evaluate(e, expression);
 
@@ -745,8 +768,10 @@ cval *builtin_traced_load(cenv *e, cval *a, trace *t) {
 
         while (expr->count) {
             cval *expression = cval_pop(expr, 0);
+#if TRACE_ENABLED == 1
             record_trace(t, expression);
             set_trace_data(e, t);
+#endif
 
             cval *x = cval_evaluate(e, expression);
 
@@ -889,6 +914,12 @@ cval *builtin_length(cenv *e, cval *a) {
         return cval_number(length);
     }
 
+    if (a->cell[0]->type == CVAL_DICTIONARY) {
+        long length = a->cell[0]->ht->items;
+        cval_delete(a);
+        return cval_number(length);
+    }
+
     cval_delete(a);
 #if SYSTEM_LANG == 0
     return cval_fault("Function 'length' pashed unshupported type!");
@@ -900,33 +931,140 @@ cval *builtin_length(cenv *e, cval *a) {
 
 cval *builtin_type(cenv *e, cval *a) {
     int type = a->cell[0]->type;
-    cval_delete(a);
+    cval* returnVal = NULL;
 
     switch (type) {
         case CVAL_NUMBER:
-            return cval_number(0);
+            returnVal = cval_number(0);
+            break;
 
         case CVAL_STRING:
-            return cval_number(1);
+            returnVal = cval_number(1);
+            break;
 
         case CVAL_S_EXPRESSION:
-            return cval_number(2);
+            returnVal = cval_number(2);
+            break;
 
         case CVAL_Q_EXPRESSION:
-            return cval_number(3);
+            returnVal = cval_number(3);
+            break;
 
         case CVAL_FUNCTION:
-            return cval_number(4);
+            returnVal = cval_number(4);
+            break;
 
         case CVAL_SYMBOL:
-            return cval_number(5);
+            returnVal = cval_number(5);
+            break;
 
         case CVAL_BOOLEAN:
-            return cval_number(6);
+            returnVal = cval_number(6);
+            break;
+
+        case CVAL_FLOAT:
+            returnVal = cval_number(7);
+            break;
+
+        case CVAL_DICTIONARY:
+            returnVal = cval_number(8);
+            break;
+
+        case CVAL_NULL:
+            returnVal = cval_number(9);
+            break;
 
         default:
-            return cval_fault("Type not defined!");
+            returnVal = cval_fault("Type not defined!");
     }
+    return returnVal;
+}
+
+cval *builtin_stow(cenv *e, cval *a) {
+    CASSERT_TYPE("stow", a, 1, CVAL_STRING);
+
+    if (a->count < 3) {
+        return cval_fault("Stow requiresh at leasht three argumentsh."
+                          "The dictionary, the key (ash a shtring of courshe) and the value to be shet.");
+    }
+    cval* activeCval = NULL;
+
+    if (a->cell[0]->type == CVAL_DICTIONARY) {
+        activeCval = a->cell[0];
+    } else {
+        if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+            if (a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
+                 activeCval = a->cell[0]->cell[0];
+            }
+        }
+    }
+
+    hash_table* ht = activeCval->ht;
+
+    if (ht == NULL) {
+        return cval_fault("Stow requiresh a dictionary, shtring for the key, and a value for the value.");
+    }
+
+    hash_table_set(ht, a->cell[1]->str, a->cell[2]);
+
+    if (a->count >= 5) {
+        int pos = 0;
+        while (a->count > (pos + 3)) {
+
+            if ((a->count - pos + 3) % 2 == 0) {
+                hash_table_set(ht, a->cell[pos + 3]->str, a->cell[pos + 4]);
+                pos += 2;
+            } else {
+                return cval_fault("Stow requiresh a even number of argumentsh, lad.");
+            }
+        }
+    }
+    return activeCval;
+}
+
+cval *builtin_grab(cenv *e, cval *a) {
+
+    hash_table* ht = NULL;
+
+    if (a->cell[0]->type == CVAL_Q_EXPRESSION) {
+        if (a->cell[0]->cell[0]->type == CVAL_DICTIONARY) {
+            ht = a->cell[0]->cell[0]->ht;
+        }
+    } else {
+        if (a->cell[0]->type == CVAL_DICTIONARY) {
+            ht = a->cell[0]->ht;
+        }
+    }
+
+    if (ht == NULL) {
+        return cval_fault("Grab requiresh at leasht two argumentsh, the dictionary to fetch from, and the key to fetch.");
+    }
+
+    int idx = 1;
+    cval *list = cval_q_expression();;
+    while (idx < a->count) {
+        if (a->cell[idx]->type == CVAL_STRING) {
+
+        cval *item = NULL;
+
+        item = hash_table_get(ht, a->cell[idx]->str);
+
+        if (item == NULL) {
+            cval_add(list, cval_null());
+        } else {
+            cval_add(list, cval_copy(item));
+        }
+        idx += 1;
+    } else {
+        cval_delete(list);
+        cval_delete(a);
+        return cval_fault("I can only grab itemsh via namesh defined in shtringsh, lad. Try again.");
+    }
+}
+
+cval_delete(a);
+return
+list;
 }
 
 cval *builtin_http(cenv *e, cval *a) {
@@ -1013,14 +1151,77 @@ cval *builtin_input(cenv *e, cval *a) {
 }
 
 cval *builtin_convert_string(cenv *e, cval *a) {
-    if (a->cell[0]->type == CVAL_NUMBER) {
-        int length = snprintf(NULL, 0, "%ld", a->cell[0]->num);
-        char *str = malloc(length + 1);
-        snprintf(str, length + 1, "%ld", a->cell[0]->num);
+    cval* new;
 
-        return cval_string(str);
+    if (a->cell[0]->type == CVAL_NUMBER) {
+        new = cval_string(int_to_string(a->cell[0]->num));
     }
 
+    return new;
+}
+
+cval *builtin_inspect(cenv *e, cval *a) {
+    CASSERT_NUM("inspect", a, 1);
+    cval * value = a;
+    cval* container_data = NULL;
+    cval* env_data = NULL;
+    cval* allocator_data = NULL;
+    hash_table* ht = hash_table_create(15);
+    hash_table* env_ht = hash_table_create(10);
+    hash_table* allocator_ht = hash_table_create(2);
+
+    if (a->type == CVAL_S_EXPRESSION) {
+        if (a->count > 0) {
+            hash_table* c_ht = hash_table_create(2);
+            hash_table_set(c_ht, "container_id", cval_number(value->objId));
+            hash_table_set(c_ht, "container_pointer", cval_number((long) value));
+            container_data = cval_dictionary(c_ht);
+            value = a->cell[0];
+        }
+    }
+
+    if (container_data != NULL) {
+        hash_table_set(ht, "container", container_data);
+    }
+
+    hash_table_set(ht, "id", cval_number(value->objId));
+    hash_table_set(ht, "type", cval_string(ctype_name(value->type)));
+    hash_table_set(ht, "count", cval_number(value->count));
+    hash_table_set(ht, "is_deleted", cval_boolean(value->deleted));
+    hash_table_set(ht, "is_marked", cval_boolean(value->mark));
+    hash_table_set(ht, "has_children", cval_boolean(value->count > 0));
+    hash_table_set(ht, "pointer", cval_number((long) value));
+
+
+
+    hash_table_set(env_ht, "env_pointer", cval_number((long) e));
+    hash_table_set(env_ht, "env_size", cval_number((long) e->ht->table_size));
+    hash_table_set(env_ht, "env_items", cval_number((long) e->ht->items));
+    if (e->par != NULL) {
+        hash_table_set(env_ht, "env_parent_pointer", cval_number((long) e->par));
+    }
+
+    env_data = cval_dictionary(env_ht);
+    hash_table_set(ht, "env", env_data);
+
+    long row = get_row_by_id(a->objId);
+    hash_table_set(allocator_ht, "row", cval_number(row));
+    hash_table_set(allocator_ht, "index", cval_number(get_index_by_row_and_id(a->objId, row)));
+    allocator_data = cval_dictionary(ht);
+
+    hash_table_set(ht, "allocator", allocator_data);
+
+    if (value->type == CVAL_DICTIONARY) {
+        hash_table_set(ht, "size", cval_number(value->ht->table_size));
+        hash_table_set(ht, "items", cval_number(value->ht->items));
+        hash_table_set(ht, "ht_pointer", cval_number((long) value->ht));
+    }
+
+    if (value->type == CVAL_STRING) {
+        hash_table_set(ht, "string_pointer", cval_number((long) value->str));
+    }
+
+    return cval_dictionary(ht);
 }
 
 cval *builtin_sys(cenv *e, cval *a) {
@@ -1046,11 +1247,22 @@ cval *builtin_sys(cenv *e, cval *a) {
     }
 
     if (strcmp(cmd, "SOFT_EXIT") == 0) {
+        mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
+        index_shutdown();
+        cenv_delete(e);
         exit(0);
     }
 
     if (strcmp(cmd, "SYSTEM_LANGUAGE_INT") == 0) {
         return cval_number(SYSTEM_LANG);
+    }
+
+    if (strcmp(cmd, "ALLOCATOR_STATUS") == 0) {
+        return allocator_status();
+    }
+
+    if (strcmp(cmd, "TAKE_OUT_THE_TRASH") == 0) {
+        return mark_and_sweep(e);
     }
 
     return cval_fault("invalid input to stats");
@@ -1067,6 +1279,9 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "def", builtin_def);
     cenv_add_builtin(e, "=", builtin_put);
 
+    cenv_add_builtin(e, "stow", builtin_stow);
+    cenv_add_builtin(e, "grab", builtin_grab);
+
     cenv_add_builtin(e, "list", builtin_list);
     cenv_add_builtin(e, "head", builtin_head);
     cenv_add_builtin(e, "tail", builtin_tail);
@@ -1077,6 +1292,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "find", builtin_find);
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
+    cenv_add_builtin(e, "inspect", builtin_inspect);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);
@@ -1119,6 +1335,8 @@ void load_standard_lib(cenv *e) {
 }
 
 int main(int argc, char **argv) {
+    allocator_setup();
+
     Number = mpc_new("number");
     Float = mpc_new("float");
     Symbol = mpc_new("symbol");
@@ -1127,61 +1345,77 @@ int main(int argc, char **argv) {
     Expr = mpc_new("expr");
     Comment = mpc_new("comment");
     String = mpc_new("string");
+    DictionaryPair = mpc_new("dictionary_pair");
+    Dictionary = mpc_new("dictionary");
     Connery = mpc_new("connery");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-              "                                                 \
+              "                                               \
                 float     : /-?[0-9]*\\.[0-9]+/ ;                     \
                 number    : /-?[0-9]+/ ;                              \
                 symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/          \
                             |'+' | '-' | '*' | '/' ;                  \
                 sexpr     : '(' <expr>* ')' ;                         \
                 qexpr     : '{' <expr>* '}' ;                         \
+                dictionary_pair : <string> '&' <expr> /[,]?/ ;        \
+                dictionary : '#' <dictionary_pair>* '#' ;             \
                 string    : /\"(\\\\.|[^\"])*\"/;                     \
                 comment : /;[^\\r\\n]*/  ;                            \
-                expr      : <float>  | <number> | <symbol>             \
-                          | <comment> | <sexpr> | <qexpr> | <string> ;\
+                expr      : <float>  | <number> | <symbol>            \
+                          | <comment> | <sexpr> | <qexpr> | <string>  \
+                          | <dictionary>  ;                           \
                 connery   : /^/ <expr>* /$/ ;                         \
             ",
-              Float, Number, Symbol, Sexpr, Qexpr, Expr, String, Comment, Connery);
+              Float, Number, Symbol, Sexpr, Qexpr, DictionaryPair, Dictionary, Expr, String, Comment, Connery);
 
     cenv *e = cenv_new();
 
+    hash_table_set(e->ht, "Null", cval_null());
+    hash_table_set(e->ht, "True", cval_boolean(true));
+    hash_table_set(e->ht, "False", cval_boolean(false));
+    hash_table_set(e->ht, "Empty", cval_string(""));
+    hash_table_set(e->ht, "None", cval_s_expression());
+    hash_table_set(e->ht, "Otherwise", cval_boolean(true));
+    hash_table_set(e->ht, "__std_lib_main_location__", cval_string(STD_LIB_LOCATION));
+    hash_table_set(e->ht, "__BK_13__", cval_string("Nyvpr Vzbtra Pvcevnab"));
+
     cenv_add_builtins(e);
     load_standard_lib(e);
+    mark_and_sweep(e);
 
     puts("   ______                                 \n"
          "  / ____/___  ____  ____  ___  _______  __\n"
-         " / /   / __ \\/ __ \\/ __ \\/ _ \\/ ___/ / / /\n"
+         " / /   / __ \\/ __ \\/ __ \\/ _ \\=/ ___/ / / /\n"
          "/ /___/ /_/ / / / / / / /  __/ /  / /_/ / \n"
          "\\____/\\____/_/ /_/_/ /_/\\___/_/   \\__, /  \n"
          "                                 /____/   ");
 #if SYSTEM_LANG == 1
     puts("_____________ English Mode _____________");
 #endif
-
     puts("            Version "CONNERY_VERSION);
     puts("           ConneryLang.org             \n");
 
     hash_table_set(e->ht, "__LOG_LEVEL__", cval_number(LOG_LEVEL));
 
+
     if (argc == 1) {
         hash_table_set(e->ht, "__SOURCE__", cval_string("INTERACTIVE"));
+#if TRACE_ENABLED == 1
         trace *trace = start_trace("interactive");
+#endif
         while (1) {
             char *input = readline("connery> ");
             add_history(input);
 
+#if TRACE_ENABLED == 1
             record_trace(trace, cval_string(input));
             set_trace_data(e, trace);
-
+#endif
             mpc_result_t result;
             if (mpc_parse("<stdin>", input, Connery, &result)) {
                 cval *output = cval_evaluate(e, cval_read(result.output));
 
                 cval_print_line(output);
-
-
                 cval_delete(output);
 
                 mpc_ast_delete(result.output);
@@ -1195,13 +1429,17 @@ int main(int argc, char **argv) {
 
     if (argc >= 2) {
         hash_table_set(e->ht, "__SOURCE__", cval_string("FILE"));
+#if TRACE_ENABLED == 1
         trace *trace = start_trace("FILE");
+#endif
         for (int i = 1; i < argc; i++) {
             cval *args = cval_add(cval_s_expression(), cval_string(argv[i]));
             hash_table_set(e->ht, "__SOURCE_FILE__", cval_string(argv[i]));
+#if TRACE_ENABLED == 1
             cval *x = builtin_traced_load(e, args, trace);
-
-
+#else
+            cval *x = builtin_load(e, args);
+#endif
             if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }
@@ -1209,7 +1447,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    mpc_cleanup(8, Number, Float, Symbol, String, Comment, Sexpr, Qexpr, Expr, Connery);
+    mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
+    index_shutdown();
     cenv_delete(e);
-    return 0;
+    exit(0);
 }

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 #include "cval.h"
 
 #define SYSTEM_LANG 0
@@ -39,6 +40,12 @@ CASSERT(args, args->count == num, \
     func, args->count, num)
 #endif
 
+
+char *int_to_string(long integer) {
+    char *str = malloc(11);
+    sprintf(str, "%ld", integer);
+    return str;
+}
 
 // https://creativeandcritical.net/str-replace-c
 char *repl_str(const char *str, const char *from, const char *to) {
@@ -260,6 +267,7 @@ cval *builtin_split(cenv *e, cval *a) {
 }
 
 cval *builtin_concat(cenv *e, cval *a) {
+//    todo: rewrite this
     CASSERT_TYPE("concat", a, 0, CVAL_STRING);
     CASSERT_TYPE("concat", a, 1, CVAL_STRING);
 

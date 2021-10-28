@@ -6,9 +6,10 @@
         {(== i 3) "Q Expression"}
         {(== i 4) "Function"}
         {(== i 5) "Symbol"}
-        {(== i 6) "Float"}
-        {(== i 7) "Boolean"}
-        {(== i 8) "Null"}
+        {(== i 6) "Boolean"}
+        {(== i 7) "Float"}
+        {(== i 8) "Dictionary"}
+        {(== i 9) "Null Type"}
         {(Otherwise) "Unknown"}
 })
 
