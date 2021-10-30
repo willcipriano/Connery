@@ -39,7 +39,6 @@ cval_allocation_index *INDEX = NULL;
 int CUR_OBJ_ID = 0;
 int CUR_PRE_CACHE_POS = 0;
 bool INIT_COMPLETE = false;
-bool ALLOCATOR_MEMORY_PRESSURE = false;
 
 cval *OUT_OF_MEMORY_FAULT = NULL;
 cval **preCache = NULL;
@@ -69,6 +68,7 @@ cval_allocation_array *preallocateArray(int slots) {
             nullConst->cell = NULL;
             nullConst->formals = NULL;
             nullConst->body = NULL;
+            nullConst->count = 0;
             array[i] = nullConst;
         } else {
             return NULL;
@@ -286,6 +286,7 @@ int sweep() {
                 }
                 object->type = CVAL_REALLOCATED;
                 object->deleted = false;
+                object->count = 0;
                 row->allocated -= 1;
                 sweptObj += 1;
 
@@ -377,5 +378,11 @@ void index_shutdown() {
 
     free(INDEX->rows);
     free(INDEX);
+}
+
+void allocator_check(cenv* env){
+    if (INDEX->cur == INDEX->size - 1) {
+        mark_and_sweep(env);
+    }
 }
 

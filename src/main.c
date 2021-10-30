@@ -1040,6 +1040,14 @@ cval *builtin_grab(cenv *e, cval *a) {
         return cval_fault("Grab requiresh at leasht two argumentsh, the dictionary to fetch from, and the key to fetch.");
     }
 
+    if (a->count == 2) {
+        cval *item = NULL;
+
+        item = hash_table_get(ht, a->cell[1]->str);
+
+        return item;
+    }
+
     int idx = 1;
     cval *list = cval_q_expression();;
     while (idx < a->count) {
@@ -1063,8 +1071,7 @@ cval *builtin_grab(cenv *e, cval *a) {
 }
 
 cval_delete(a);
-return
-list;
+return list;
 }
 
 cval *builtin_http(cenv *e, cval *a) {
@@ -1424,6 +1431,7 @@ int main(int argc, char **argv) {
                 mpc_err_delete(result.error);
             }
             free(input);
+            allocator_check(e);
         }
     }
 
