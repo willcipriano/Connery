@@ -3,10 +3,7 @@
 #include "cval.h"
 #include "hashtable.h"
 #include "allocator.h"
-
-#define HASH_TABLE_RESIZE_DEPTH 3
-#define HASH_TABLE_RESIZE_MULTIPLIER 2
-#define HASH_TABLE_RESIZE_BONUS 100
+#include "globals.h"
 
 unsigned int hash(const char *key, const long table_size) {
     unsigned long int value = 0;
@@ -249,10 +246,12 @@ cval **hash_table_dump_keys(hash_table *target_hash_table) {
     int itemsFound = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
-
-        while (target_hash_table->entries[i] != NULL) {
+        if (target_hash_table->entries[i] != NULL) {
             itemsFound += 1;
             array[itemsFound - 1] = cval_string(target_hash_table->entries[i]->key);
+        }
+        if (target_hash_table->items == itemsFound) {
+            return array;
         }
     }
 }

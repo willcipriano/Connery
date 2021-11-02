@@ -3,10 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <math.h>
 #include "cval.h"
-
-#define SYSTEM_LANG 0
+#include "globals.h"
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\

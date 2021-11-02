@@ -1,11 +1,6 @@
 #include "allocator.h"
 #include "cval.h"
-
-#define PREALLOCATE_SLOTS 4096
-#define PREALLOCATE_ROWS 16
-#define ROWS_MAX 4194304
-#define MAX_OBJECT_ID 17179869184
-#define PRE_CACHE_SIZE 16
+#include "globals.h"
 
 typedef struct cval_allocation_array {
     cval **array;

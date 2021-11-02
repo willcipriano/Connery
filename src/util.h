@@ -1,14 +1,6 @@
 #ifndef CONNERY_UTIL_H
 #define CONNERY_UTIL_H
 
-//http
-struct http_response {
-    char *body;
-    size_t len;
-};
-void init_http_response(struct http_response *s);
-size_t http_response_writer(void *ptr, size_t size, size_t nmemb, struct http_response *s);
-
 //multitok
 typedef char *multi_tok_t;
 char *multi_tok(char *input, multi_tok_t *string, char *delimiter);

@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <curl/curl.h>
 #include <string.h>
+#include "globals.h"
 #include "mpc.h"
 #include "util.h"
 #include "cval.h"
 #include "hashtable.h"
 #include "allocator.h"
-
 #include "strings.h"
+#include "http.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.3"
@@ -1070,178 +1070,7 @@ return list;
 
 cval *builtin_http(cenv *e, cval *a) {
     CASSERT_TYPE("http", a, 0, CVAL_STRING);
-    CASSERT_TYPE("http", a, 1, CVAL_STRING);
-
-    hash_table *resHt = hash_table_create(10);
-    hash_table *requestTimeHt = hash_table_create(10);
-    hash_table *sizeHt = hash_table_create(10);
-    hash_table *headerHt = hash_table_create(15);
-
-    CURL *curl;
-    CURLcode res;
-    long response_code;
-    cval *response_list = cval_q_expression();
-    cval *headers_list = cval_q_expression();
-    char *html_body;
-
-    char *type = a->cell[0]->str;
-    char *url = a->cell[1]->str;
-    cval *request_headers = a->cell[2];
-
-    curl = curl_easy_init();
-    if (curl) {
-        struct http_response s;
-        init_http_response(&s);
-        struct curl_slist *chunk = NULL;
-
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Connery");
-        curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
-
-        for (int i = 0; i < request_headers->count; i++) {
-            CASSERT_TYPE("http_request_headers", request_headers, i, CVAL_STRING);
-            chunk = curl_slist_append(chunk, request_headers->cell[i]->str);
-        }
-
-        if (strstr(type, "POST")) {
-            CASSERT_TYPE("http", a, 3, CVAL_STRING);
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, a->cell[3]->str);
-        }
-
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        res = curl_easy_perform(curl);
-
-        if (res == CURLE_OK) {
-            char * temp_char = NULL;
-            long temp_long = -1;
-            double temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-            hash_table_set(resHt, "response code", cval_number(response_code));
-
-            curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &temp_char);
-            if (temp_char != NULL) {
-                hash_table_set(resHt, "url", cval_string(temp_char));
-            }
-            temp_char = NULL;
-
-            curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD, &temp_double);
-            if (temp_double != -1) {
-            hash_table_set(resHt, "up speed", cval_float(temp_double)); }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(resHt, "down speed", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            // size
-            curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD, &temp_long);
-            hash_table_set(sizeHt, "download", cval_number(temp_long));
-
-            curl_easy_getinfo(curl, CURLINFO_SIZE_UPLOAD, &temp_long);
-            hash_table_set(sizeHt, "upload", cval_number(temp_long));
-
-            curl_easy_getinfo(curl, CURLINFO_HEADER_SIZE, &temp_long);
-            hash_table_set(sizeHt, "header", cval_number(temp_long));
-
-            curl_easy_getinfo(curl, CURLINFO_REQUEST_SIZE, &temp_long);
-            hash_table_set(sizeHt, "request", cval_number(temp_long));
-
-            hash_table_set(resHt, "size", cval_dictionary(sizeHt));
-
-
-            // time
-            curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "total", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "dns", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "connect", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "ssl", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "prestart", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "start", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME, &temp_double);
-            if (temp_double != -1) {
-                hash_table_set(requestTimeHt, "redirect", cval_float(temp_double));
-            }
-            temp_double = -1;
-
-            hash_table_set(resHt, "time", cval_dictionary(requestTimeHt));
-
-
-
-
-            char *response;
-            response = malloc(strlen(s.body) + 1);
-            strcpy(response, s.body);
-
-            multi_tok_t y = multiTok_init();
-            char *headers = multi_tok(response, &y, "\r\n\r\n");
-
-            multi_tok_t x = multiTok_init();
-            char *header = multi_tok(headers, &x, "\r\n");
-
-            while (header != NULL) {
-                if (strstr(header, ": ")) {
-                    multi_tok_t q = multiTok_init();
-                    char *key = multi_tok(header, &q, ": ");
-
-                    hash_table_set(headerHt, key, cval_string(multi_tok(NULL, &q, ": ")));
-                } else {
-                    if (strstr(header, "HTTP/")) {
-                    hash_table_set(headerHt, "Response Code", cval_string(header)); }
-                }
-                header = multi_tok(NULL, &x, "\r\n");
-            }
-
-
-
-            hash_table_set(resHt, "body", cval_string(strstr(s.body, "\r\n\r\n") + 4));
-        } else {
-            cval_delete(response_list);
-#if SYSTEM_LANG == 0
-            response_list = cval_fault("unable to accesh url!");
-#else
-            response_list = cval_fault("unable to access url!");
-#endif
-        }
-        free(s.body);
-        curl_easy_cleanup(curl);
-    }
-    hash_table_set(resHt, "headers", cval_dictionary(headerHt));
-    return cval_dictionary(resHt);
+    return http_req_impl(e, a);
 }
 
 cval *builtin_input(cenv *e, cval *a) {

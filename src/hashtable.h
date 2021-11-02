@@ -33,4 +33,6 @@ int hash_table_print(hash_table *target_hash_table);
 
 cval **hash_table_dump_values(hash_table *target_hash_table);
 
+cval **hash_table_dump_keys(hash_table *target_hash_table);
+
 #endif //CONNERY_HASHTABLE_H

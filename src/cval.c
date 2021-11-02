@@ -3,15 +3,13 @@
 #include "trace.h"
 #include "hashtable.h"
 #include "allocator.h"
+#include "http.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#define ENV_HASH_TABLE_SIZE 100
-#define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 125
-#define SYSTEM_LANG 1
+#include "globals.h"
 
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
