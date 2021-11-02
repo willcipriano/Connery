@@ -348,8 +348,6 @@ cval* mark_and_sweep(cenv* env) {
     return allocatorStatus(sweptObj, markedObj);
 }
 
-
-
 cval *allocator_status() {
     if (INIT_COMPLETE) {
         return allocatorStatus(-1, -1);
@@ -359,7 +357,7 @@ cval *allocator_status() {
 
 cval *object_by_id(long id) {
     long row = get_row_by_id(id);
-    return INDEX->rows[row]->array[get_index_by_row_and_id(id, row)];
+    return INDEX->rows[row - 1]->array[get_index_by_row_and_id(id, row) - 1];
 }
 
 void index_shutdown() {
@@ -381,7 +379,7 @@ void index_shutdown() {
 }
 
 void allocator_check(cenv* env){
-    if (INDEX->cur == INDEX->size - 1) {
+    if (INDEX->cur >= INDEX->size - 1) {
         mark_and_sweep(env);
     }
 }

@@ -738,13 +738,7 @@ cval *builtin_load(cenv *e, cval *a) {
         cval_delete(expr);
         cval_delete(a);
 
-        if (hash_table_get(e->ht, "__RETURN_SET__") != NULL &&
-            hash_table_get(e->ht, "__RETURN_SET__")->boolean) {
-            hash_table_entry_delete(e->ht, "__RETURN_SET__");
-            return hash_table_get(e->ht, "__RETURN_VAL__");
-        } else {
-            return cval_s_expression();
-        }
+        return cval_s_expression();
 
     } else {
         char *err_msg = mpc_err_string(r.error);
@@ -1077,7 +1071,11 @@ return list;
 cval *builtin_http(cenv *e, cval *a) {
     CASSERT_TYPE("http", a, 0, CVAL_STRING);
     CASSERT_TYPE("http", a, 1, CVAL_STRING);
-    CASSERT_TYPE("http", a, 2, CVAL_Q_EXPRESSION);
+
+    hash_table *resHt = hash_table_create(10);
+    hash_table *requestTimeHt = hash_table_create(10);
+    hash_table *sizeHt = hash_table_create(10);
+    hash_table *headerHt = hash_table_create(15);
 
     CURL *curl;
     CURLcode res;
@@ -1117,8 +1115,93 @@ cval *builtin_http(cenv *e, cval *a) {
         res = curl_easy_perform(curl);
 
         if (res == CURLE_OK) {
+            char * temp_char = NULL;
+            long temp_long = -1;
+            double temp_double = -1;
+
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-            cval_add(response_list, cval_number(response_code));
+            hash_table_set(resHt, "response code", cval_number(response_code));
+
+            curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &temp_char);
+            if (temp_char != NULL) {
+                hash_table_set(resHt, "url", cval_string(temp_char));
+            }
+            temp_char = NULL;
+
+            curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD, &temp_double);
+            if (temp_double != -1) {
+            hash_table_set(resHt, "up speed", cval_float(temp_double)); }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(resHt, "down speed", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            // size
+            curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD, &temp_long);
+            hash_table_set(sizeHt, "download", cval_number(temp_long));
+
+            curl_easy_getinfo(curl, CURLINFO_SIZE_UPLOAD, &temp_long);
+            hash_table_set(sizeHt, "upload", cval_number(temp_long));
+
+            curl_easy_getinfo(curl, CURLINFO_HEADER_SIZE, &temp_long);
+            hash_table_set(sizeHt, "header", cval_number(temp_long));
+
+            curl_easy_getinfo(curl, CURLINFO_REQUEST_SIZE, &temp_long);
+            hash_table_set(sizeHt, "request", cval_number(temp_long));
+
+            hash_table_set(resHt, "size", cval_dictionary(sizeHt));
+
+
+            // time
+            curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "total", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "dns", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "connect", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "ssl", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "prestart", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "start", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(requestTimeHt, "redirect", cval_float(temp_double));
+            }
+            temp_double = -1;
+
+            hash_table_set(resHt, "time", cval_dictionary(requestTimeHt));
+
+
+
 
             char *response;
             response = malloc(strlen(s.body) + 1);
@@ -1131,12 +1214,21 @@ cval *builtin_http(cenv *e, cval *a) {
             char *header = multi_tok(headers, &x, "\r\n");
 
             while (header != NULL) {
-                cval_add(headers_list, cval_string(header));
+                if (strstr(header, ": ")) {
+                    multi_tok_t q = multiTok_init();
+                    char *key = multi_tok(header, &q, ": ");
+
+                    hash_table_set(headerHt, key, cval_string(multi_tok(NULL, &q, ": ")));
+                } else {
+                    if (strstr(header, "HTTP/")) {
+                    hash_table_set(headerHt, "Response Code", cval_string(header)); }
+                }
                 header = multi_tok(NULL, &x, "\r\n");
             }
 
-            cval_add(response_list, headers_list);
-            cval_add(response_list, cval_string(strstr(s.body, "\r\n\r\n") + 4));
+
+
+            hash_table_set(resHt, "body", cval_string(strstr(s.body, "\r\n\r\n") + 4));
         } else {
             cval_delete(response_list);
 #if SYSTEM_LANG == 0
@@ -1148,7 +1240,8 @@ cval *builtin_http(cenv *e, cval *a) {
         free(s.body);
         curl_easy_cleanup(curl);
     }
-    return response_list;
+    hash_table_set(resHt, "headers", cval_dictionary(headerHt));
+    return cval_dictionary(resHt);
 }
 
 cval *builtin_input(cenv *e, cval *a) {
@@ -1199,8 +1292,6 @@ cval *builtin_inspect(cenv *e, cval *a) {
     hash_table_set(ht, "has_children", cval_boolean(value->count > 0));
     hash_table_set(ht, "pointer", cval_number((long) value));
 
-
-
     hash_table_set(env_ht, "env_pointer", cval_number((long) e));
     hash_table_set(env_ht, "env_size", cval_number((long) e->ht->table_size));
     hash_table_set(env_ht, "env_items", cval_number((long) e->ht->items));
@@ -1233,27 +1324,36 @@ cval *builtin_inspect(cenv *e, cval *a) {
 
 cval *builtin_sys(cenv *e, cval *a) {
     CASSERT_TYPE("stats", a, 0, CVAL_STRING);
-    CASSERT_NUM("stats", a, 1);
 
     char *cmd = a->cell[0]->str;
 
     if (strcmp(cmd, "VERSION") == 0) {
+        CASSERT_NUM("sys VERSION", a, 1);
+        cval_delete(a);
         return cval_string(CONNERY_VERSION);
     }
 
     if (strcmp(cmd, "VERSION_INT") == 0) {
+        CASSERT_NUM("sys VERSION_INT", a, 1);
+        cval_delete(a);
         return cval_number(CONNERY_VER_INT);
     }
 
     if (strcmp(cmd, "PRINT_ENV") == 0) { ;
+        CASSERT_NUM("sys PRINT_ENV", a, 1);
+        cval_delete(a);
         return cval_number(hash_table_print(e->ht));
     }
 
     if (strcmp(cmd, "HARD_EXIT") == 0) {
+        CASSERT_NUM("sys HARD_EXIT", a, 1);
+        cval_delete(a);
         exit(1);
     }
 
     if (strcmp(cmd, "SOFT_EXIT") == 0) {
+        CASSERT_NUM("sys SOFT_EXIT", a, 1);
+        cval_delete(a);
         mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
         index_shutdown();
         cenv_delete(e);
@@ -1261,15 +1361,28 @@ cval *builtin_sys(cenv *e, cval *a) {
     }
 
     if (strcmp(cmd, "SYSTEM_LANGUAGE_INT") == 0) {
+        CASSERT_NUM("sys SYSTEM_LANGUAGE_INT", a, 1);
+        cval_delete(a);
         return cval_number(SYSTEM_LANG);
     }
 
     if (strcmp(cmd, "ALLOCATOR_STATUS") == 0) {
+        CASSERT_NUM("sys ALLOCATOR_STATUS", a, 1);
+        cval_delete(a);
         return allocator_status();
     }
 
     if (strcmp(cmd, "TAKE_OUT_THE_TRASH") == 0) {
+        CASSERT_NUM("sys TAKE_OUT_THE_TRASH", a, 1);
+        cval_delete(a);
         return mark_and_sweep(e);
+    }
+
+    if (strcmp(cmd, "BY_ID") == 0) {
+        CASSERT_NUM("sys BY_ID", a, 2);
+        cval* obj = object_by_id(a->cell[1]->objId);
+        cval_delete(a);
+        return obj;
     }
 
     return cval_fault("invalid input to stats");
@@ -1451,7 +1564,9 @@ int main(int argc, char **argv) {
             if (x->type == CVAL_FAULT) {
                 cval_print_line(x);
             }
+
             cval_delete(x);
+            allocator_check(e);
         }
     }
 

@@ -449,6 +449,7 @@ cval* cenv_get(cenv* e, cval* k) {
 }
 
 cval* cval_evaluate(cenv* env, cval* value) {
+
     if (value->type == CVAL_SYMBOL) {
         cval* x = cenv_get(env, value);
         cval_delete(value);
