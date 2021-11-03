@@ -34,7 +34,7 @@ cval *parse_object(json_object* json_obj) {
             return temp_cval;
 
         case json_type_string:
-            return cval_string(json_object_get_string(json_obj));
+            return cval_string((char *) json_object_get_string(json_obj));
 
         case json_type_int:
             return cval_number(json_object_get_int64(json_obj));
