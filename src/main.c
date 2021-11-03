@@ -1075,7 +1075,7 @@ cval *builtin_http(cenv *e, cval *a) {
 }
 
 cval *builtin_json(cenv *e, cval *a) {
-    return parse_json_cval_string(a->cell[0]);
+    return parse_json_cval(e, a->cell[0]);
 }
 
 cval *builtin_input(cenv *e, cval *a) {

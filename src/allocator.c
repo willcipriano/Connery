@@ -63,6 +63,7 @@ cval_allocation_array *preallocateArray(int slots) {
             nullConst->cell = NULL;
             nullConst->formals = NULL;
             nullConst->body = NULL;
+            nullConst->class = CVAL_CLASS_UNDEFINED;
             nullConst->count = 0;
             array[i] = nullConst;
         } else {
@@ -282,6 +283,7 @@ int sweep() {
                 object->type = CVAL_REALLOCATED;
                 object->deleted = false;
                 object->count = 0;
+                object->class = CVAL_CLASS_UNDEFINED;
                 row->allocated -= 1;
                 sweptObj += 1;
 

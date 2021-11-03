@@ -1,17 +1,14 @@
-#include "mpc.h"
-#include "allocator.h"
 #include "json_parser.h"
 #include <json-c/json.h>
 #include "globals.h"
 #include "cval.h"
 #include "hashtable.h"
 
-cval *parse_object(json_object* json_obj) {
+cval *parse_json_object(json_object* json_obj) {
     json_type type = json_object_get_type(json_obj);
     hash_table *temp_ht = NULL;
 
     int temp_size;
-    cval* temp_cval = NULL;
     cval* return_val = cval_null();
 
     switch (type) {
@@ -19,7 +16,7 @@ cval *parse_object(json_object* json_obj) {
             temp_ht = hash_table_create(JSON_OBJECT_HT_INIT_SIZE);
 
             json_object_object_foreach(json_obj, key, value) {
-                hash_table_set(temp_ht, key, parse_object(value));
+                hash_table_set(temp_ht, key, parse_json_object(value));
             }
             return_val = cval_dictionary(temp_ht);
             break;
@@ -30,11 +27,10 @@ cval *parse_object(json_object* json_obj) {
             int cur = 0;
 
             while (cur < temp_size) {
-                cval_add(return_val, parse_object(json_object_array_get_idx(json_obj, cur)));
+                cval_add(return_val, parse_json_object(json_object_array_get_idx(json_obj, cur)));
                 cur += 1;
             }
             break;
-
 
         case json_type_string:
             return_val = cval_string((char *) json_object_get_string(json_obj));
@@ -61,25 +57,79 @@ cval *parse_object(json_object* json_obj) {
             break;
     }
 
+    // free object
     json_object_put(json_obj);
+
     return return_val;
 }
 
-cval *parse_json_cval_string(cval* value) {
-    if (value->type == CVAL_STRING) {
-        return parse_object(json_tokener_parse(value->str));
+json_object *parse_cval_object(cenv* env, cval *object) {
+    json_object * return_object = NULL;
+    cval ** temp_keys = NULL;
+    int cur = 0;
+
+    switch(object->type) {
+
+        case CVAL_DICTIONARY:
+            return_object = json_object_new_object();
+            temp_keys = hash_table_dump_keys(object->ht);
+
+            while (cur < object->ht->items) {
+                json_object_object_add(return_object, temp_keys[cur]->str, parse_cval_object(env, hash_table_get(object->ht, temp_keys[cur]->str)));
+                cur += 1;
+            }
+            break;
+
+        case CVAL_Q_EXPRESSION:
+        case CVAL_S_EXPRESSION:
+            return_object = json_object_new_array();
+
+            while (cur < object->count) {
+                json_object_array_add(return_object, parse_cval_object(env, object->cell[cur]));
+                cur += 1;
+            }
+            break;
+
+        case CVAL_NUMBER:
+            return_object = json_object_new_int64(object->num);
+            break;
+
+        case CVAL_BOOLEAN:
+            if (object->boolean) {
+                return_object = json_object_new_boolean(true);
+            } else {
+                return_object = json_object_new_boolean(false);
+            }
+            break;
+
+        case CVAL_STRING:
+            return_object = json_object_new_string(object->str);
+            break;
+
+        case CVAL_SYMBOL:
+            return_object = parse_cval_object(env, cval_evaluate(env, object));
+            break;
     }
 
-    // if response from http, skip grab step
-    if (value->type == CVAL_DICTIONARY) {
+    return return_object;
+}
+
+cval *parse_json_cval(cenv* env, cval* value) {
+    // if a json string, parse it
+    if (value->type == CVAL_STRING) {
+        return parse_json_object(json_tokener_parse(value->str));
+    }
+
+    // if response from the http builtin, parse the body
+    if (value->class == CVAL_CLASS_HTTP && value->type == CVAL_DICTIONARY) {
         cval* body = hash_table_get(value->ht, "body");
         if (body != NULL) {
-            if (body->type == CVAL_STRING) {
-                return parse_object(json_tokener_parse(body->str));
-            }
+            return parse_json_object(json_tokener_parse(body->str));
         }
+        return cval_null();
     }
 
-    return cval_fault("Unable to parse JSON from provided %s", ctype_name(value->type));
+    // otherwise, convert the object into a json string
+    return cval_string((char *) json_object_get_string(parse_cval_object(env, value)));
 }
 

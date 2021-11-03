@@ -16,6 +16,10 @@ enum {
     CVAL_BOOLEAN, CVAL_DICTIONARY, CVAL_NULL, CVAL_UNALLOCATED, CVAL_REALLOCATED
 };
 
+enum {
+    CVAL_CLASS_UNDEFINED, CVAL_CLASS_HTTP
+};
+
 struct cval {
     int type;
 
@@ -37,6 +41,7 @@ struct cval {
     cval **cell;
     bool mark;
     bool deleted;
+    int class;
 };
 
 struct cenv {

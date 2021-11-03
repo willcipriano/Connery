@@ -254,5 +254,7 @@ cval * http_req_impl(cenv* env, cval* a) {
     }
     hash_table_set(resHt, "headers", cval_dictionary(headerHt));
     curl_easy_cleanup(curl);
-    return cval_dictionary(resHt);
+    cval * result = cval_dictionary(resHt);
+    result->class = CVAL_CLASS_HTTP;
+    return result;
 }
