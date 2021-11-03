@@ -10,7 +10,6 @@
 #define STD_LIB_LOCATION "stdlib/main.connery"
 #define ENV_HASH_TABLE_SIZE 100
 
-
 // allocator
 #define PREALLOCATE_SLOTS 4096
 #define PREALLOCATE_ROWS 16
@@ -23,6 +22,12 @@
 #define HASH_TABLE_RESIZE_MULTIPLIER 2
 #define HASH_TABLE_RESIZE_BONUS 100
 #define DICTIONARY_LITERAL_INSTANTIATED_HASH_TABLE_MINIMUM 25
+
+// http
+#define COOKIE_JAR "connery.cookies"
+
+//json
+#define JSON_OBJECT_HT_INIT_SIZE 25
 
 
 #endif //CONNERY_GLOBALS_H
