@@ -41,6 +41,7 @@ cval * http_req_impl(cenv* env, cval* a) {
     hash_table *requestTimeHt = hash_table_create(10);
     hash_table *sizeHt = hash_table_create(10);
     hash_table *speedHt = hash_table_create(2);
+    hash_table *ipHt = hash_table_create(2);
     hash_table *headerHt = hash_table_create(15);
 
     CURL *curl;
@@ -65,8 +66,8 @@ cval * http_req_impl(cenv* env, cval* a) {
         struct curl_slist *chunk = NULL;
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_COOKIEJAR, "cookies.txt");
-        curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "cookies.txt");
+        curl_easy_setopt(curl, CURLOPT_COOKIEJAR, COOKIE_JAR);
+        curl_easy_setopt(curl, CURLOPT_COOKIEFILE, COOKIE_JAR);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_response_writer);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, concat(2,"Connery ", CONNERY_VERSION));
@@ -112,15 +113,29 @@ cval * http_req_impl(cenv* env, cval* a) {
             }
             temp_char = NULL;
 
+            // ip
+            curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &temp_char);
+            if (temp_char != NULL) {
+                hash_table_set(ipHt, "remote", cval_string(temp_char));
+            }
+            temp_char = NULL;
+
+            curl_easy_getinfo(curl, CURLINFO_LOCAL_IP, &temp_char);
+            if (temp_char != NULL) {
+                hash_table_set(ipHt, "local", cval_string(temp_char));
+            }
+            temp_char = NULL;
+            hash_table_set(resHt, "ip", cval_dictionary(ipHt));
+
             // speed
             curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD, &temp_double);
             if (temp_double != -1) {
-                hash_table_set(speedHt, "up speed", cval_float(temp_double)); }
+                hash_table_set(speedHt, "up", cval_float(temp_double)); }
             temp_double = -1;
 
             curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &temp_double);
             if (temp_double != -1) {
-                hash_table_set(speedHt, "down speed", cval_float(temp_double));
+                hash_table_set(speedHt, "down", cval_float(temp_double));
             }
             temp_double = -1;
 
@@ -147,6 +162,12 @@ cval * http_req_impl(cenv* env, cval* a) {
             if (temp_long != -1) {
                 hash_table_set(sizeHt, "request", cval_number(temp_long));}
             temp_long = -1;
+
+            curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &temp_double);
+            if (temp_double != -1) {
+                hash_table_set(sizeHt, "content length", cval_float(temp_double));
+            }
+            temp_double = -1;
 
             hash_table_set(resHt, "size", cval_dictionary(sizeHt));
 
@@ -192,6 +213,8 @@ cval * http_req_impl(cenv* env, cval* a) {
                 hash_table_set(requestTimeHt, "redirect", cval_float(temp_double));
             }
             temp_double = -1;
+
+
 
             hash_table_set(resHt, "time", cval_dictionary(requestTimeHt));
 

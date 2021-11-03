@@ -9,6 +9,7 @@
 #include "allocator.h"
 #include "strings.h"
 #include "http.h"
+#include "json_parser.h"
 
 #define SYSTEM_LANG 0
 #define CONNERY_VERSION "0.0.3"
@@ -1073,6 +1074,11 @@ cval *builtin_http(cenv *e, cval *a) {
     return http_req_impl(e, a);
 }
 
+cval *builtin_json(cenv *e, cval *a) {
+    CASSERT_TYPE("json", a, 0, CVAL_STRING);
+    return parse_json_cval_string(a->cell[0]);
+}
+
 cval *builtin_input(cenv *e, cval *a) {
     CASSERT_TYPE("input", a, 0, CVAL_STRING);
     char *input = readline(a->cell[0]->str);
@@ -1263,6 +1269,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "print", builtin_print);
     cenv_add_builtin(e, "type", builtin_type);
     cenv_add_builtin(e, "http", builtin_http);
+    cenv_add_builtin(e, "json", builtin_json);
 
     cenv_add_builtin(e, "file", builtin_file);
     cenv_add_builtin(e, "convert_string", builtin_convert_string);

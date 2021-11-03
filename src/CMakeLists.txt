@@ -5,9 +5,10 @@ set(CMAKE_C_STANDARD 99)
 set(CURL_LIBRARY "-lcurl")
 find_package(CURL REQUIRED)
 
-add_executable(Connery main.c mpc.c util.c util.h hashtable.c hashtable.h cval.h cval.c trace.c trace.h strings.c strings.h allocator.c allocator.h http.c http.h globals.h)
+
+add_executable(Connery main.c mpc.c util.c util.h hashtable.c hashtable.h cval.h cval.c trace.c trace.h strings.c strings.h allocator.c allocator.h http.c http.h globals.h json_parser.c json_parser.h)
 include_directories(${CURL_INCLUDE_DIR})
-target_link_libraries(Connery PRIVATE /usr/lib/x86_64-linux-gnu/libedit.so ${CURL_LIBRARIES})
+target_link_libraries(Connery PRIVATE /usr/lib/x86_64-linux-gnu/libedit.so ${CURL_LIBRARIES} json-c)
 
 add_custom_command(
         TARGET Connery PRE_BUILD
