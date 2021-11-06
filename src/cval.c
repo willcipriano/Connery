@@ -439,11 +439,23 @@ cval* cenv_get(cenv* e, cval* k) {
         return cval_copy(value);
     }
 
-    if (e->par) {
-        return cenv_get(e->par, k);
-    } else {
+    if (!e->par) {
         return cval_fault("Unbound shymbol '%s' not defined in shcope!", k->sym);
     }
+    return cenv_get(e->par, k);
+}
+
+cval* safe_cenv_get(cenv* e, char * s) {
+    cval* value = hash_table_get(e->ht, s);
+    if (value != NULL) {
+        return cval_copy(value);
+    }
+
+    if (!e->par) {
+       return NULL;
+    }
+
+    return safe_cenv_get(e->par, s);
 }
 
 cval* cval_evaluate(cenv* env, cval* value) {
@@ -641,7 +653,7 @@ void cval_print_str(cval* v) {
     char* escaped = malloc(strlen(v->str)+1);
     strcpy(escaped, v->str);
     escaped = mpcf_escape(escaped);
-    printf("%s", escaped);
+    printf("%s", v->str);
     free(escaped);
 }
 

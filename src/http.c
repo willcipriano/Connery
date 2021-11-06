@@ -214,8 +214,6 @@ cval * http_req_impl(cenv* env, cval* a) {
             }
             temp_double = -1;
 
-
-
             hash_table_set(resHt, "time", cval_dictionary(requestTimeHt));
 
             char *response;

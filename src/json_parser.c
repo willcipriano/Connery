@@ -9,7 +9,7 @@ cval *parse_json_object(json_object* json_obj) {
     hash_table *temp_ht = NULL;
 
     int temp_size;
-    cval* return_val = cval_null();
+    cval* return_val = NULL;
 
     switch (type) {
         case json_type_object:
@@ -55,8 +55,10 @@ cval *parse_json_object(json_object* json_obj) {
         case json_type_double:
             return_val = cval_float(json_object_get_double(json_obj));
             break;
-    }
 
+        default:
+            return cval_fault("unable to parshe jshon object with content: '%s'", json_object_get_string(json_obj));
+    }
     // free object
     json_object_put(json_obj);
 
@@ -109,15 +111,22 @@ json_object *parse_cval_object(cenv* env, cval *object) {
         case CVAL_SYMBOL:
             return_object = parse_cval_object(env, cval_evaluate(env, object));
             break;
+
+        default:
+            return_object = cval_null();
     }
 
     return return_object;
 }
 
 cval *parse_json_cval(cenv* env, cval* value) {
-    // if a json string, parse it
+    // if it's a string, check to see if it's a json string
     if (value->type == CVAL_STRING) {
-        return parse_json_object(json_tokener_parse(value->str));
+        json_object* obj = json_tokener_parse(value->str);
+        if (obj != NULL) {
+            return parse_json_object(obj);
+        }
+        free(obj);
     }
 
     // if response from the http builtin, parse the body
@@ -129,7 +138,26 @@ cval *parse_json_cval(cenv* env, cval* value) {
         return cval_null();
     }
 
-    // otherwise, convert the object into a json string
-    return cval_string((char *) json_object_get_string(parse_cval_object(env, value)));
+    cval* mode = safe_cenv_get(env, "__JSON_OUTPUT_MODE__");
+    json_object* obj = parse_cval_object(env, value);
+
+    // if mode is configured, use that
+    if (mode != NULL) {
+        char * modeStr = mode->str;
+        if (strstr(modeStr, "pretty")) {
+            return cval_string((char *) json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY));
+        }
+
+        if (strstr(modeStr, "compact")) {
+            return cval_string((char *) json_object_to_json_string_ext(obj, JSON_C_TO_STRING_NOZERO));
+        }
+
+        if (strstr(modeStr, "basic")) {
+            return cval_string((char *) json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PLAIN));
+        }
+    }
+
+    // otherwise, convert the object into a json string with the default output mode
+    return cval_string((char *) json_object_to_json_string_ext(parse_cval_object(env, value), JSON_STRING_DEFAULT_OUTPUT_MODE));
 }
 
