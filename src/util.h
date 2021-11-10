@@ -1,5 +1,6 @@
 #ifndef CONNERY_UTIL_H
 #define CONNERY_UTIL_H
+#include "cval.h"
 
 //multitok
 typedef char *multi_tok_t;
@@ -15,6 +16,10 @@ char *replace_str(char *str, char *orig, char *rep);
 
 //mkpath
 int mkpath(const char *path, mode_t mode);
+
+//hashing
+cval *murmurhash_cval(cval* value);
+cval *murmurhash_cval_with_seed(cval* value, cval* seed);
 
 
 

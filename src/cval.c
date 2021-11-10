@@ -347,7 +347,11 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
         if(f->formals->count == 0) {
             cval_delete(a);
+#if SYSTEM_LANG == 0
             return cval_fault("Function pashed too many argumentsh. Got %i, Expected %i", given, total);
+#else
+            return cval_fault("Function passed too many arguments. Got %i, Expected %i", given, total);
+#endif
         }
 
         cval* sym = cval_pop(f->formals, 0);
@@ -356,7 +360,11 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
 
             if (f->formals->count != 1) {
                 cval_delete(a);
+#if SYSTEM_LANG == 0
                 return cval_fault("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+#else
+                return cval_fault("Function format invalid. Symbol '&' not followed by a single symbol.");
+#endif
             }
 
             cval* nsym = cval_pop(f->formals, 0);
@@ -378,7 +386,11 @@ cval* cval_call(cenv* e, cval* f, cval* a) {
     if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
 
         if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
+#if SYSTEM_LANG == 0
             return cval_fault("Function format invalid. shymbol '&' not followed by shingle shymbol.");
+#else
+            return cval_fault("Function format invalid. Symbol '&' not followed by a single symbol.");
+#endif
         }
 
         cval_delete(cval_pop(f->formals, 0));
@@ -424,7 +436,11 @@ cval* cval_evaluate_s_expression(cenv* env, cval* value) {
                 return cval_evaluate_s_expression(env, f);
             }
             else {
+#if SYSTEM_LANG == 0
                 return cval_fault("I'm afraid thatsh not valid connery, lad.");
+#else
+                return cval_fault("Invalid input");
+#endif
             }
         }
 
@@ -440,7 +456,11 @@ cval* cenv_get(cenv* e, cval* k) {
     }
 
     if (!e->par) {
+#if SYSTEM_LANG == 0
         return cval_fault("Unbound shymbol '%s' not defined in shcope!", k->sym);
+#else
+        return cval_fault("Unbound symbol '%s' not defined in scope!", k->sym);
+#endif
     }
     return cenv_get(e->par, k);
 }
@@ -544,15 +564,27 @@ cval *cval_read_boolean(mpc_ast_t *t) {
 cval* cval_read_num(mpc_ast_t* t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
+#if SYSTEM_LANG == 0
     return errno != ERANGE ?
            cval_number(x) : cval_fault("that'sh an invalid number");
+#else
+    return errno != ERANGE ?
+           cval_number(x) : cval_fault("that's an invalid number");
+#endif
+
+
 }
 
 cval* cval_read_float(mpc_ast_t* t) {
     errno = 0;
     long double x = strtold(t->contents, NULL);
+#if SYSTEM_LANG == 0
     return errno != ERANGE ?
            cval_float(x) : cval_fault("that'sh a invalid float");
+#else
+    return errno != ERANGE ?
+           cval_float(x) : cval_fault("that's a invalid float");
+#endif
 }
 
 cval* cval_read_string(mpc_ast_t* t) {

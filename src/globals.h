@@ -6,7 +6,7 @@
 #define CONNERY_VERSION "0.0.3"
 #define CONNERY_VER_INT 3
 #define LOG_LEVEL 4
-#define TRACE_ENABLED 0
+#define TRACE_ENABLED 1
 #define STD_LIB_LOCATION "stdlib/main.connery"
 #define ENV_HASH_TABLE_SIZE 100
 
@@ -30,5 +30,7 @@
 #define JSON_OBJECT_HT_INIT_SIZE 25
 #define JSON_STRING_DEFAULT_OUTPUT_MODE JSON_C_TO_STRING_PRETTY
 
+// hashing
+#define HASHING_SEED 1234567
 
 #endif //CONNERY_GLOBALS_H

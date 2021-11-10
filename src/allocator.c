@@ -349,7 +349,11 @@ cval *allocator_status() {
     if (INIT_COMPLETE) {
         return allocatorStatus(-1, -1);
      }
+#if SYSTEM_LANG == 0
     return cval_fault("The allocator takesh a wee bit of time to warm up laddy.");
+#else
+    return cval_fault("The allocator is not yet initalized.");
+#endif
 }
 
 cval *object_by_id(long id) {

@@ -6,6 +6,8 @@
 #include "cval.h"
 #include "globals.h"
 
+// todo: take a more serious look at strings, consider Simple Dynamic Strings
+
 #define CASSERT(args, cond, fmt, ...) \
 if (!(cond)) {\
     cval* err = cval_fault(fmt, ##__VA_ARGS__); \
@@ -237,7 +239,11 @@ cval *builtin_split(cenv *e, cval *a) {
 
     if (str_length <= split_index) {
         cval_delete(a);
+#if SYSTEM_LANG==0
+        return cval_fault("Index %i out of boundsh", split_index);
+#else
         return cval_fault("Index %i out of bounds", split_index);
+#endif
     }
 
     char first_half[split_index];
@@ -345,7 +351,11 @@ cval *builtin_concat(cenv *e, cval *a) {
             break;
 
         default:
+#if SYSTEM_LANG == 0
+            new_cval = cval_fault("concat acceptsh between 2 and 10 shtringsh.");
+#else
             new_cval = cval_fault("concat accepts between 2 and 10 strings.");
+#endif
     }
 
     cval_delete(a);

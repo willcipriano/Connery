@@ -11,17 +11,9 @@
 #include "http.h"
 #include "json_parser.h"
 
-#define SYSTEM_LANG 0
-#define CONNERY_VERSION "0.0.3"
-#define CONNERY_VER_INT 3
-#define LOG_LEVEL 4
-#define TRACE_ENABLED 0
-#define STD_LIB_LOCATION "stdlib/main.connery"
 
 #if TRACE_ENABLED == 1
-
 #include "trace.h"
-
 #else
 typedef struct trace {} trace;
 #endif
@@ -979,8 +971,13 @@ cval *builtin_stow(cenv *e, cval *a) {
     CASSERT_TYPE("stow", a, 1, CVAL_STRING);
 
     if (a->count < 3) {
+#if SYSTEM_LANG == 0
         return cval_fault("Stow requiresh at leasht three argumentsh."
                           "The dictionary, the key (ash a shtring of courshe) and the value to be shet.");
+#else
+        return cval_fault("Stow requires at least three aruguments."
+                          "The dictionary, the key and the value to be set.");
+#endif
     }
     cval* activeCval = NULL;
 
@@ -1222,11 +1219,24 @@ cval *builtin_sys(cenv *e, cval *a) {
     return cval_fault("invalid input to stats");
 }
 
+cval* builtin_hash(cenv* e, cval* a) {
+    cval *hash = murmurhash_cval(a->cell[0]);
+    int cur = 1;
+
+    while (cur < a->count) {
+        hash = murmurhash_cval_with_seed(a->cell[cur], hash);
+        cur += 1;
+    }
+
+    return hash;
+}
+
 void cenv_add_string_functions(cenv *e) {
     cenv_add_builtin(e, "string_replace_all", builtin_string_replace_all);
     cenv_add_builtin(e, "string_replace_first_char", builtin_string_replace_first_char);
     cenv_add_builtin(e, "string_concat", builtin_concat);
 }
+
 
 void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "\\", builtin_lambda);
@@ -1247,6 +1257,7 @@ void cenv_add_builtins(cenv *e) {
     cenv_add_builtin(e, "split", builtin_split);
     cenv_add_builtin(e, "sys", builtin_sys);
     cenv_add_builtin(e, "inspect", builtin_inspect);
+    cenv_add_builtin(e, "hash", builtin_hash);
 
     cenv_add_builtin(e, "+", builtin_add);
     cenv_add_builtin(e, "-", builtin_sub);

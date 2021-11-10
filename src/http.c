@@ -81,7 +81,11 @@ cval * http_req_impl(cenv* env, cval* a) {
             for (int i = 0; i < ht_dict->ht->items; i++) {
                 cval* value = hash_table_get(ht_dict->ht, keys[i]->str);
                 if (value->type != CVAL_STRING) {
+#if SYSTEM_LANG == 0
+                    return cval_fault("Unable to parshe header located at key %s, expected %s got %s.", keys[i], ctype_name(CVAL_STRING), ctype_name(value->type));
+#else
                     return cval_fault("Unable to parse header located at key %s, expected %s got %s.", keys[i], ctype_name(CVAL_STRING), ctype_name(value->type));
+#endif
                 }
                 chunk = curl_slist_append(chunk, concat(3, keys[i], ":", value->str));
             }

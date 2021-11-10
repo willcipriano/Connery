@@ -1,21 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "cval.h"
+#include "murmurhash.h"
 #include "hashtable.h"
 #include "allocator.h"
 #include "globals.h"
 
 unsigned int hash(const char *key, const long table_size) {
-    unsigned long int value = 0;
-    unsigned int key_len = strlen(key);
-
-    for (unsigned int i = 0; i < key_len; ++i) {
-        value = value * 37 + key[i];
-    }
-
-    value = value % table_size;
-
-    return value;
+    uint32_t hash = murmurhash(key, (uint32_t) strlen(key), (uint32_t) HASHING_SEED);
+    return (long) hash % table_size;
 }
 
 hash_table_entry *hash_table_pair(const char *key, cval *value) {
@@ -242,13 +235,24 @@ cval **hash_table_dump_values(hash_table *target_hash_table) {
 }
 
 cval **hash_table_dump_keys(hash_table *target_hash_table) {
-    cval** array = calloc(sizeof(cval*), target_hash_table->items);
+    cval** array = calloc(sizeof(cval*), target_hash_table->items - 1);
     int itemsFound = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {
         if (target_hash_table->entries[i] != NULL) {
             itemsFound += 1;
             array[itemsFound - 1] = cval_string(target_hash_table->entries[i]->key);
+
+            if (target_hash_table->entries[i]->next != NULL) {
+                hash_table_entry *entry = target_hash_table->entries[i]->next;
+                while (entry != NULL) {
+                    itemsFound += 1;
+                    array[itemsFound - 1] = cval_string(entry->key);
+                    entry = entry->next;
+                }
+            }
+
+
         }
         if (target_hash_table->items == itemsFound) {
             return array;

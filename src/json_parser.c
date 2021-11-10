@@ -57,7 +57,12 @@ cval *parse_json_object(json_object* json_obj) {
             break;
 
         default:
+#if SYSTEM_LANG == 0
             return cval_fault("unable to parshe jshon object with content: '%s'", json_object_get_string(json_obj));
+#else
+        return cval_fault("unable to parse json object with content: '%s'", json_object_get_string(json_obj));
+#endif
+
     }
     // free object
     json_object_put(json_obj);
