@@ -57,14 +57,10 @@ cval_allocation_array *preallocateArray(int slots) {
     for (int i = 0; i < slots; ++i) {
         int objId = createObjectId();
         if (objId != -1) {
-            cval *nullConst = malloc(sizeof(cval));
+            cval *nullConst = calloc(sizeof(cval), 1);
             nullConst->type = CVAL_UNALLOCATED;
             nullConst->objId = objId;
-            nullConst->cell = NULL;
-            nullConst->formals = NULL;
-            nullConst->body = NULL;
             nullConst->class = CVAL_CLASS_UNDEFINED;
-            nullConst->count = 0;
             array[i] = nullConst;
         } else {
             return NULL;
@@ -101,7 +97,7 @@ cval *fetchSmode() {
 
         while (INDEX->scur < INDEX->cur) {
             while (cur <= PREALLOCATE_SLOTS) {
-                cval* target = INDEX->rows[INDEX->scur]->array[cur];
+                cval* target = INDEX->rows[INDEX->scur]->array[cur - 1];
                 if (target != NULL) {
                 if (target->type == CVAL_REALLOCATED) {
                     target->type = CVAL_UNALLOCATED;
@@ -279,6 +275,7 @@ int sweep() {
                     case CVAL_STRING:
                         free(object->str);
                         break;
+
                 }
                 object->type = CVAL_REALLOCATED;
                 object->deleted = false;

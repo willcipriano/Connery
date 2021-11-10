@@ -1105,7 +1105,6 @@ cval *builtin_inspect(cenv *e, cval *a) {
         if (a->count > 0) {
             hash_table* c_ht = hash_table_create(2);
             hash_table_set(c_ht, "container_id", cval_number(value->objId));
-            hash_table_set(c_ht, "container_pointer", cval_number((long) value));
             container_data = cval_dictionary(c_ht);
             value = a->cell[0];
         }
@@ -1121,14 +1120,9 @@ cval *builtin_inspect(cenv *e, cval *a) {
     hash_table_set(ht, "is_deleted", cval_boolean(value->deleted));
     hash_table_set(ht, "is_marked", cval_boolean(value->mark));
     hash_table_set(ht, "has_children", cval_boolean(value->count > 0));
-    hash_table_set(ht, "pointer", cval_number((long) value));
 
-    hash_table_set(env_ht, "env_pointer", cval_number((long) e));
     hash_table_set(env_ht, "env_size", cval_number((long) e->ht->table_size));
     hash_table_set(env_ht, "env_items", cval_number((long) e->ht->items));
-    if (e->par != NULL) {
-        hash_table_set(env_ht, "env_parent_pointer", cval_number((long) e->par));
-    }
 
     env_data = cval_dictionary(env_ht);
     hash_table_set(ht, "env", env_data);
@@ -1143,12 +1137,9 @@ cval *builtin_inspect(cenv *e, cval *a) {
     if (value->type == CVAL_DICTIONARY) {
         hash_table_set(ht, "size", cval_number(value->ht->table_size));
         hash_table_set(ht, "items", cval_number(value->ht->items));
-        hash_table_set(ht, "ht_pointer", cval_number((long) value->ht));
     }
 
-    if (value->type == CVAL_STRING) {
-        hash_table_set(ht, "string_pointer", cval_number((long) value->str));
-    }
+    hash_table_set(ht, "hash", murmurhash_cval(value));
 
     return cval_dictionary(ht);
 }
@@ -1185,9 +1176,9 @@ cval *builtin_sys(cenv *e, cval *a) {
     if (strcmp(cmd, "SOFT_EXIT") == 0) {
         CASSERT_NUM("sys SOFT_EXIT", a, 1);
         cval_delete(a);
-        mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
-        index_shutdown();
         cenv_delete(e);
+        index_shutdown();
+        mpc_cleanup(8, Number, Float, Symbol, Sexpr, Qexpr, Expr, Comment, String, DictionaryPair, Dictionary, Connery);
         exit(0);
     }
 

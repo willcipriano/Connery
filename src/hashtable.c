@@ -99,7 +99,7 @@ cval *hash_table_get(hash_table *target_hash_table, const char *key) {
 
 hash_table *hash_table_create(const long table_size) {
 
-    hash_table *ht = malloc(sizeof(hash_table));
+    hash_table *ht = calloc(sizeof(hash_table), 1);
     ht->table_size = table_size;
     ht->entries = calloc(sizeof(hash_table_entry*), table_size);
     ht->items = 0;
@@ -235,7 +235,7 @@ cval **hash_table_dump_values(hash_table *target_hash_table) {
 }
 
 cval **hash_table_dump_keys(hash_table *target_hash_table) {
-    cval** array = calloc(sizeof(cval*), target_hash_table->items - 1);
+    cval** array = calloc(sizeof(cval*), target_hash_table->items);
     int itemsFound = 0;
 
     for (long i = 0; i < target_hash_table->table_size; i++) {

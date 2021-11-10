@@ -15,7 +15,7 @@ trace* start_trace(char* s) {
 }
 
 void record_trace(trace* t, cval* data) {
-    trace_entry *te = malloc(sizeof(trace_entry) * 1);
+    trace_entry *te = calloc(1, sizeof(trace_entry));
 
     te->position=t->current->position + 1;
     te->prev=t->current;

@@ -70,22 +70,15 @@ cval *parse_json_object(json_object* json_obj) {
     return return_val;
 }
 
+json_object *parse_cval_dict(cenv* env, cval *object);
+
 json_object *parse_cval_object(cenv* env, cval *object) {
-    json_object * return_object = NULL;
-    cval ** temp_keys = NULL;
+    json_object* return_object = NULL;
     int cur = 0;
 
     switch(object->type) {
-
         case CVAL_DICTIONARY:
-            return_object = json_object_new_object();
-            temp_keys = hash_table_dump_keys(object->ht);
-
-            while (cur < object->ht->items) {
-                json_object_object_add(return_object, temp_keys[cur]->str, parse_cval_object(env, hash_table_get(object->ht, temp_keys[cur]->str)));
-                cur += 1;
-            }
-            break;
+            return parse_cval_dict(env, object);
 
         case CVAL_Q_EXPRESSION:
         case CVAL_S_EXPRESSION:
@@ -95,30 +88,39 @@ json_object *parse_cval_object(cenv* env, cval *object) {
                 json_object_array_add(return_object, parse_cval_object(env, object->cell[cur]));
                 cur += 1;
             }
-            break;
+            return return_object;
 
         case CVAL_NUMBER:
-            return_object = json_object_new_int64(object->num);
-            break;
+            return json_object_new_int64(object->num);
 
         case CVAL_BOOLEAN:
             if (object->boolean) {
-                return_object = json_object_new_boolean(true);
+                return json_object_new_boolean(true);
             } else {
-                return_object = json_object_new_boolean(false);
+                return json_object_new_boolean(false);
             }
-            break;
 
         case CVAL_STRING:
-            return_object = json_object_new_string(object->str);
-            break;
+            return json_object_new_string(object->str);
 
         case CVAL_SYMBOL:
-            return_object = parse_cval_object(env, cval_evaluate(env, object));
-            break;
+            return parse_cval_object(env, cval_evaluate(env, object));
 
         default:
-            return_object = cval_null();
+            return NULL;
+    }
+
+}
+
+json_object *parse_cval_dict(cenv* env, cval *object) {
+    json_object * return_object = json_object_new_object();
+    cval ** temp_keys = hash_table_dump_keys(object->ht);
+
+    cval * curObj = NULL;
+
+    for (int i = 0; i < object->ht->items; ++i) {
+        curObj = hash_table_get(object->ht, temp_keys[i]->str);
+        json_object_object_add(return_object, temp_keys[i]->str, parse_cval_object(env, curObj));
     }
 
     return return_object;
