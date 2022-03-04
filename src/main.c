@@ -18,8 +18,6 @@
 typedef struct trace {} trace;
 #endif
 
-
-#ifdef _WIN32
 #include <string.h>
 
 static char buffer[2048];
@@ -34,12 +32,9 @@ char* readline(char* prompt) {
 }
 
 void add_history(char* unused) {}
-#else
 
-#include <editline/history.h>
-
-#endif
 mpc_parser_t *Number;
+
 mpc_parser_t *Float;
 mpc_parser_t *Symbol;
 mpc_parser_t *String;
