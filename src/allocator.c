@@ -78,12 +78,12 @@ cval_allocation_index *preallocateIndex(int rows, int slots) {
     index->smode = false;
 
     for (int i = 0; i <= rows; ++i) {
-        cval_allocation_array *array = preallocateArray(slots);
-        if (array != NULL) {
-            index->rows[i] = array;
-        }
-    }
 
+    cval_allocation_array *array = preallocateArray(slots);
+    if (array != NULL) {
+        index->rows[i] = array;
+    }
+}
     for (int i = rows; i < ROWS_MAX; ++i) {
         index->rows[i] = NULL;
     }

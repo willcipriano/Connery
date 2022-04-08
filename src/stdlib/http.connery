@@ -105,15 +105,3 @@
 (fun {http_status_code_text response} {
     grab __http_status_codes__ (convert_string response)
 })
-
-(fun {http_get url} {
-    http __HTTP_GET__ url None
-})
-
-(fun {http_post url post_body} {
-    http __HTTP_POST__ url None post_body
-})
-
-(fun {http_download url location} {
-    http __HTTP_DOWN__ url None location
-})

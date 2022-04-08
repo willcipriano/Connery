@@ -128,8 +128,10 @@ json_object *parse_cval_dict(cenv* env, cval *object) {
 
 cval *parse_json_cval(cenv* env, cval* value) {
     // if it's a string, check to see if it's a json string
+    json_object* obj;
+
     if (value->type == CVAL_STRING) {
-        json_object* obj = json_tokener_parse(value->str);
+        obj = json_tokener_parse(value->str);
         if (obj != NULL) {
             return parse_json_object(obj);
         }
@@ -140,13 +142,17 @@ cval *parse_json_cval(cenv* env, cval* value) {
     if (value->class == CVAL_CLASS_HTTP && value->type == CVAL_DICTIONARY) {
         cval* body = hash_table_get(value->ht, "body");
         if (body != NULL) {
-            return parse_json_object(json_tokener_parse(body->str));
+            obj = json_tokener_parse(body->str);
+            if (obj != NULL) {
+                return parse_json_object(obj);
+            }
+            free(obj);
         }
-        return cval_null();
+        return cval_fault("unable to parshe provided jshon.");
     }
 
     cval* mode = safe_cenv_get(env, "__JSON_OUTPUT_MODE__");
-    json_object* obj = parse_cval_object(env, value);
+    obj = parse_cval_object(env, value);
 
     // if mode is configured, use that
     if (mode != NULL) {
